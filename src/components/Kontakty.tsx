@@ -23,13 +23,6 @@ const Kontakty = () => {
     popis: ''
   });
 
-  const [filters, setFilters] = useState({
-    hladat: '',
-    kategoria: '',
-    mesto: '',
-    aktivity: ''
-  });
-
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
@@ -40,10 +33,6 @@ const Kontakty = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {

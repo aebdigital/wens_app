@@ -3,15 +3,6 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const Objednavky = () => {
   const { isDark } = useTheme();
-  const [filters, setFilters] = useState({
-    cisloObjednavky: '',
-    cisloZakazky: '',
-    zakaznik: '',
-    firma: '',
-    odoslane: '',
-    dorucene: '',
-    limitRadkov: '200'
-  });
 
   const [objednavkyData] = useState(() => {
     const saved = localStorage.getItem('objednavkyData');
@@ -25,10 +16,6 @@ const Objednavky = () => {
     localStorage.setItem('selectedOrder', JSON.stringify(order));
     // Navigate to Spis page
     window.location.href = '/spis';
-  };
-
-  const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSort = (key: string) => {

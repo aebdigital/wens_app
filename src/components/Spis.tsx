@@ -8,21 +8,6 @@ const Spis = () => {
   const location = useLocation();
   const { isDark } = useTheme();
   const highlightedRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
-  const [filters, setFilters] = useState({
-    cisloCP: '',
-    cisloZakazky: '',
-    datum: '',
-    od: '',
-    do: '',
-    popis: '',
-    meno: '',
-    kategoria: '',
-    spracovatel: '',
-    firma: '',
-    sprostredkovatel: '',
-    stav: '',
-    limitRadkov: '100'
-  });
 
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('vseobecne');
@@ -48,7 +33,6 @@ const Spis = () => {
   });
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   
@@ -317,11 +301,8 @@ const Spis = () => {
         setHighlightedProjectIds([]);
       }, 5000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
-
-  const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
-  };
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -587,7 +568,6 @@ const Spis = () => {
       });
     }
 
-    let updatedEntries;
     if (isEditMode && editingIndex !== null) {
       // Update existing entry
       setEntries(prev => {
@@ -1929,9 +1909,9 @@ const Spis = () => {
                     {uploadedPhotos.map(photo => (
                       <div key={photo.id} className="border border-gray-300 rounded-lg overflow-hidden bg-white">
                         <div className="aspect-w-16 aspect-h-9 bg-gray-100">
-                          <img 
-                            src={photo.url} 
-                            alt="Project photo" 
+                          <img
+                            src={photo.url}
+                            alt={photo.description || 'Project'}
                             className="w-full h-48 object-cover"
                           />
                         </div>
