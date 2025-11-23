@@ -279,6 +279,7 @@ const Spis = () => {
         }, 3000); // Highlight for 3 seconds
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, objednavkyData]);
 
   // Handle highlighting rows when navigating from Kontakty page
