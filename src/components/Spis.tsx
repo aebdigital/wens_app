@@ -703,7 +703,7 @@ const Spis = () => {
             setEditingIndex(null);
             setShowModal(true);
           }}
-          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          className="flex items-center px-4 py-2 bg-[#e11b28] text-white rounded-lg hover:bg-[#c71325] transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -861,7 +861,7 @@ const Spis = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-4 py-2 text-sm font-medium border-b-2 ${
                       activeTab === tab.id
-                        ? `border-blue-500 text-blue-600 ${isDark ? 'bg-gray-800' : 'bg-white'}`
+                        ? `border-[#e11b28] text-[#e11b28] ${isDark ? 'bg-gray-800' : 'bg-white'}`
                         : `border-transparent ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`
                     }`}
                   >
@@ -1674,7 +1674,7 @@ const Spis = () => {
                           objednavkyItems: [...prev.objednavkyItems, newItem]
                         }));
                       }}
-                      className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                      className="px-3 py-1 bg-[#e11b28] text-white rounded text-xs hover:bg-[#c71325]"
                     >
                       Pridať objednávku
                     </button>
@@ -2092,7 +2092,7 @@ const Spis = () => {
                   </button>
                   <button 
                     onClick={handleSaveEntry}
-                    className="px-3 py-3 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 text-center transition-colors font-medium"
+                    className="px-3 py-3 text-sm text-white bg-[#e11b28] rounded-lg hover:bg-[#c71325] text-center transition-colors font-medium"
                   >
                     {isEditMode ? 'Uložiť' : 'OK'}
                   </button>
