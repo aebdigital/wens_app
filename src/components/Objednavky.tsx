@@ -10,6 +10,7 @@ const Objednavky = () => {
   });
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
+  const [activeSearchColumn, setActiveSearchColumn] = useState<string | null>(null);
 
   const handleOrderClick = (order: any) => {
     // Store the clicked order info for navigation
@@ -87,37 +88,67 @@ const Objednavky = () => {
               ].map((column, index, array) => (
                 <th
                   key={column.key}
-                  className={`px-2 py-1 text-left text-xs font-medium cursor-pointer ${
-                    isDark ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-600 hover:bg-gray-200'
+                  className={`px-2 py-2 text-left text-xs font-medium transition-all ${
+                    isDark ? 'text-gray-300' : 'text-gray-600'
                   } ${index < array.length - 1 ? (isDark ? 'border-r border-gray-600' : 'border-r border-gray-200') : ''}`}
                 >
-                  <div className="space-y-1">
-                    <div
-                      onClick={() => handleSort(column.key)}
-                      className="flex items-center justify-between"
-                    >
-                      <span>{column.label}</span>
-                      <span>
-                        {sortConfig?.key === column.key
-                          ? (sortConfig.direction === 'asc' ? '▲' : '▼')
-                          : '▼'
-                        }
-                      </span>
+                  {activeSearchColumn === column.key ? (
+                    <div className="flex items-center gap-2 animate-fadeIn">
+                      <svg className="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder={`Search...`}
+                        value={columnFilters[column.key] || ''}
+                        onChange={(e) => handleColumnFilter(column.key, e.target.value)}
+                        onBlur={() => {
+                          if (!columnFilters[column.key]) {
+                            setActiveSearchColumn(null);
+                          }
+                        }}
+                        autoFocus
+                        className={`w-full text-xs px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
+                          isDark ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                      />
+                      {columnFilters[column.key] && (
+                        <button
+                          onClick={() => {
+                            handleColumnFilter(column.key, '');
+                            setActiveSearchColumn(null);
+                          }}
+                          className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                    <input
-                      type="text"
-                      placeholder={`Filter ${column.label}...`}
-                      value={columnFilters[column.key] || ''}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleColumnFilter(column.key, e.target.value);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full text-xs px-1 py-1 border rounded focus:outline-none focus:border-blue-500 ${
-                        isDark ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                    />
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span
+                        onClick={() => handleSort(column.key)}
+                        className="cursor-pointer hover:text-[#e11b28] transition-colors"
+                      >
+                        {column.label}
+                        {sortConfig?.key === column.key && (
+                          <span className="ml-1">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => setActiveSearchColumn(column.key)}
+                        className={`ml-2 p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
+                          columnFilters[column.key] ? 'text-[#e11b28]' : ''
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </th>
               ))}
             </tr>
