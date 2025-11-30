@@ -12,24 +12,35 @@ const Spis = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('vseobecne');
   const [entries, setEntries] = useState<any[]>(() => {
-    const saved = localStorage.getItem('spisEntries');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('spisEntries');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Failed to parse spisEntries from localStorage:', error);
+      return [];
+    }
   });
   const [uploadedPhotos, setUploadedPhotos] = useState<{id: string, file: File, url: string, description: string}[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [firmaOptions, setFirmaOptions] = useState<string[]>(() => {
-    const saved = localStorage.getItem('firmaOptions');
-    return saved ? JSON.parse(saved) : ['Slavo Zdenko'];
+    try {
+      const saved = localStorage.getItem('firmaOptions');
+      return saved ? JSON.parse(saved) : ['Slavo Zdenko'];
+    } catch (error) {
+      console.error('Failed to parse firmaOptions from localStorage:', error);
+      return ['Slavo Zdenko'];
+    }
   });
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
-  const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>(() => {
-    const saved = localStorage.getItem('firmaOptions');
-    return saved ? JSON.parse(saved) : ['Slavo Zdenko'];
-  });
   const [objednavkyData, setObjednavkyData] = useState<any[]>(() => {
-    const saved = localStorage.getItem('objednavkyData');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('objednavkyData');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Failed to parse objednavkyData from localStorage:', error);
+      return [];
+    }
   });
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
@@ -257,31 +268,35 @@ const Spis = () => {
   
   // Check for selected order from navigation
   React.useEffect(() => {
-    const selectedOrder = localStorage.getItem('selectedOrder');
-    if (selectedOrder) {
-      const orderData = JSON.parse(selectedOrder);
-      // Find the parent Spis entry
-      const parentEntry = entries.find(entry => entry.cisloCP === orderData.parentSpisId);
-      if (parentEntry) {
-        const entryIndex = entries.indexOf(parentEntry);
-        handleRowClick(parentEntry, entryIndex);
-        // Set active tab to objednavky
-        setActiveTab('objednavky');
-        // Set selected order for highlighting
-        const orderIndex = objednavkyData.findIndex(order => 
-          order.cisloObjednavky === orderData.cisloObjednavky && 
-          order.parentSpisId === orderData.parentSpisId
-        );
-        setSelectedOrderIndex(orderIndex >= 0 ? orderIndex : null);
-        // Clear the selected order after short delay
-        setTimeout(() => {
-          localStorage.removeItem('selectedOrder');
-          setSelectedOrderIndex(null);
-        }, 3000); // Highlight for 3 seconds
+    try {
+      const selectedOrder = localStorage.getItem('selectedOrder');
+      if (selectedOrder) {
+        const orderData = JSON.parse(selectedOrder);
+        // Find the parent Spis entry
+        const parentEntry = entries.find(entry => entry.cisloCP === orderData.parentSpisId);
+        if (parentEntry) {
+          const entryIndex = entries.indexOf(parentEntry);
+          handleRowClick(parentEntry, entryIndex);
+          // Set active tab to objednavky
+          setActiveTab('objednavky');
+          // Set selected order for highlighting
+          const orderIndex = objednavkyData.findIndex(order =>
+            order.cisloObjednavky === orderData.cisloObjednavky &&
+            order.parentSpisId === orderData.parentSpisId
+          );
+          setSelectedOrderIndex(orderIndex >= 0 ? orderIndex : null);
+          // Clear the selected order after short delay
+          setTimeout(() => {
+            localStorage.removeItem('selectedOrder');
+            setSelectedOrderIndex(null);
+          }, 3000); // Highlight for 3 seconds
+        }
       }
+    } catch (error) {
+      console.error('Failed to process selected order:', error);
+      localStorage.removeItem('selectedOrder');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, objednavkyData]);
+  }, [entries, objednavkyData, handleRowClick]);
 
   // Handle highlighting rows when navigating from Kontakty page
   useEffect(() => {
@@ -290,7 +305,7 @@ const Spis = () => {
       setHighlightedProjectIds(projectIds);
 
       // Scroll to first highlighted row
-      setTimeout(() => {
+      const scrollTimer = setTimeout(() => {
         const firstProjectId = projectIds[0];
         const rowElement = highlightedRowRefs.current[firstProjectId];
         if (rowElement) {
@@ -299,11 +314,15 @@ const Spis = () => {
       }, 100);
 
       // Clear highlights after 5 seconds
-      setTimeout(() => {
+      const clearTimer = setTimeout(() => {
         setHighlightedProjectIds([]);
       }, 5000);
+
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(clearTimer);
+      };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   const handleSort = (key: string) => {
@@ -548,7 +567,11 @@ const Spis = () => {
     if (formData.firma && !firmaOptions.includes(formData.firma)) {
       const newFirmaOptions = [...firmaOptions, formData.firma];
       setFirmaOptions(newFirmaOptions);
-      localStorage.setItem('firmaOptions', JSON.stringify(newFirmaOptions));
+      try {
+        localStorage.setItem('firmaOptions', JSON.stringify(newFirmaOptions));
+      } catch (error) {
+        console.error('Failed to save firmaOptions:', error);
+      }
     }
 
     // Save objednavky data if any exist
@@ -562,10 +585,17 @@ const Spis = () => {
         odoslane: item.datum ? new Date(item.datum).toLocaleDateString('sk-SK') : '',
         parentSpisId: entryData.cisloCP // Link to parent Spis entry
       }));
-      
+
       setObjednavkyData(prev => {
         const updated = [...prev, ...objednavkyEntries];
-        localStorage.setItem('objednavkyData', JSON.stringify(updated));
+        try {
+          localStorage.setItem('objednavkyData', JSON.stringify(updated));
+        } catch (error) {
+          console.error('Failed to save objednavkyData:', error);
+          if (error instanceof DOMException && error.code === 22) {
+            alert('Nedostatok miesta v úložisku. Objednávky nemožno uložiť.');
+          }
+        }
         return updated;
       });
     }
@@ -575,14 +605,28 @@ const Spis = () => {
       setEntries(prev => {
         const updated = [...prev];
         updated[editingIndex] = entryData;
-        localStorage.setItem('spisEntries', JSON.stringify(updated));
+        try {
+          localStorage.setItem('spisEntries', JSON.stringify(updated));
+        } catch (error) {
+          console.error('Failed to save spisEntries:', error);
+          if (error instanceof DOMException && error.code === 22) {
+            alert('Nedostatok miesta v úložisku. Záznam nemožno uložiť.');
+          }
+        }
         return updated;
       });
     } else {
       // Add new entry
       setEntries(prev => {
         const updated = [...prev, entryData];
-        localStorage.setItem('spisEntries', JSON.stringify(updated));
+        try {
+          localStorage.setItem('spisEntries', JSON.stringify(updated));
+        } catch (error) {
+          console.error('Failed to save spisEntries:', error);
+          if (error instanceof DOMException && error.code === 22) {
+            alert('Nedostatok miesta v úložisku. Záznam nemožno uložiť.');
+          }
+        }
         return updated;
       });
     }
@@ -805,7 +849,7 @@ const Spis = () => {
               const isHighlighted = highlightedProjectIds.includes(item.cisloCP);
               return (
               <tr
-                key={index}
+                key={item.cisloCP || `entry-${index}`}
                 ref={(el) => {
                   if (el) highlightedRowRefs.current[item.cisloCP] = el;
                 }}
@@ -978,9 +1022,9 @@ const Spis = () => {
                             />
                             {showFirmaDropdown && filteredFirmaOptions.length > 0 && (
                               <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded shadow-md z-50 max-h-32 overflow-y-auto">
-                                {filteredFirmaOptions.map((option, index) => (
+                                {firmaOptions.map((option) => (
                                   <div
-                                    key={index}
+                                    key={option}
                                     onClick={() => {
                                       setFormData(prev => ({...prev, firma: option}));
                                       setShowFirmaDropdown(false);
@@ -1631,7 +1675,7 @@ const Spis = () => {
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={index}>
+                          <tr key={`row-${index}`}>
                             <td className="border border-gray-300 px-1 py-1">
                               <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
                             </td>
@@ -1666,11 +1710,19 @@ const Spis = () => {
               {activeTab === 'objednavky' && (
                 <div className="p-2 h-full">
                   <div className="mb-4">
-                    <button 
+                    <button
                       onClick={() => {
-                        const newItem = {nazov: '', vypracoval: '', datum: '', popis: '', cisloObjednavky: '', dorucene: ''};
+                        const newItem = {
+                          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                          nazov: '',
+                          vypracoval: '',
+                          datum: '',
+                          popis: '',
+                          cisloObjednavky: '',
+                          dorucene: ''
+                        };
                         setFormData(prev => ({
-                          ...prev, 
+                          ...prev,
                           objednavkyItems: [...prev.objednavkyItems, newItem]
                         }));
                       }}
@@ -1701,7 +1753,7 @@ const Spis = () => {
                             objednavkyData[selectedOrderIndex].cisloObjednavky === item.cisloObjednavky;
                           
                           return (
-                            <tr key={index} className={isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}>
+                            <tr key={item.id || `objednavka-${index}`} className={isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}>
                               <td className="border border-gray-300 px-1 py-1">
                                 <input 
                                   type="text" 
@@ -1886,7 +1938,7 @@ const Spis = () => {
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={index}>
+                          <tr key={`row-${index}`}>
                             <td className="border border-gray-300 px-1 py-1">
                               <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
                             </td>
@@ -2007,7 +2059,7 @@ const Spis = () => {
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={index}>
+                          <tr key={`row-${index}`}>
                             <td className="border border-gray-300 px-1 py-1">
                               <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
                             </td>
@@ -2049,8 +2101,8 @@ const Spis = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {technicalData.map((doc, index) => (
-                          <tr key={index} className="border-b hover:bg-gray-50 bg-white">
+                        {technicalData.map((doc) => (
+                          <tr key={`${doc.nazov}-${doc.datum}`} className="border-b hover:bg-gray-50 bg-white">
                             <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-[#e11b28]">
                               {doc.nazov}
                             </td>

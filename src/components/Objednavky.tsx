@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Objednavky = () => {
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const [objednavkyData] = useState(() => {
-    const saved = localStorage.getItem('objednavkyData');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('objednavkyData');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Failed to parse objednavkyData from localStorage:', error);
+      return [];
+    }
   });
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
@@ -15,8 +22,8 @@ const Objednavky = () => {
   const handleOrderClick = (order: any) => {
     // Store the clicked order info for navigation
     localStorage.setItem('selectedOrder', JSON.stringify(order));
-    // Navigate to Spis page
-    window.location.href = '/spis';
+    // Navigate to Spis page using React Router
+    navigate('/spis');
   };
 
   const handleSort = (key: string) => {
@@ -155,9 +162,9 @@ const Objednavky = () => {
             </tr>
           </thead>
           <tbody>
-            {getSortedAndFilteredOrders().map((order: any, index: number) => (
+            {getSortedAndFilteredOrders().map((order: any) => (
               <tr
-                key={index}
+                key={order.cisloObjednavky || `order-${order.cisloZakazky}-${order.datum}`}
                 className={`border-b cursor-pointer transition-colors ${
                   isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700' : 'border-gray-200 bg-white hover:bg-gray-50 hover:bg-blue-50'
                 }`}

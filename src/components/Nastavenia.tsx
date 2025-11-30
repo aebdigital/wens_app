@@ -27,12 +27,37 @@ const Nastavenia = () => {
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-      }));
+      // Load saved preferences from localStorage
+      try {
+        const savedPreferences = localStorage.getItem(`preferences_${user.id}`);
+        if (savedPreferences) {
+          const prefs = JSON.parse(savedPreferences);
+          setFormData(prev => ({
+            ...prev,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: prefs.phone || '',
+            notifications: prefs.notifications || prev.notifications,
+            language: prefs.language || 'sk',
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+        setFormData(prev => ({
+          ...prev,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        }));
+      }
     }
   }, [user]);
 
@@ -52,8 +77,26 @@ const Nastavenia = () => {
   };
 
   const handleSave = () => {
-    console.log('Saving settings:', formData);
-    alert('Nastavenia boli uložené');
+    if (!user) return;
+
+    try {
+      // Save user preferences to localStorage
+      const preferences = {
+        phone: formData.phone,
+        notifications: formData.notifications,
+        language: formData.language,
+      };
+
+      localStorage.setItem(`preferences_${user.id}`, JSON.stringify(preferences));
+      alert('Nastavenia boli úspešne uložené');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      if (error instanceof DOMException && error.code === 22) {
+        alert('Nedostatok miesta v úložisku. Vymažte prosím niektoré dáta.');
+      } else {
+        alert('Chyba pri ukladaní nastavení. Skúste to znova.');
+      }
+    }
   };
 
   const handlePasswordChange = async () => {

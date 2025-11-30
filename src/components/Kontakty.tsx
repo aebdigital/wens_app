@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const Kontakty = () => {
   const navigate = useNavigate();
-  const { contacts } = useContacts();
+  const { contacts, addContact, updateContact, deleteContact } = useContacts();
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
     priezviskoMeno: '',
@@ -20,26 +20,160 @@ const Kontakty = () => {
     kontaktnaMeno: '',
     kontaktnaTelefon: '',
     kontaktnaEmail: '',
-    popis: ''
+    popis: '',
+    typ: 'zakaznik' as 'zakaznik' | 'architekt'
   });
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
   const [activeSearchColumn, setActiveSearchColumn] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const validateEmail = (email: string): boolean => {
+    if (!email) return true; // Optional field
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone) return true; // Optional field
+    return /^[+]?[\d\s()-]+$/.test(phone);
+  };
+
+  const validateICO = (ico: string): boolean => {
+    if (!ico) return true; // Optional field
+    return /^\d{8}$/.test(ico.replace(/\s/g, ''));
+  };
+
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+
+    // Split priezviskoMeno into meno and priezvisko
+    const nameParts = formData.priezviskoMeno.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      errors.priezviskoMeno = 'Zadajte priezvisko aj meno';
+    }
+
+    if (formData.telefon && !validatePhone(formData.telefon)) {
+      errors.telefon = 'Neplatný formát telefónneho čísla';
+    }
+
+    if (formData.email && !validateEmail(formData.email)) {
+      errors.email = 'Neplatný formát emailu';
+    }
+
+    if (formData.kontaktnaEmail && !validateEmail(formData.kontaktnaEmail)) {
+      errors.kontaktnaEmail = 'Neplatný formát emailu';
+    }
+
+    if (formData.kontaktnaTelefon && !validatePhone(formData.kontaktnaTelefon)) {
+      errors.kontaktnaTelefon = 'Neplatný formát telefónneho čísla';
+    }
+
+    if (formData.ico && !validateICO(formData.ico)) {
+      errors.ico = 'IČO musí obsahovať 8 číslic';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    // Clear error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      priezviskoMeno: '',
+      telefon: '',
+      email: '',
+      ulica: '',
+      mesto: '',
+      psc: '',
+      ico: '',
+      icDph: '',
+      kontaktnaPriezvisko: '',
+      kontaktnaMeno: '',
+      kontaktnaTelefon: '',
+      kontaktnaEmail: '',
+      popis: '',
+      typ: 'zakaznik'
+    });
+    setFormErrors({});
+    setEditingContactId(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    setIsPopupOpen(false);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      // Split priezviskoMeno into parts
+      const nameParts = formData.priezviskoMeno.trim().split(/\s+/);
+      const priezvisko = nameParts[0];
+      const meno = nameParts.slice(1).join(' ');
+
+      if (editingContactId) {
+        // Update existing contact
+        updateContact(editingContactId, {
+          meno,
+          priezvisko,
+          telefon: formData.telefon,
+          email: formData.email,
+          ulica: formData.ulica,
+          mesto: formData.mesto,
+          psc: formData.psc,
+          ico: formData.ico,
+          icDph: formData.icDph,
+          typ: formData.typ
+        });
+      } else {
+        // Add new contact
+        addContact({
+          meno,
+          priezvisko,
+          telefon: formData.telefon,
+          email: formData.email,
+          ulica: formData.ulica,
+          mesto: formData.mesto,
+          psc: formData.psc,
+          ico: formData.ico,
+          icDph: formData.icDph,
+          typ: formData.typ,
+          projectIds: []
+        });
+      }
+
+      resetForm();
+      setIsPopupOpen(false);
+    } catch (error) {
+      console.error('Error saving contact:', error);
+      alert('Chyba pri ukladaní kontaktu. Skúste to znova.');
+    }
+  };
+
+  const handleDeleteContact = () => {
+    if (editingContactId && window.confirm('Naozaj chcete odstrániť tento kontakt?')) {
+      deleteContact(editingContactId);
+      setIsPopupOpen(false);
+      resetForm();
+    }
   };
 
   const handleSort = (key: string) => {
@@ -143,14 +277,18 @@ const Kontakty = () => {
               {/* Main form section with 2 columns layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                 <div className="flex flex-col space-y-1">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko + Meno:</label>
+                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko + Meno: *</label>
                   <input
                     type="text"
                     name="priezviskoMeno"
                     value={formData.priezviskoMeno}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezviskoMeno ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    required
                   />
+                  {formErrors.priezviskoMeno && (
+                    <span className="text-xs text-red-500">{formErrors.priezviskoMeno}</span>
+                  )}
                 </div>
 
                 <div className="flex flex-col space-y-1">
@@ -160,8 +298,11 @@ const Kontakty = () => {
                     name="telefon"
                     value={formData.telefon}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.telefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
+                  {formErrors.telefon && (
+                    <span className="text-xs text-red-500">{formErrors.telefon}</span>
+                  )}
                 </div>
 
                 <div className="flex flex-col space-y-1">
@@ -171,8 +312,11 @@ const Kontakty = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.email ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
+                  {formErrors.email && (
+                    <span className="text-xs text-red-500">{formErrors.email}</span>
+                  )}
                 </div>
 
                 <div className="flex flex-col space-y-1">
@@ -215,8 +359,11 @@ const Kontakty = () => {
                     name="ico"
                     value={formData.ico}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.ico ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
+                  {formErrors.ico && (
+                    <span className="text-xs text-red-500">{formErrors.ico}</span>
+                  )}
                 </div>
 
                 <div className="flex flex-col space-y-1">
@@ -264,8 +411,11 @@ const Kontakty = () => {
                       name="kontaktnaTelefon"
                       value={formData.kontaktnaTelefon}
                       onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaTelefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     />
+                    {formErrors.kontaktnaTelefon && (
+                      <span className="text-xs text-red-500">{formErrors.kontaktnaTelefon}</span>
+                    )}
                   </div>
 
                   <div className="flex flex-col space-y-1">
@@ -275,8 +425,11 @@ const Kontakty = () => {
                       name="kontaktnaEmail"
                       value={formData.kontaktnaEmail}
                       onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaEmail ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     />
+                    {formErrors.kontaktnaEmail && (
+                      <span className="text-xs text-red-500">{formErrors.kontaktnaEmail}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -303,12 +456,15 @@ const Kontakty = () => {
                 >
                   Zrušiť
                 </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  Odstrániť
-                </button>
+                {editingContactId && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteContact}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Odstrániť
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="px-4 py-2 bg-[#e11b28] text-white rounded hover:bg-red-700"

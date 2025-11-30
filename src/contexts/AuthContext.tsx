@@ -36,18 +36,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Failed to parse user from localStorage:', error);
+      localStorage.removeItem('currentUser');
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const usersData = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(usersData);
       const foundUser = users.find((u: any) => u.email === email && u.password === password);
-      
+
       if (foundUser) {
         const userWithoutPassword = {
           id: foundUser.id,
@@ -69,7 +75,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const usersData = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(usersData);
       
       if (users.find((u: any) => u.email === email)) {
         return false;
@@ -112,8 +119,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
       if (!user) return false;
-      
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+
+      const usersData = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(usersData);
       const userIndex = users.findIndex((u: any) => u.id === user.id && u.password === currentPassword);
       
       if (userIndex === -1) {

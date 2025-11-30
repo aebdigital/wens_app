@@ -20,6 +20,7 @@ interface ContactsContextType {
   contacts: Contact[];
   addContact: (contact: Omit<Contact, 'id' | 'dateAdded'>) => Contact;
   updateContact: (id: string, contact: Partial<Contact>) => void;
+  deleteContact: (id: string) => void;
   getContactById: (id: string) => Contact | undefined;
   getContactsByProject: (projectId: string) => Contact[];
   associateContactWithProject: (contactId: string, projectId: string) => void;
@@ -29,12 +30,24 @@ const ContactsContext = createContext<ContactsContextType | undefined>(undefined
 
 export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [contacts, setContacts] = useState<Contact[]>(() => {
-    const saved = localStorage.getItem('contacts');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('contacts');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Failed to parse contacts from localStorage:', error);
+      return [];
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
+    try {
+      localStorage.setItem('contacts', JSON.stringify(contacts));
+    } catch (error) {
+      console.error('Failed to save contacts to localStorage:', error);
+      if (error instanceof DOMException && error.code === 22) {
+        alert('Nedostatok miesta v úložisku. Kontakty nemožno uložiť. Vymažte prosím staré dáta.');
+      }
+    }
   }, [contacts]);
 
   const addContact = (contactData: Omit<Contact, 'id' | 'dateAdded'>): Contact => {
@@ -73,6 +86,10 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     );
   };
 
+  const deleteContact = (id: string) => {
+    setContacts(prev => prev.filter(contact => contact.id !== id));
+  };
+
   const getContactById = (id: string) => {
     return contacts.find(c => c.id === id);
   };
@@ -96,6 +113,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
         contacts,
         addContact,
         updateContact,
+        deleteContact,
         getContactById,
         getContactsByProject,
         associateContactWithProject
