@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface Contact {
   id: string;
@@ -29,9 +30,11 @@ interface ContactsContextType {
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
 
 export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>(() => {
     try {
-      const saved = localStorage.getItem('contacts');
+      const storageKey = user ? `contacts_${user.id}` : 'contacts';
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
       console.error('Failed to parse contacts from localStorage:', error);
@@ -39,16 +42,29 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   });
 
+  // Reload contacts when user changes
   useEffect(() => {
     try {
-      localStorage.setItem('contacts', JSON.stringify(contacts));
+      const storageKey = user ? `contacts_${user.id}` : 'contacts';
+      const saved = localStorage.getItem(storageKey);
+      setContacts(saved ? JSON.parse(saved) : []);
+    } catch (error) {
+      console.error('Failed to load contacts for user:', error);
+      setContacts([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    try {
+      const storageKey = user ? `contacts_${user.id}` : 'contacts';
+      localStorage.setItem(storageKey, JSON.stringify(contacts));
     } catch (error) {
       console.error('Failed to save contacts to localStorage:', error);
       if (error instanceof DOMException && error.code === 22) {
         alert('Nedostatok miesta v úložisku. Kontakty nemožno uložiť. Vymažte prosím staré dáta.');
       }
     }
-  }, [contacts]);
+  }, [contacts, user]);
 
   const addContact = (contactData: Omit<Contact, 'id' | 'dateAdded'>): Contact => {
     // Check if contact already exists based on email or phone

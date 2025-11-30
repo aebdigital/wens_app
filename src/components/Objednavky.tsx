@@ -1,20 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Objednavky = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [objednavkyData] = useState(() => {
+  const [objednavkyData, setObjednavkyData] = useState(() => {
     try {
-      const saved = localStorage.getItem('objednavkyData');
+      const storageKey = user ? `objednavkyData_${user.id}` : 'objednavkyData';
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
       console.error('Failed to parse objednavkyData from localStorage:', error);
       return [];
     }
   });
+
+  // Reload orders when user changes
+  useEffect(() => {
+    if (user) {
+      try {
+        const storageKey = `objednavkyData_${user.id}`;
+        const saved = localStorage.getItem(storageKey);
+        setObjednavkyData(saved ? JSON.parse(saved) : []);
+      } catch (error) {
+        console.error('Failed to reload orders for user:', error);
+        setObjednavkyData([]);
+      }
+    }
+  }, [user]);
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
   const [activeSearchColumn, setActiveSearchColumn] = useState<string | null>(null);

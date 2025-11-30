@@ -2,18 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useContacts } from '../contexts/ContactsContext';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Spis = () => {
   const { addContact } = useContacts();
   const location = useLocation();
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const highlightedRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
 
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('vseobecne');
   const [entries, setEntries] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('spisEntries');
+      const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
       console.error('Failed to parse spisEntries from localStorage:', error);
@@ -25,7 +28,8 @@ const Spis = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [firmaOptions, setFirmaOptions] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('firmaOptions');
+      const storageKey = user ? `firmaOptions_${user.id}` : 'firmaOptions';
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : ['Slavo Zdenko'];
     } catch (error) {
       console.error('Failed to parse firmaOptions from localStorage:', error);
@@ -33,9 +37,11 @@ const Spis = () => {
     }
   });
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
+  const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>([]);
   const [objednavkyData, setObjednavkyData] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('objednavkyData');
+      const storageKey = user ? `objednavkyData_${user.id}` : 'objednavkyData';
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
       console.error('Failed to parse objednavkyData from localStorage:', error);
@@ -248,7 +254,7 @@ const Spis = () => {
     cenovePonukyItems: [] as {cisloCP: string, verzia: string, odoslane: string, vytvoril: string, popis: string}[],
 
     // Objednávky data
-    objednavkyItems: [] as {nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string}[],
+    objednavkyItems: [] as {id?: string, nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string}[],
 
     // Emaily
     emailKomu: '',
@@ -265,7 +271,28 @@ const Spis = () => {
   });
 
   // No sample data - start with empty table
-  
+
+  // Reload data when user changes
+  useEffect(() => {
+    if (user) {
+      try {
+        const storageKey = `spisEntries_${user.id}`;
+        const saved = localStorage.getItem(storageKey);
+        setEntries(saved ? JSON.parse(saved) : []);
+
+        const objednavkyKey = `objednavkyData_${user.id}`;
+        const objednavkySaved = localStorage.getItem(objednavkyKey);
+        setObjednavkyData(objednavkySaved ? JSON.parse(objednavkySaved) : []);
+
+        const firmaKey = `firmaOptions_${user.id}`;
+        const firmaSaved = localStorage.getItem(firmaKey);
+        setFirmaOptions(firmaSaved ? JSON.parse(firmaSaved) : ['Slavo Zdenko']);
+      } catch (error) {
+        console.error('Failed to reload user data:', error);
+      }
+    }
+  }, [user]);
+
   // Check for selected order from navigation
   React.useEffect(() => {
     try {
@@ -296,7 +323,8 @@ const Spis = () => {
       console.error('Failed to process selected order:', error);
       localStorage.removeItem('selectedOrder');
     }
-  }, [entries, objednavkyData, handleRowClick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, objednavkyData]);
 
   // Handle highlighting rows when navigating from Kontakty page
   useEffect(() => {
@@ -568,7 +596,8 @@ const Spis = () => {
       const newFirmaOptions = [...firmaOptions, formData.firma];
       setFirmaOptions(newFirmaOptions);
       try {
-        localStorage.setItem('firmaOptions', JSON.stringify(newFirmaOptions));
+        const storageKey = user ? `firmaOptions_${user.id}` : 'firmaOptions';
+        localStorage.setItem(storageKey, JSON.stringify(newFirmaOptions));
       } catch (error) {
         console.error('Failed to save firmaOptions:', error);
       }
@@ -589,7 +618,8 @@ const Spis = () => {
       setObjednavkyData(prev => {
         const updated = [...prev, ...objednavkyEntries];
         try {
-          localStorage.setItem('objednavkyData', JSON.stringify(updated));
+          const storageKey = user ? `objednavkyData_${user.id}` : 'objednavkyData';
+          localStorage.setItem(storageKey, JSON.stringify(updated));
         } catch (error) {
           console.error('Failed to save objednavkyData:', error);
           if (error instanceof DOMException && error.code === 22) {
@@ -606,7 +636,8 @@ const Spis = () => {
         const updated = [...prev];
         updated[editingIndex] = entryData;
         try {
-          localStorage.setItem('spisEntries', JSON.stringify(updated));
+          const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
+          localStorage.setItem(storageKey, JSON.stringify(updated));
         } catch (error) {
           console.error('Failed to save spisEntries:', error);
           if (error instanceof DOMException && error.code === 22) {
@@ -620,7 +651,8 @@ const Spis = () => {
       setEntries(prev => {
         const updated = [...prev, entryData];
         try {
-          localStorage.setItem('spisEntries', JSON.stringify(updated));
+          const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
+          localStorage.setItem(storageKey, JSON.stringify(updated));
         } catch (error) {
           console.error('Failed to save spisEntries:', error);
           if (error instanceof DOMException && error.code === 22) {
