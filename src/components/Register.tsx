@@ -216,7 +216,7 @@ const Register: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-red-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            className="w-full bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-lg hover:shadow-xl"
           >
             {isLoading ? 'Registruje sa...' : 'Vytvoriť účet'}
           </button>

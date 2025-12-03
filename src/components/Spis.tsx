@@ -616,7 +616,10 @@ const Spis = () => {
       }));
 
       setObjednavkyData(prev => {
-        const updated = [...prev, ...objednavkyEntries];
+        // Remove old orders from this project to avoid duplicates
+        const filteredPrev = prev.filter(order => order.parentSpisId !== entryData.cisloCP);
+        // Add the current orders
+        const updated = [...filteredPrev, ...objednavkyEntries];
         try {
           const storageKey = user ? `objednavkyData_${user.id}` : 'objednavkyData';
           localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -772,14 +775,14 @@ const Spis = () => {
     <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Spis</h1>
+        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Spis</h1>
         <button
           onClick={() => {
             setIsEditMode(false);
             setEditingIndex(null);
             setShowModal(true);
           }}
-          className="flex items-center px-4 py-2 bg-[#e11b28] text-white rounded-lg hover:bg-[#c71325] transition-colors"
+          className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -790,9 +793,14 @@ const Spis = () => {
       
 
       {/* Table Section */}
-      <div className={`rounded-lg shadow-md overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div
+        className={`rounded-lg overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        style={{
+          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+        }}
+      >
         <table className="w-full text-xs">
-          <thead className={`sticky top-0 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+          <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
             <tr>
               {[
                 { key: 'stav', label: 'Stav' },
@@ -810,18 +818,16 @@ const Spis = () => {
               ].map((column, index, array) => (
                 <th
                   key={column.key}
-                  className={`px-2 py-2 text-left text-xs font-medium transition-all ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
-                  } ${index < array.length - 1 ? (isDark ? 'border-r border-gray-600' : 'border-r border-gray-200') : ''}`}
+                  className={`px-2 py-2 text-left text-xs font-medium transition-all text-white ${index < array.length - 1 ? 'border-r border-white/20' : ''}`}
                 >
                   {activeSearchColumn === column.key ? (
                     <div className="flex items-center gap-2" style={{ animation: 'slideIn 0.2s ease-out' }}>
-                      <svg className="w-4 h-4 flex-shrink-0 text-gray-400" style={{ animation: 'fadeIn 0.3s ease-out' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 flex-shrink-0 text-white/70" style={{ animation: 'fadeIn 0.3s ease-out' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
                         type="text"
-                        placeholder={`Search...`}
+                        placeholder={`Vyhľadať...`}
                         value={columnFilters[column.key] || ''}
                         onChange={(e) => handleColumnFilter(column.key, e.target.value)}
                         onBlur={() => {
@@ -830,10 +836,11 @@ const Spis = () => {
                           }
                         }}
                         autoFocus
-                        style={{ animation: 'expandWidth 0.25s ease-out' }}
-                        className={`w-full text-xs px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-[#e11b28] transition-all ${
-                          isDark ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        }`}
+                        style={{
+                          animation: 'expandWidth 0.25s ease-out',
+                          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                        }}
+                        className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white placeholder-white/60"
                       />
                       {columnFilters[column.key] && (
                         <button
@@ -841,7 +848,7 @@ const Spis = () => {
                             handleColumnFilter(column.key, '');
                             setActiveSearchColumn(null);
                           }}
-                          className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                          className="flex-shrink-0 text-white/70 hover:text-white"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -853,7 +860,7 @@ const Spis = () => {
                     <div className="flex items-center justify-between">
                       <span
                         onClick={() => handleSort(column.key)}
-                        className="cursor-pointer hover:text-[#e11b28] transition-colors"
+                        className="cursor-pointer hover:text-white/80 transition-colors"
                       >
                         {column.label}
                         {sortConfig?.key === column.key && (
@@ -862,8 +869,8 @@ const Spis = () => {
                       </span>
                       <button
                         onClick={() => setActiveSearchColumn(column.key)}
-                        className={`ml-2 p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
-                          columnFilters[column.key] ? 'text-[#e11b28]' : ''
+                        className={`ml-2 p-1 rounded hover:bg-white/20 transition-colors ${
+                          columnFilters[column.key] ? 'text-white' : 'text-white/70'
                         }`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -917,9 +924,14 @@ const Spis = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`rounded-lg shadow-xl w-full max-w-7xl h-full overflow-hidden flex flex-col ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div
+            className={`rounded-lg w-full max-w-[95vw] h-full overflow-hidden flex flex-col ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            style={{
+              boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+            }}
+          >
             {/* Modal Tabs with Close Button */}
-            <div className={`flex border-b flex-shrink-0 justify-between items-center ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex border-b flex-shrink-0 justify-between items-center bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <div className="flex">
                 {[
                   { id: 'vseobecne', label: 'Všeobecné' },
@@ -935,10 +947,10 @@ const Spis = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                    className={`px-4 py-2 text-sm font-medium border-b-2 text-white ${
                       activeTab === tab.id
-                        ? `border-[#e11b28] text-[#e11b28] ${isDark ? 'bg-gray-800' : 'bg-white'}`
-                        : `border-transparent ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`
+                        ? 'border-white bg-white/30 backdrop-blur-md'
+                        : 'border-transparent hover:bg-white/10'
                     }`}
                   >
                     {tab.label}
@@ -951,7 +963,7 @@ const Spis = () => {
                   setIsEditMode(false);
                   setEditingIndex(null);
                 }}
-                className={`p-2 mr-2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                className="p-2 mr-2 text-white/70 hover:text-white"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -961,10 +973,15 @@ const Spis = () => {
 
             {/* Modal Content with Action Buttons */}
             <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex flex-1 overflow-hidden p-4 gap-4">
+              <div className="flex flex-1 overflow-hidden p-4 gap-6">
                 {/* Left Sidebar - only show on first tab */}
                 {activeTab === 'vseobecne' && (
-                  <div className={`w-80 border rounded-lg overflow-y-auto shadow-sm ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <div
+                    className={`w-96 border rounded-lg overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
+                    style={{
+                      boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                    }}
+                  >
                   <div className="p-2">
                   {/* Ochrana section */}
                   <div className="mb-2">
@@ -1033,9 +1050,9 @@ const Spis = () => {
                               onChange={(e) => {
                                 const value = e.target.value;
                                 setFormData(prev => ({...prev, firma: value}));
-                                
+
                                 // Filter options based on input
-                                const filtered = firmaOptions.filter(option => 
+                                const filtered = firmaOptions.filter(option =>
                                   option.toLowerCase().includes(value.toLowerCase())
                                 );
                                 setFilteredFirmaOptions(filtered);
@@ -1050,10 +1067,15 @@ const Spis = () => {
                                 setTimeout(() => setShowFirmaDropdown(false), 150);
                               }}
                               placeholder="Zadajte alebo vyberte firmu"
-                              className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                              className="w-full text-xs border border-gray-300 px-1 py-1 rounded"
                             />
                             {showFirmaDropdown && filteredFirmaOptions.length > 0 && (
-                              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded shadow-md z-50 max-h-32 overflow-y-auto">
+                              <div
+                                className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded z-50 max-h-32 overflow-y-auto"
+                                style={{
+                                  boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                                }}
+                              >
                                 {firmaOptions.map((option) => (
                                   <div
                                     key={option}
@@ -1158,8 +1180,8 @@ const Spis = () => {
 
                   {/* Financie section */}
                   <div className="mb-2">
-                    <h3 className="text-xs font-semibold text-gray-700 mb-1 px-1">Financie</h3>
-                    <div className="space-y-1 text-xs bg-gray-100 rounded p-1 border">
+                    <div className="space-y-1 text-xs bg-gray-200 rounded p-2 border">
+                      <h3 className="text-xs font-semibold text-gray-700 mb-1">Financie</h3>
                       <div className="px-1 py-1">
                         <div className="flex items-center gap-2">
                           <label className="text-gray-600 text-xs w-20 flex-shrink-0">Provízia</label>
@@ -1167,7 +1189,7 @@ const Spis = () => {
                             type="text"
                             value={formData.provizia}
                             onChange={(e) => setFormData(prev => ({...prev, provizia: e.target.value}))}
-                            className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                            className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
                           />
                         </div>
                       </div>
@@ -1178,7 +1200,7 @@ const Spis = () => {
                             type="text"
                             value={formData.cena}
                             onChange={(e) => setFormData(prev => ({...prev, cena: e.target.value}))}
-                            className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                            className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
                           />
                         </div>
                       </div>
@@ -1189,13 +1211,8 @@ const Spis = () => {
                             type="text"
                             value={formData.zaloha1}
                             onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
-                            className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                            className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
                           />
-                        </div>
-                      </div>
-                      <div className="px-1 py-1">
-                        <div className="flex items-center gap-2">
-                          <label className="text-gray-600 text-xs w-20 flex-shrink-0">Dátum</label>
                           <input
                             type="date"
                             value={formData.zaloha1Datum}
@@ -1211,13 +1228,8 @@ const Spis = () => {
                             type="text"
                             value={formData.zaloha2}
                             onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
-                            className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                            className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
                           />
-                        </div>
-                      </div>
-                      <div className="px-1 py-1">
-                        <div className="flex items-center gap-2">
-                          <label className="text-gray-600 text-xs w-20 flex-shrink-0">Dátum</label>
                           <input
                             type="date"
                             value={formData.zaloha2Datum}
@@ -1233,13 +1245,8 @@ const Spis = () => {
                             type="text"
                             value={formData.doplatok}
                             onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
-                            className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                            className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
                           />
-                        </div>
-                      </div>
-                      <div className="px-1 py-1">
-                        <div className="flex items-center gap-2">
-                          <label className="text-gray-600 text-xs w-20 flex-shrink-0">Dátum</label>
                           <input
                             type="date"
                             value={formData.doplatokDatum}
@@ -1636,13 +1643,13 @@ const Spis = () => {
                             />
                             K10
                           </label>
-                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200">
+                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 font-semibold">
                             Konečný zákazník
                           </button>
-                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200">
+                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 font-semibold">
                             Sprostredkovateľ
                           </button>
-                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200">
+                          <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 font-semibold">
                             Fakturačná firma / Realizátor
                           </button>
                         </div>
@@ -1695,33 +1702,33 @@ const Spis = () => {
               {activeTab === 'cenove-ponuky' && (
                 <div className="p-2 h-full">
                   <div className="h-full overflow-auto">
-                    <table className="w-full text-xs border border-gray-300">
+                    <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       <thead className="sticky top-0">
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-3 py-2">Číslo CP</th>
-                          <th className="border border-gray-300 px-3 py-2">Verzia</th>
-                          <th className="border border-gray-300 px-3 py-2">Odoslané</th>
-                          <th className="border border-gray-300 px-3 py-2">Vytvoril</th>
-                          <th className="border border-gray-300 px-3 py-2">Popis</th>
+                        <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Verzia</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={`row-${index}`}>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                          <tr key={`row-${index}`} className={isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
                           </tr>
                         ))}
@@ -1758,22 +1765,22 @@ const Spis = () => {
                           objednavkyItems: [...prev.objednavkyItems, newItem]
                         }));
                       }}
-                      className="px-3 py-1 bg-[#e11b28] text-white rounded text-xs hover:bg-[#c71325]"
+                      className="px-3 py-1 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded text-xs hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
                     >
                       Pridať objednávku
                     </button>
                   </div>
                   <div className="h-full overflow-auto">
-                    <table className="w-full text-xs border border-gray-300">
+                    <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       <thead className="sticky top-0">
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-3 py-2">Názov</th>
-                          <th className="border border-gray-300 px-3 py-2">Vytvoril</th>
-                          <th className="border border-gray-300 px-3 py-2">Dátum</th>
-                          <th className="border border-gray-300 px-3 py-2">Popis</th>
-                          <th className="border border-gray-300 px-3 py-2">Číslo objednávky</th>
-                          <th className="border border-gray-300 px-3 py-2">Doručené</th>
-                          <th className="border border-gray-300 px-3 py-2">Akcie</th>
+                        <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Názov</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Dátum</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo objednávky</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Doručené</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Akcie</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1785,77 +1792,77 @@ const Spis = () => {
                             objednavkyData[selectedOrderIndex].cisloObjednavky === item.cisloObjednavky;
                           
                           return (
-                            <tr key={item.id || `objednavka-${index}`} className={isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="text" 
+                            <tr key={item.id || `objednavka-${index}`} className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50')}`}>
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="text"
                                   value={item.nazov}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].nazov = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="text" 
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="text"
                                   value={item.vypracoval}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].vypracoval = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="date" 
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="date"
                                   value={item.datum}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].datum = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="text" 
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="text"
                                   value={item.popis}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].popis = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="text" 
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="text"
                                   value={item.cisloObjednavky}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].cisloObjednavky = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <input 
-                                  type="text" 
+                              <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <input
+                                  type="text"
                                   value={item.dorucene}
                                   onChange={(e) => {
                                     const updated = [...formData.objednavkyItems];
                                     updated[index].dorucene = e.target.value;
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className={`w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1 ${isHighlighted ? 'bg-yellow-50' : ''}`}
+                                  className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''}`}
                                 />
                               </td>
                               <td className="border border-gray-300 px-1 py-1">
@@ -1864,7 +1871,7 @@ const Spis = () => {
                                     const updated = formData.objednavkyItems.filter((_, i) => i !== index);
                                     setFormData(prev => ({...prev, objednavkyItems: updated}));
                                   }}
-                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 font-semibold"
                                 >
                                   Odstrániť
                                 </button>
@@ -1886,72 +1893,41 @@ const Spis = () => {
               )}
 
               {activeTab === 'emaily' && (
-                <div className="p-2">
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-yellow-400 rounded border border-gray-400"></div>
-                      <span className="text-xs">Odoslať</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Komu</label>
-                      <div className="flex gap-1">
-                        <select className="flex-1 text-xs border border-gray-300 px-2 py-1 rounded">
-                          <option></option>
-                        </select>
-                        <input type="text" className="flex-1 text-xs border border-gray-300 px-2 py-1 rounded" />
+                <div className="h-full flex items-center justify-center relative">
+                  {/* Blurred background content */}
+                  <div className="absolute inset-0 p-2 blur-sm pointer-events-none">
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-yellow-400 rounded border border-gray-400"></div>
+                        <span className="text-xs">Odoslať</span>
                       </div>
                     </div>
-                    <div></div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Predmet</label>
-                      <input type="text" defaultValue="CP2025/0365" className="w-full text-xs border border-gray-300 px-2 py-1 rounded" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Komu</label>
+                        <div className="flex gap-1">
+                          <select className="flex-1 text-xs border border-gray-300 px-2 py-1 rounded">
+                            <option></option>
+                          </select>
+                          <input type="text" className="flex-1 text-xs border border-gray-300 px-2 py-1 rounded" />
+                        </div>
+                      </div>
+                      <div></div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Predmet</label>
+                        <input type="text" defaultValue="CP2025/0365" className="w-full text-xs border border-gray-300 px-2 py-1 rounded" />
+                      </div>
                     </div>
-                    <div></div>
                   </div>
-                  <div className="mt-4">
-                    <textarea 
-                      className="w-full text-xs border border-gray-300 px-2 py-1 rounded" 
-                      rows={12}
-                      placeholder="T"
-                    ></textarea>
-                  </div>
-                  <div className="mt-4">
-                    <table className="w-full text-xs border border-gray-300">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-2 py-1">Popis</th>
-                          <th className="border border-gray-300 px-2 py-1">Názov</th>
-                          <th className="border border-gray-300 px-2 py-1">Dátum</th>
-                          <th className="border border-gray-300 px-2 py-1">Vývojí</th>
-                          <th className="border border-gray-300 px-2 py-1">Stav</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-gray-300 px-2 py-1 h-8"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 px-2 py-1 h-8"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 px-2 py-1 h-8"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                          <td className="border border-gray-300 px-2 py-1"></td>
-                        </tr>
-                      </tbody>
-                    </table>
+
+                  {/* Centered popup */}
+                  <div
+                    className={`text-center z-10 px-8 py-6 rounded-xl ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border`}
+                    style={{
+                      boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                    }}
+                  >
+                    <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Bude doplnené neskôr</p>
                   </div>
                 </div>
               )}
@@ -1959,29 +1935,29 @@ const Spis = () => {
               {activeTab === 'meranie-dokumenty' && (
                 <div className="p-2 h-full">
                   <div className="h-full overflow-auto">
-                    <table className="w-full text-xs border border-gray-300">
+                    <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       <thead className="sticky top-0">
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-3 py-2">Dátum</th>
-                          <th className="border border-gray-300 px-3 py-2">Popis</th>
-                          <th className="border border-gray-300 px-3 py-2">Pridať</th>
-                          <th className="border border-gray-300 px-3 py-2">Zodpovedný</th>
+                        <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Dátum</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Pridať</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Zodpovedný</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={`row-${index}`}>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                          <tr key={`row-${index}`} className={isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
                           </tr>
                         ))}
@@ -2055,7 +2031,7 @@ const Spis = () => {
                                 URL.revokeObjectURL(photo.url);
                                 setUploadedPhotos(prev => prev.filter(p => p.id !== photo.id));
                               }}
-                              className="text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-300 rounded hover:bg-red-50"
+                              className="text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-300 rounded hover:bg-red-50 font-semibold"
                             >
                               Odstrániť
                             </button>
@@ -2080,29 +2056,29 @@ const Spis = () => {
               {activeTab === 'vyrobne-vykresy' && (
                 <div className="p-2 h-full">
                   <div className="h-full overflow-auto">
-                    <table className="w-full text-xs border border-gray-300">
+                    <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       <thead className="sticky top-0">
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-3 py-2">Popis</th>
-                          <th className="border border-gray-300 px-3 py-2">Názov</th>
-                          <th className="border border-gray-300 px-3 py-2">Odoslané</th>
-                          <th className="border border-gray-300 px-3 py-2">Vytvoril</th>
+                        <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Názov</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
+                          <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.from({ length: 20 }, (_, index) => (
-                          <tr key={`row-${index}`}>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                          <tr key={`row-${index}`} className={isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
-                            <td className="border border-gray-300 px-1 py-1">
-                              <input type="text" className="w-full h-8 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 rounded px-1" />
+                            <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <input type="text" className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'}`} />
                             </td>
                           </tr>
                         ))}
@@ -2115,36 +2091,36 @@ const Spis = () => {
               {activeTab === 'technicke-vykresy' && (
                 <div className="p-2 h-full">
                   <div className="h-full overflow-auto">
-                    <table className="w-full text-xs border border-gray-300">
+                    <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       <thead className="sticky top-0">
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-3 py-2 cursor-pointer hover:bg-gray-200">
+                        <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                          <th className="border border-white/20 px-3 py-2.5 cursor-pointer font-semibold text-white hover:bg-white/10">
                             Názov ▼
                           </th>
-                          <th className="border border-gray-300 px-3 py-2 cursor-pointer hover:bg-gray-200">
+                          <th className="border border-white/20 px-3 py-2.5 cursor-pointer font-semibold text-white hover:bg-white/10">
                             Dátum ▼
                           </th>
-                          <th className="border border-gray-300 px-3 py-2 cursor-pointer hover:bg-gray-200">
+                          <th className="border border-white/20 px-3 py-2.5 cursor-pointer font-semibold text-white hover:bg-white/10">
                             Kategória ▼
                           </th>
-                          <th className="border border-gray-300 px-3 py-2 cursor-pointer hover:bg-gray-200">
+                          <th className="border border-white/20 px-3 py-2.5 cursor-pointer font-semibold text-white hover:bg-white/10">
                             Dodávateľ ▼
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         {technicalData.map((doc) => (
-                          <tr key={`${doc.nazov}-${doc.datum}`} className="border-b hover:bg-gray-50 bg-white">
-                            <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-[#e11b28]">
+                          <tr key={`${doc.nazov}-${doc.datum}`} className={`border-b ${isDark ? 'hover:bg-gray-750 bg-gray-800' : 'hover:bg-gray-50 bg-white'}`}>
+                            <td className={`border px-2 py-1.5 text-xs font-medium text-[#e11b28] ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                               {doc.nazov}
                             </td>
-                            <td className="border border-gray-300 px-2 py-1 text-xs">
+                            <td className={`border px-2 py-1.5 text-xs ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300'}`}>
                               {doc.datum}
                             </td>
-                            <td className="border border-gray-300 px-2 py-1 text-xs">
+                            <td className={`border px-2 py-1.5 text-xs ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300'}`}>
                               {doc.kategoria}
                             </td>
-                            <td className="border border-gray-300 px-2 py-1 text-xs">
+                            <td className={`border px-2 py-1.5 text-xs ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300'}`}>
                               {doc.dodavatel}
                             </td>
                           </tr>
@@ -2157,30 +2133,37 @@ const Spis = () => {
                 </div>
 
                 {/* Vertical Action Buttons Sidebar */}
-                <div className="w-32 bg-gray-50 border border-gray-200 rounded-lg shadow-sm flex flex-col justify-center gap-3 p-3">
+                <div
+                  className="w-32 bg-gray-50 border border-gray-200 rounded-lg flex flex-col justify-center gap-3 p-3"
+                  style={{
+                    boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                  }}
+                >
                   <button
                     onClick={() => {
                       setShowModal(false);
                       setIsEditMode(false);
                       setEditingIndex(null);
                     }}
-                    className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-medium"
+                    className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-semibold"
                   >
                     Zrušit
                   </button>
                   <button
                     onClick={() => setShowModal(false)}
-                    className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-medium"
+                    className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-semibold"
                   >
                     Pridať vzor
                   </button>
-                  <button 
+                  <button
                     onClick={handleSaveEntry}
-                    className="px-3 py-3 text-sm text-white bg-[#e11b28] rounded-lg hover:bg-[#c71325] text-center transition-colors font-medium"
+                    className="px-3 py-3 text-sm text-white bg-gradient-to-br from-[#e11b28] to-[#b8141f] rounded-lg hover:from-[#c71325] hover:to-[#9e1019] text-center transition-all font-semibold shadow-lg hover:shadow-xl"
                   >
                     {isEditMode ? 'Uložiť' : 'OK'}
                   </button>
-                  <button className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-medium">
+                  <button
+                    className="px-3 py-3 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center transition-colors font-semibold"
+                  >
                     Obnovit
                   </button>
                 </div>
@@ -2188,23 +2171,28 @@ const Spis = () => {
 
               {/* Popis section - full width below main content, only for vseobecne tab */}
               {activeTab === 'vseobecne' && (
-                <div className="mx-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex-shrink-0">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Popis</h3>
-                  <table className="w-full text-xs border border-gray-300">
+                <div
+                  className={`mx-4 mb-4 rounded-lg p-4 flex-shrink-0 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'} border`}
+                  style={{
+                    boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                  }}
+                >
+                  <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis</h3>
+                  <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-3 py-2">Dátum</th>
-                        <th className="border border-gray-300 px-3 py-2">Popis</th>
-                        <th className="border border-gray-300 px-3 py-2">Pridať</th>
-                        <th className="border border-gray-300 px-3 py-2">Zospovedný</th>
+                      <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+                        <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Dátum</th>
+                        <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
+                        <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Pridať</th>
+                        <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Zospovedný</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td className="border border-gray-300 px-3 py-2 h-10"></td>
-                        <td className="border border-gray-300 px-3 py-2"></td>
-                        <td className="border border-gray-300 px-3 py-2"></td>
-                        <td className="border border-gray-300 px-3 py-2"></td>
+                      <tr className={isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'}>
+                        <td className={`border px-3 py-2.5 h-10 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}></td>
+                        <td className={`border px-3 py-2.5 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}></td>
+                        <td className={`border px-3 py-2.5 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}></td>
+                        <td className={`border px-3 py-2.5 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}></td>
                       </tr>
                     </tbody>
                   </table>

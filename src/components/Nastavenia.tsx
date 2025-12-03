@@ -137,12 +137,17 @@ const Nastavenia = () => {
     <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6">
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Nastavenia</h1>
+        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Nastavenia</h1>
       </div>
 
-      <div className={`rounded-lg shadow-md overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div
+        className={`rounded-lg overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        style={{
+          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+        }}
+      >
         {/* Tabs */}
-        <div className={`flex border-b ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+        <div className="flex border-b bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
           {[
             { id: 'account', label: 'Účet', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
             { id: 'security', label: 'Bezpečnosť', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
@@ -152,10 +157,10 @@ const Nastavenia = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-colors text-white ${
                 activeTab === tab.id
-                  ? `border-[#e11b28] text-[#e11b28] ${isDark ? 'bg-gray-800' : 'bg-white'}`
-                  : `border-transparent ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`
+                  ? 'border-white bg-white/30 backdrop-blur-md'
+                  : 'border-transparent hover:bg-white/10'
               }`}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,21 +178,6 @@ const Nastavenia = () => {
               <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Informácie o účte</h3>
 
               <div className="space-y-6">
-                {/* Profile Picture */}
-                <div className="flex items-center space-x-6">
-                  <div className="w-20 h-20 bg-[#e11b28] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">
-                      {user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}` : 'U'}
-                    </span>
-                  </div>
-                  <div>
-                    <button className="px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors">
-                      Zmeniť fotku
-                    </button>
-                    <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>JPG, PNG alebo GIF. Max. 2MB.</p>
-                  </div>
-                </div>
-
                 {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -294,7 +284,7 @@ const Nastavenia = () => {
               <div className="mt-6">
                 <button
                   onClick={handlePasswordChange}
-                  className="px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors"
+                  className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-md hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
                 >
                   Zmeniť heslo
                 </button>
@@ -402,7 +392,7 @@ const Nastavenia = () => {
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors"
+            className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-md hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
           >
             Uložiť zmeny
           </button>

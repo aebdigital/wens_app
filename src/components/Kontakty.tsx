@@ -190,6 +190,31 @@ const Kontakty = () => {
 
   const handleContactClick = (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      // Load contact data into form for editing
+      setEditingContactId(contactId);
+      setFormData({
+        priezviskoMeno: `${contact.priezvisko} ${contact.meno}`.trim(),
+        telefon: contact.telefon,
+        email: contact.email,
+        ulica: contact.ulica,
+        mesto: contact.mesto,
+        psc: contact.psc,
+        ico: contact.ico || '',
+        icDph: contact.icDph || '',
+        kontaktnaPriezvisko: '',
+        kontaktnaMeno: '',
+        kontaktnaTelefon: '',
+        kontaktnaEmail: '',
+        popis: '',
+        typ: contact.typ
+      });
+      setIsPopupOpen(true);
+    }
+  };
+
+  const handleNavigateToSpis = (contactId: string, e?: React.MouseEvent) => {
+    const contact = contacts.find(c => c.id === contactId);
     if (contact && contact.projectIds.length > 0) {
       // Navigate to Spis page and highlight the projects
       navigate('/spis', { state: { highlightProjectIds: contact.projectIds } });
@@ -243,10 +268,10 @@ const Kontakty = () => {
     <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Kontakty</h1>
+        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Kontakty</h1>
         <button
           onClick={() => setIsPopupOpen(true)}
-          className="flex items-center px-4 py-2 bg-[#e11b28] text-white rounded-lg hover:bg-[#c71325] transition-colors"
+          className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -258,12 +283,22 @@ const Kontakty = () => {
       {/* Contact Form Popup */}
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className={`rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div
+            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            style={{
+              boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+            }}
+          >
             {/* Popup Header */}
             <div className={`flex justify-between items-center p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Pridať nový kontakt</h2>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {editingContactId ? 'Upraviť kontakt' : 'Pridať nový kontakt'}
+              </h2>
               <button
-                onClick={() => setIsPopupOpen(false)}
+                onClick={() => {
+                  setIsPopupOpen(false);
+                  resetForm();
+                }}
                 className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,7 +486,10 @@ const Kontakty = () => {
               <div className={`flex justify-end space-x-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <button
                   type="button"
-                  onClick={() => setIsPopupOpen(false)}
+                  onClick={() => {
+                    setIsPopupOpen(false);
+                    resetForm();
+                  }}
                   className={`px-4 py-2 rounded ${isDark ? 'bg-gray-600 text-gray-200 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                 >
                   Zrušiť
@@ -460,14 +498,14 @@ const Kontakty = () => {
                   <button
                     type="button"
                     onClick={handleDeleteContact}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold"
                   >
                     Odstrániť
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#e11b28] text-white rounded hover:bg-red-700"
+                  className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
                 >
                   Uložiť
                 </button>
@@ -478,9 +516,14 @@ const Kontakty = () => {
       )}
 
       {/* Clients Table */}
-      <div className={`rounded-lg shadow-md overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div
+        className={`rounded-lg overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        style={{
+          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+        }}
+      >
         <table className="w-full text-xs">
-          <thead className={`sticky top-0 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+          <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
             <tr>
               {[
                 { key: 'meno', label: 'Meno' },
@@ -493,18 +536,16 @@ const Kontakty = () => {
               ].map((column, index, array) => (
                 <th
                   key={column.key}
-                  className={`px-2 py-2 text-left text-xs font-medium transition-all ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
-                  } ${index < array.length - 1 ? (isDark ? 'border-r border-gray-600' : 'border-r border-gray-200') : ''}`}
+                  className={`px-2 py-2 text-left text-xs font-medium transition-all text-white ${index < array.length - 1 ? 'border-r border-white/20' : ''}`}
                 >
                   {activeSearchColumn === column.key ? (
                     <div className="flex items-center gap-2" style={{ animation: 'slideIn 0.2s ease-out' }}>
-                      <svg className="w-4 h-4 flex-shrink-0 text-gray-400" style={{ animation: 'fadeIn 0.3s ease-out' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 flex-shrink-0 text-white/70" style={{ animation: 'fadeIn 0.3s ease-out' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
                         type="text"
-                        placeholder={`Search...`}
+                        placeholder={`Vyhľadať...`}
                         value={columnFilters[column.key] || ''}
                         onChange={(e) => handleColumnFilter(column.key, e.target.value)}
                         onBlur={() => {
@@ -513,10 +554,11 @@ const Kontakty = () => {
                           }
                         }}
                         autoFocus
-                        style={{ animation: 'expandWidth 0.25s ease-out' }}
-                        className={`w-full text-xs px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-[#e11b28] transition-all ${
-                          isDark ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        }`}
+                        style={{
+                          animation: 'expandWidth 0.25s ease-out',
+                          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+                        }}
+                        className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white placeholder-white/60"
                       />
                       {columnFilters[column.key] && (
                         <button
@@ -524,7 +566,7 @@ const Kontakty = () => {
                             handleColumnFilter(column.key, '');
                             setActiveSearchColumn(null);
                           }}
-                          className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                          className="flex-shrink-0 text-white/70 hover:text-white"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -536,7 +578,7 @@ const Kontakty = () => {
                     <div className="flex items-center justify-between">
                       <span
                         onClick={() => handleSort(column.key)}
-                        className="cursor-pointer hover:text-[#e11b28] transition-colors"
+                        className="cursor-pointer hover:text-white/80 transition-colors"
                       >
                         {column.label}
                         {sortConfig?.key === column.key && (
@@ -545,8 +587,8 @@ const Kontakty = () => {
                       </span>
                       <button
                         onClick={() => setActiveSearchColumn(column.key)}
-                        className={`ml-2 p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
-                          columnFilters[column.key] ? 'text-[#e11b28]' : ''
+                        className={`ml-2 p-1 rounded hover:bg-white/20 transition-colors ${
+                          columnFilters[column.key] ? 'text-white' : 'text-white/70'
                         }`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -563,18 +605,27 @@ const Kontakty = () => {
             {getSortedAndFilteredClients().map((client) => (
               <tr
                 key={client.id}
-                className={`border-b cursor-pointer ${
+                className={`border-b ${
                   isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700' : 'border-gray-200 bg-white hover:bg-gray-50'
                 }`}
-                onClick={() => handleContactClick(client.id)}
               >
-                <td className={`px-2 py-1 text-xs font-medium text-[#e11b28] ${isDark ? 'border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.meno}</td>
+                <td
+                  className={`px-2 py-1 text-xs font-medium text-[#e11b28] cursor-pointer ${isDark ? 'border-r border-gray-700' : 'border-r border-gray-200'}`}
+                  onClick={() => handleContactClick(client.id)}
+                >
+                  {client.meno}
+                </td>
                 <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.firma}</td>
                 <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.telefon}</td>
                 <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.email}</td>
                 <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.mesto}</td>
                 <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.ico}</td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300' : ''}`}>{client.poznamka}</td>
+                <td
+                  className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-300' : ''}`}
+                  onClick={() => handleNavigateToSpis(client.id)}
+                >
+                  {client.poznamka}
+                </td>
               </tr>
             ))}
           </tbody>
