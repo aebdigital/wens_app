@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContacts } from '../contexts/ContactsContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { SortableTable, Column } from './common/SortableTable';
 
 const Kontakty = () => {
   const navigate = useNavigate();
   const { contacts, addContact, updateContact, deleteContact } = useContacts();
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
-    priezviskoMeno: '',
+    priezvisko: '',
+    meno: '',
     telefon: '',
     email: '',
     ulica: '',
@@ -27,9 +29,6 @@ const Kontakty = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
-  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
-  const [columnFilters, setColumnFilters] = useState<{[key: string]: string}>({});
-  const [activeSearchColumn, setActiveSearchColumn] = useState<string | null>(null);
 
   const validateEmail = (email: string): boolean => {
     if (!email) return true; // Optional field
@@ -49,10 +48,8 @@ const Kontakty = () => {
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
 
-    // Split priezviskoMeno into meno and priezvisko
-    const nameParts = formData.priezviskoMeno.trim().split(/\s+/);
-    if (nameParts.length < 2) {
-      errors.priezviskoMeno = 'Zadajte priezvisko aj meno';
+    if (!formData.priezvisko.trim()) {
+      errors.priezvisko = 'Priezvisko je povinné';
     }
 
     if (formData.telefon && !validatePhone(formData.telefon)) {
@@ -97,7 +94,8 @@ const Kontakty = () => {
 
   const resetForm = () => {
     setFormData({
-      priezviskoMeno: '',
+      priezvisko: '',
+      meno: '',
       telefon: '',
       email: '',
       ulica: '',
@@ -124,30 +122,11 @@ const Kontakty = () => {
     }
 
     try {
-      // Split priezviskoMeno into parts
-      const nameParts = formData.priezviskoMeno.trim().split(/\s+/);
-      const priezvisko = nameParts[0];
-      const meno = nameParts.slice(1).join(' ');
-
       if (editingContactId) {
         // Update existing contact
         updateContact(editingContactId, {
-          meno,
-          priezvisko,
-          telefon: formData.telefon,
-          email: formData.email,
-          ulica: formData.ulica,
-          mesto: formData.mesto,
-          psc: formData.psc,
-          ico: formData.ico,
-          icDph: formData.icDph,
-          typ: formData.typ
-        });
-      } else {
-        // Add new contact
-        addContact({
-          meno,
-          priezvisko,
+          meno: formData.meno,
+          priezvisko: formData.priezvisko,
           telefon: formData.telefon,
           email: formData.email,
           ulica: formData.ulica,
@@ -156,6 +135,30 @@ const Kontakty = () => {
           ico: formData.ico,
           icDph: formData.icDph,
           typ: formData.typ,
+          kontaktnaPriezvisko: formData.kontaktnaPriezvisko,
+          kontaktnaMeno: formData.kontaktnaMeno,
+          kontaktnaTelefon: formData.kontaktnaTelefon,
+          kontaktnaEmail: formData.kontaktnaEmail,
+          popis: formData.popis
+        });
+      } else {
+        // Add new contact
+        addContact({
+          meno: formData.meno,
+          priezvisko: formData.priezvisko,
+          telefon: formData.telefon,
+          email: formData.email,
+          ulica: formData.ulica,
+          mesto: formData.mesto,
+          psc: formData.psc,
+          ico: formData.ico,
+          icDph: formData.icDph,
+          typ: formData.typ,
+          kontaktnaPriezvisko: formData.kontaktnaPriezvisko,
+          kontaktnaMeno: formData.kontaktnaMeno,
+          kontaktnaTelefon: formData.kontaktnaTelefon,
+          kontaktnaEmail: formData.kontaktnaEmail,
+          popis: formData.popis,
           projectIds: []
         });
       }
@@ -176,25 +179,14 @@ const Kontakty = () => {
     }
   };
 
-  const handleSort = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const handleColumnFilter = (column: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [column]: value }));
-  };
-
   const handleContactClick = (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       // Load contact data into form for editing
       setEditingContactId(contactId);
       setFormData({
-        priezviskoMeno: `${contact.priezvisko} ${contact.meno}`.trim(),
+        priezvisko: contact.priezvisko || '',
+        meno: contact.meno || '',
         telefon: contact.telefon,
         email: contact.email,
         ulica: contact.ulica,
@@ -202,11 +194,11 @@ const Kontakty = () => {
         psc: contact.psc,
         ico: contact.ico || '',
         icDph: contact.icDph || '',
-        kontaktnaPriezvisko: '',
-        kontaktnaMeno: '',
-        kontaktnaTelefon: '',
-        kontaktnaEmail: '',
-        popis: '',
+        kontaktnaPriezvisko: contact.kontaktnaPriezvisko || '',
+        kontaktnaMeno: contact.kontaktnaMeno || '',
+        kontaktnaTelefon: contact.kontaktnaTelefon || '',
+        kontaktnaEmail: contact.kontaktnaEmail || '',
+        popis: contact.popis || '',
         typ: contact.typ
       });
       setIsPopupOpen(true);
@@ -214,6 +206,9 @@ const Kontakty = () => {
   };
 
   const handleNavigateToSpis = (contactId: string, e?: React.MouseEvent) => {
+    // If e is provided (clicked from note), we stop propagation there too just in case
+    if (e) e.stopPropagation();
+    
     const contact = contacts.find(c => c.id === contactId);
     if (contact && contact.projectIds.length > 0) {
       // Navigate to Spis page and highlight the projects
@@ -221,9 +216,9 @@ const Kontakty = () => {
     }
   };
 
-  const getSortedAndFilteredClients = () => {
-    // Transform contacts to match the table format
-    let filteredClients = contacts.map(contact => ({
+  // Transform contacts for the table
+  const tableData = useMemo(() => {
+    return [...contacts].reverse().map(contact => ({
       id: contact.id,
       meno: `${contact.priezvisko} ${contact.meno}`.trim(),
       firma: contact.typ === 'zakaznik' ? 'Zákazník' : 'Architekt',
@@ -231,41 +226,48 @@ const Kontakty = () => {
       email: contact.email,
       mesto: contact.mesto,
       ico: contact.ico,
-      poznamka: `${contact.projectIds.length} projekt${contact.projectIds.length === 1 ? '' : 'y/ov'}`
+      poznamka: `${contact.projectIds.length} projekt${contact.projectIds.length === 1 ? '' : 'y/ov'}`,
+      rawContact: contact // Keep reference to original object if needed
     }));
+  }, [contacts]);
 
-    // Apply column filters
-    Object.keys(columnFilters).forEach(column => {
-      const filterValue = columnFilters[column];
-      if (filterValue) {
-        filteredClients = filteredClients.filter(client => {
-          const value = client[column as keyof typeof client] || '';
-          return value.toString().toLowerCase().includes(filterValue.toLowerCase());
-        });
-      }
-    });
-
-    // Apply sorting
-    if (sortConfig) {
-      filteredClients.sort((a, b) => {
-        const aValue = (a as any)[sortConfig.key] || '';
-        const bValue = (b as any)[sortConfig.key] || '';
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
+  const columns: Column<typeof tableData[0]>[] = [
+    { 
+      key: 'meno', 
+      label: 'Meno',
+      render: (val, item) => (
+        <span 
+          className="font-medium text-[#e11b28] cursor-pointer hover:underline"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleContactClick(item.id);
+          }}
+        >
+          {val}
+        </span>
+      )
+    },
+    { key: 'firma', label: 'Firma' },
+    { key: 'telefon', label: 'Telefón' },
+    { key: 'email', label: 'Email' },
+    { key: 'mesto', label: 'Mesto' },
+    { key: 'ico', label: 'IČO' },
+    { 
+      key: 'poznamka', 
+      label: 'Poznámka',
+      render: (val, item) => (
+        <span 
+          className="cursor-pointer hover:text-[#e11b28] transition-colors"
+          onClick={(e) => handleNavigateToSpis(item.id, e as any)}
+        >
+          {val}
+        </span>
+      )
     }
-
-    return filteredClients;
-  };
+  ];
 
   return (
-    <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+    <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Kontakty</h1>
@@ -309,21 +311,71 @@ const Kontakty = () => {
 
             {/* Popup Form */}
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              {/* Type Selection - Only for new contacts */}
+              <div className="flex items-center gap-4">
+                <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Typ kontaktu:</label>
+                {editingContactId ? (
+                  <span className={`px-3 py-1 rounded text-sm font-medium ${
+                    formData.typ === 'zakaznik' 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-purple-100 text-purple-800'
+                  }`}>
+                    {formData.typ === 'zakaznik' ? 'Zákazník' : 'Architekt'}
+                  </span>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, typ: 'zakaznik' }))}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        formData.typ === 'zakaznik'
+                          ? 'bg-blue-600 text-white'
+                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      Zákazník
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, typ: 'architekt' }))}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        formData.typ === 'architekt'
+                          ? 'bg-purple-600 text-white'
+                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      Architekt
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Main form section with 2 columns layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                 <div className="flex flex-col space-y-1">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko + Meno: *</label>
+                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko: *</label>
                   <input
                     type="text"
-                    name="priezviskoMeno"
-                    value={formData.priezviskoMeno}
+                    name="priezvisko"
+                    value={formData.priezvisko}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezviskoMeno ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     required
                   />
-                  {formErrors.priezviskoMeno && (
-                    <span className="text-xs text-red-500">{formErrors.priezviskoMeno}</span>
+                  {formErrors.priezvisko && (
+                    <span className="text-xs text-red-500">{formErrors.priezvisko}</span>
                   )}
+                </div>
+
+                <div className="flex flex-col space-y-1">
+                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
+                  <input
+                    type="text"
+                    name="meno"
+                    value={formData.meno}
+                    onChange={handleInputChange}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  />
                 </div>
 
                 <div className="flex flex-col space-y-1">
@@ -413,74 +465,78 @@ const Kontakty = () => {
                 </div>
               </div>
 
-              {/* Kontaktná osoba section */}
-              <div className={`pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Kontaktná osoba:</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                  <div className="flex flex-col space-y-1">
-                    <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko:</label>
-                    <input
-                      type="text"
-                      name="kontaktnaPriezvisko"
-                      value={formData.kontaktnaPriezvisko}
-                      onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    />
-                  </div>
+              {/* Kontaktná osoba section - Only for Zakaznik */}
+              {formData.typ === 'zakaznik' && (
+                <div className={`pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Kontaktná osoba:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko:</label>
+                      <input
+                        type="text"
+                        name="kontaktnaPriezvisko"
+                        value={formData.kontaktnaPriezvisko}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
 
-                  <div className="flex flex-col space-y-1">
-                    <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
-                    <input
-                      type="text"
-                      name="kontaktnaMeno"
-                      value={formData.kontaktnaMeno}
-                      onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    />
-                  </div>
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
+                      <input
+                        type="text"
+                        name="kontaktnaMeno"
+                        value={formData.kontaktnaMeno}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
 
-                  <div className="flex flex-col space-y-1">
-                    <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Telefón:</label>
-                    <input
-                      type="tel"
-                      name="kontaktnaTelefon"
-                      value={formData.kontaktnaTelefon}
-                      onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaTelefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    />
-                    {formErrors.kontaktnaTelefon && (
-                      <span className="text-xs text-red-500">{formErrors.kontaktnaTelefon}</span>
-                    )}
-                  </div>
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Telefón:</label>
+                      <input
+                        type="tel"
+                        name="kontaktnaTelefon"
+                        value={formData.kontaktnaTelefon}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaTelefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                      {formErrors.kontaktnaTelefon && (
+                        <span className="text-xs text-red-500">{formErrors.kontaktnaTelefon}</span>
+                      )}
+                    </div>
 
-                  <div className="flex flex-col space-y-1">
-                    <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email:</label>
-                    <input
-                      type="email"
-                      name="kontaktnaEmail"
-                      value={formData.kontaktnaEmail}
-                      onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaEmail ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    />
-                    {formErrors.kontaktnaEmail && (
-                      <span className="text-xs text-red-500">{formErrors.kontaktnaEmail}</span>
-                    )}
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email:</label>
+                      <input
+                        type="email"
+                        name="kontaktnaEmail"
+                        value={formData.kontaktnaEmail}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaEmail ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                      {formErrors.kontaktnaEmail && (
+                        <span className="text-xs text-red-500">{formErrors.kontaktnaEmail}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Popis section */}
-              <div className="pt-4">
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Popis:</label>
-                <textarea
-                  name="popis"
-                  value={formData.popis}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className={`w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
-                  placeholder="Pridajte ďalšie informácie o kontakte..."
-                />
-              </div>
+              {/* Popis section - Only for Zakaznik */}
+              {formData.typ === 'zakaznik' && (
+                <div className="pt-4">
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Popis:</label>
+                  <textarea
+                    name="popis"
+                    value={formData.popis}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className={`w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
+                    placeholder="Pridajte ďalšie informácie o kontakte..."
+                  />
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className={`flex justify-end space-x-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -516,121 +572,12 @@ const Kontakty = () => {
       )}
 
       {/* Clients Table */}
-      <div
-        className={`rounded-lg overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-        style={{
-          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-        }}
-      >
-        <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
-            <tr>
-              {[
-                { key: 'meno', label: 'Meno' },
-                { key: 'firma', label: 'Firma' },
-                { key: 'telefon', label: 'Telefón' },
-                { key: 'email', label: 'Email' },
-                { key: 'mesto', label: 'Mesto' },
-                { key: 'ico', label: 'IČO' },
-                { key: 'poznamka', label: 'Poznámka' }
-              ].map((column, index, array) => (
-                <th
-                  key={column.key}
-                  className={`px-2 py-2 text-left text-xs font-medium transition-all text-white ${index < array.length - 1 ? 'border-r border-white/20' : ''}`}
-                >
-                  {activeSearchColumn === column.key ? (
-                    <div className="flex items-center gap-2" style={{ animation: 'slideIn 0.2s ease-out' }}>
-                      <svg className="w-4 h-4 flex-shrink-0 text-white/70" style={{ animation: 'fadeIn 0.3s ease-out' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <input
-                        type="text"
-                        placeholder={`Vyhľadať...`}
-                        value={columnFilters[column.key] || ''}
-                        onChange={(e) => handleColumnFilter(column.key, e.target.value)}
-                        onBlur={() => {
-                          if (!columnFilters[column.key]) {
-                            setActiveSearchColumn(null);
-                          }
-                        }}
-                        autoFocus
-                        style={{
-                          animation: 'expandWidth 0.25s ease-out',
-                          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-                        }}
-                        className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white placeholder-white/60"
-                      />
-                      {columnFilters[column.key] && (
-                        <button
-                          onClick={() => {
-                            handleColumnFilter(column.key, '');
-                            setActiveSearchColumn(null);
-                          }}
-                          className="flex-shrink-0 text-white/70 hover:text-white"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span
-                        onClick={() => handleSort(column.key)}
-                        className="cursor-pointer hover:text-white/80 transition-colors"
-                      >
-                        {column.label}
-                        {sortConfig?.key === column.key && (
-                          <span className="ml-1">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>
-                        )}
-                      </span>
-                      <button
-                        onClick={() => setActiveSearchColumn(column.key)}
-                        className={`ml-2 p-1 rounded hover:bg-white/20 transition-colors ${
-                          columnFilters[column.key] ? 'text-white' : 'text-white/70'
-                        }`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {getSortedAndFilteredClients().map((client) => (
-              <tr
-                key={client.id}
-                className={`border-b ${
-                  isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700' : 'border-gray-200 bg-white hover:bg-gray-50'
-                }`}
-              >
-                <td
-                  className={`px-2 py-1 text-xs font-medium text-[#e11b28] cursor-pointer ${isDark ? 'border-r border-gray-700' : 'border-r border-gray-200'}`}
-                  onClick={() => handleContactClick(client.id)}
-                >
-                  {client.meno}
-                </td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.firma}</td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.telefon}</td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.email}</td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.mesto}</td>
-                <td className={`px-2 py-1 text-xs ${isDark ? 'text-gray-300 border-r border-gray-700' : 'border-r border-gray-200'}`}>{client.ico}</td>
-                <td
-                  className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-300' : ''}`}
-                  onClick={() => handleNavigateToSpis(client.id)}
-                >
-                  {client.poznamka}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SortableTable
+        columns={columns}
+        data={tableData}
+        rowClassName={(item) => item.rawContact.typ === 'architekt' ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
+        onRowClick={(item) => handleNavigateToSpis(item.id)}
+      />
     </div>
   );
 };
