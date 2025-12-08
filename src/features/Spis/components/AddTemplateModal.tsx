@@ -1,0 +1,297 @@
+import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { DvereForm } from './DvereForm';
+import { NabytokForm } from './NabytokForm';
+import { PuzdraForm } from './PuzdraForm';
+import { DvereData, NabytokData, PuzdraData } from '../types';
+
+interface AddTemplateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (type: 'dvere' | 'nabytok' | 'puzdra', data: any) => void;
+  initialTab?: 'dvere' | 'nabytok' | 'puzdra';
+  // Props for header info
+  firma: string;
+  priezvisko: string;
+  meno: string;
+  ulica: string;
+  mesto: string;
+  psc: string;
+  telefon: string;
+  email: string;
+  vypracoval: string;
+  predmet: string;
+  // Initial data for editing
+  editingData?: {
+    type: 'dvere' | 'nabytok' | 'puzdra';
+    data: any;
+  };
+}
+
+export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialTab = 'dvere',
+  firma,
+  priezvisko,
+  meno,
+  ulica,
+  mesto,
+  psc,
+  telefon,
+  email,
+  vypracoval,
+  predmet,
+  editingData
+}) => {
+  const { isDark } = useTheme();
+  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'puzdra'>(initialTab);
+
+  // Initialize state with default values or editing data
+  const [dvereData, setDvereData] = useState<DvereData>(() => {
+    if (editingData?.type === 'dvere' && editingData.data) {
+      return editingData.data;
+    }
+    return {
+      popisVyrobkov: 'Dyhované dvere s masívnou smrekovou výplňou. Všetky hrany dverí sú chránené náglejkom z tvrdého dreva.',
+      dvereTyp: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne',
+      zarubnaTyp: 'obložková, spoj „T", dyha dub bielený',
+      vyrobky: Array(1).fill(null).map((_, i) => ({
+        id: i + 1,
+        miestnost: i === 0 ? 'Izba' : '',
+        dvereTypRozmer: 'Séria C1',
+        dvereOtvor: 'otvor 2020x880x150',
+        pL: 'P dnu',
+        zamok: 'BB',
+        sklo: 'matné',
+        povrch: 'dub bielený/bezfalcové',
+        poznamkaDvere: '',
+        poznamkaZarubna: 'dub bielený/T',
+        ks: 1,
+        ksZarubna: 1,
+        cenaDvere: 380,
+        cenaZarubna: 310,
+      })),
+      priplatky: [
+        { id: 1, nazov: 'dyha dub bielený + 15%', ks: 1, cenaKs: 828, cenaCelkom: 828 },
+      ],
+      zlavaPercent: 15,
+      kovanie: [
+        { id: 1, nazov: 'pánt Tectus 3D (zkrát dvere) + úprava dverí a zárubní na bezfalcové prevedenie', ks: 1, cenaKs: 55, cenaCelkom: 55 },
+      ],
+      montaz: [
+        { id: 1, nazov: '1 krídlové bezfalcové dvere', ks: 1, cenaKs: 95, cenaCelkom: 95 },
+      ],
+      montazPoznamka: 'Neumožnená kompletná montáž z dôvodu nepripravenosti stavby, bude spoplatnená dopravou!',
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+  });
+
+  const [nabytokData, setNabytokData] = useState<NabytokData>(() => {
+    if (editingData?.type === 'nabytok' && editingData.data) {
+      return editingData.data;
+    }
+    return {
+      popisVyrobkov: 'Dyhované stupne s DTD výplňou. Hrany stupňov a podstupňov sú chránené náglejkom z tvrdého dreva.',
+      vyrobkyTyp: 'Stupeň',
+      vyrobkyPopis: 'neviditeľný spoj, DTD + dyhy dub prírodný',
+      vyrobky: Array(1).fill(null).map((_, i) => ({
+        id: i + 1,
+        nazov: i === 0 ? 'stupeň' : '',
+        rozmer: i === 0 ? '1000x280x40' : '',
+        material: i < 3 ? 'DTD - dyha dub prírodný' : '',
+        poznamka: '',
+        ks: i < 3 ? 1 : 0,
+        cenaKs: i === 0 ? 89 : 0,
+        cenaCelkom: i === 0 ? 89 : 0,
+      })),
+      priplatky: [
+        { id: 1, nazov: 'dyha dub prírodný + 5%', ks: 1, cenaKs: 16.35, cenaCelkom: 16.35 },
+      ],
+      zlavaPercent: 5,
+      kovanie: [
+        { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
+      ],
+      montaz: [
+        { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },
+      ],
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+  });
+
+  const [puzdraData, setPuzdraData] = useState<PuzdraData>(() => {
+    if (editingData?.type === 'puzdra' && editingData.data) {
+      return editingData.data;
+    }
+    return {
+      dodavatel: {
+        nazov: 'ECLISSE Slovakia s.r.o.',
+        ulica: 'Zvolenská cesta 23',
+        mesto: 'Banská Bystrica 974 05',
+        tel: '048 / 416 07 00',
+        email: 'eclisse@eclisse.sk',
+        email2: 'roman.pecnik@eclisse.sk',
+      },
+      zakazka: '',
+      polozky: [
+        { id: 1, nazov: '1.Puzdro SYNTESIS LINE do murovanej steny- jednokrídlo, H1-celková výška puzdra =2160mm, A=1015mm, C= 2215mm, hr.125mm pre celosklenené dvere', mnozstvo: 2 },
+      ],
+      tovarDorucitNaAdresu: {
+        firma: 'WENS door, s.r.o.',
+        ulica: 'Vápenická 12',
+        mesto: 'Prievidza 971 01',
+      },
+    };
+  });
+
+  // Update active tab if editing data changes (though usually modal is remounted)
+  useEffect(() => {
+    if (editingData?.type) {
+      setActiveTab(editingData.type);
+    }
+  }, [editingData]);
+
+  const handleSave = () => {
+    let dataToSave;
+    if (activeTab === 'dvere') dataToSave = dvereData;
+    else if (activeTab === 'nabytok') dataToSave = nabytokData;
+    else dataToSave = puzdraData;
+
+    onSave(activeTab, dataToSave);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+      <div
+        className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col`}
+        style={{ width: '98vw', height: '95vh', maxWidth: '1800px' }}
+      >
+        {/* Header with WENS DOOR logo and tabs */}
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+          <div className="flex items-center gap-8">
+            <div className="bg-white rounded-lg p-2 inline-block shadow-sm">
+              <img
+                src="/logo.png"
+                alt="WENS door"
+                className="h-8"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-2">
+              {(editingData 
+                ? [activeTab] 
+                : ['dvere', 'nabytok', 'puzdra'] as const
+              ).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === tab
+                      ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow-lg'
+                      : isDark
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : 'Púzdra'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Cenová ponuka č.: <span className="font-semibold">{predmet}</span>
+            </span>
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 overflow-auto p-6">
+          {activeTab === 'dvere' && (
+            <DvereForm 
+              data={dvereData} 
+              onChange={setDvereData} 
+              isDark={isDark}
+              headerInfo={{
+                firma: firma || priezvisko + ' ' + meno,
+                ulica,
+                mesto,
+                psc,
+                telefon,
+                email,
+                vypracoval
+              }}
+            />
+          )}
+          {activeTab === 'nabytok' && (
+            <NabytokForm 
+              data={nabytokData} 
+              onChange={setNabytokData} 
+              isDark={isDark}
+              headerInfo={{
+                firma: firma || priezvisko + ' ' + meno,
+                ulica,
+                mesto,
+                psc,
+                telefon,
+                email,
+                vypracoval
+              }}
+            />
+          )}
+          {activeTab === 'puzdra' && (
+            <PuzdraForm 
+              data={puzdraData} 
+              onChange={setPuzdraData} 
+              isDark={isDark}
+              headerInfo={{
+                vypracoval,
+                telefon,
+                email
+              }}
+            />
+          )}
+        </div>
+
+        {/* Footer buttons */}
+        <div className={`flex justify-end gap-3 px-6 py-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+          <button
+            onClick={onClose}
+            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+          >
+            Zrušiť
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-6 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] shadow-lg"
+          >
+            Uložiť
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
