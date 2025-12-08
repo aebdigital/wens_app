@@ -18,22 +18,22 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
     document.body.removeChild(link);
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (selectedPhotoIndex === null) return;
-    
-    if (e.key === 'Escape') {
-      setSelectedPhotoIndex(null);
-    } else if (e.key === 'ArrowLeft') {
-      setSelectedPhotoIndex(prev => (prev !== null && prev > 0 ? prev - 1 : prev));
-    } else if (e.key === 'ArrowRight') {
-      setSelectedPhotoIndex(prev => (prev !== null && prev < uploadedPhotos.length - 1 ? prev + 1 : prev));
-    }
-  };
-
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedPhotoIndex === null) return;
+      
+      if (e.key === 'Escape') {
+        setSelectedPhotoIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setSelectedPhotoIndex(prev => (prev !== null && prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setSelectedPhotoIndex(prev => (prev !== null && prev < uploadedPhotos.length - 1 ? prev + 1 : prev));
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPhotoIndex, uploadedPhotos.length]); // Dependencies needed for navigation logic
+  }, [selectedPhotoIndex, uploadedPhotos.length]);
 
   return (
     <div className="p-2">
