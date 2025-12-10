@@ -8,8 +8,6 @@ interface Employee {
   role: string;
   status: 'online' | 'offline';
   lastOnline: string;
-  ordersCreated: number;
-  projectsCompleted: number;
 }
 
 const Zamestnanci: React.FC = () => {
@@ -23,9 +21,7 @@ const Zamestnanci: React.FC = () => {
       email: 'peter.novak@wens.sk',
       role: 'Administrátor',
       status: 'online',
-      lastOnline: '',
-      ordersCreated: 145,
-      projectsCompleted: 89
+      lastOnline: ''
     },
     {
       id: 2,
@@ -33,9 +29,7 @@ const Zamestnanci: React.FC = () => {
       email: 'maria.kovacova@wens.sk',
       role: 'Manažér projektu',
       status: 'online',
-      lastOnline: '',
-      ordersCreated: 98,
-      projectsCompleted: 67
+      lastOnline: ''
     },
     {
       id: 3,
@@ -43,9 +37,7 @@ const Zamestnanci: React.FC = () => {
       email: 'jan.horak@wens.sk',
       role: 'Obchodník',
       status: 'offline',
-      lastOnline: '2 hodiny',
-      ordersCreated: 203,
-      projectsCompleted: 124
+      lastOnline: '2 hodiny'
     },
     {
       id: 4,
@@ -53,9 +45,7 @@ const Zamestnanci: React.FC = () => {
       email: 'eva.szabo@wens.sk',
       role: 'Technik',
       status: 'offline',
-      lastOnline: '5 minút',
-      ordersCreated: 67,
-      projectsCompleted: 45
+      lastOnline: '5 minút'
     },
     {
       id: 5,
@@ -63,15 +53,11 @@ const Zamestnanci: React.FC = () => {
       email: 'tomas.varga@wens.sk',
       role: 'Obchodník',
       status: 'online',
-      lastOnline: '',
-      ordersCreated: 178,
-      projectsCompleted: 98
+      lastOnline: ''
     }
   ]);
 
   // Calculate statistics
-  const totalOrders = employees.reduce((sum, emp) => sum + emp.ordersCreated, 0);
-  const totalProjects = employees.reduce((sum, emp) => sum + emp.projectsCompleted, 0);
   const onlineEmployees = employees.filter(emp => emp.status === 'online').length;
 
   return (
@@ -101,44 +87,6 @@ const Zamestnanci: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-          style={{
-            boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkom objednávok</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalOrders}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-          style={{
-            boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dokončené projekty</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalProjects}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Employees Table */}
@@ -156,8 +104,6 @@ const Zamestnanci: React.FC = () => {
               <th className="px-4 py-3 text-left font-semibold text-white">Rola</th>
               <th className="px-4 py-3 text-left font-semibold text-white">Stav</th>
               <th className="px-4 py-3 text-left font-semibold text-white">Posledná aktivita</th>
-              <th className="px-4 py-3 text-left font-semibold text-white">Počet objednávok</th>
-              <th className="px-4 py-3 text-left font-semibold text-white">Dokončené projekty</th>
             </tr>
           </thead>
           <tbody>
@@ -194,8 +140,6 @@ const Zamestnanci: React.FC = () => {
                 <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {employee.status === 'online' ? 'Práve teraz' : `Pred ${employee.lastOnline}`}
                 </td>
-                <td className={`px-4 py-3 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{employee.ordersCreated}</td>
-                <td className={`px-4 py-3 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{employee.projectsCompleted}</td>
               </tr>
             ))}
           </tbody>
