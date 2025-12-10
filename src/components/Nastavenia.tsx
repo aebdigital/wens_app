@@ -14,11 +14,6 @@ const Nastavenia = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    notifications: {
-      emailNotifications: true,
-      smsNotifications: false,
-      pushNotifications: true,
-    },
     language: 'sk',
     theme: 'light',
   });
@@ -38,7 +33,6 @@ const Nastavenia = () => {
             lastName: user.lastName,
             email: user.email,
             phone: prefs.phone || '',
-            notifications: prefs.notifications || prev.notifications,
             language: prefs.language || 'sk',
           }));
         } else {
@@ -62,18 +56,7 @@ const Nastavenia = () => {
   }, [user]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev] as object,
-          [child]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
@@ -83,7 +66,6 @@ const Nastavenia = () => {
       // Save user preferences to localStorage
       const preferences = {
         phone: formData.phone,
-        notifications: formData.notifications,
         language: formData.language,
       };
 
@@ -150,9 +132,7 @@ const Nastavenia = () => {
         <div className="flex border-b bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
           {[
             { id: 'account', label: 'Účet', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-            { id: 'security', label: 'Bezpečnosť', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
-            { id: 'notifications', label: 'Notifikácie', icon: 'M15 17h5l-3-3m3 3l-3 3m3-3H9a6 6 0 010-12h3' },
-            { id: 'preferences', label: 'Preferencie', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' }
+            { id: 'security', label: 'Bezpečnosť', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -296,85 +276,6 @@ const Nastavenia = () => {
                   <li>• Minimálne 6 znakov</li>
                   <li>• Heslo musí byť odlišné od súčasného</li>
                 </ul>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="max-w-2xl">
-              <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Nastavenia notifikácií</h3>
-
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between p-4 border rounded-md ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-white'}`}>
-                  <div>
-                    <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Email notifikácie</h4>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dostávať notifikácie na email</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.emailNotifications}
-                      onChange={(e) => handleInputChange('notifications.emailNotifications', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#e11b28]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e11b28] ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
-                  </label>
-                </div>
-
-                <div className={`flex items-center justify-between p-4 border rounded-md ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-white'}`}>
-                  <div>
-                    <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>SMS notifikácie</h4>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dostávať notifikácie cez SMS</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.smsNotifications}
-                      onChange={(e) => handleInputChange('notifications.smsNotifications', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#e11b28]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e11b28] ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
-                  </label>
-                </div>
-
-                <div className={`flex items-center justify-between p-4 border rounded-md ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-white'}`}>
-                  <div>
-                    <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Push notifikácie</h4>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dostávať push notifikácie v prehliadači</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.pushNotifications}
-                      onChange={(e) => handleInputChange('notifications.pushNotifications', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#e11b28]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e11b28] ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'preferences' && (
-            <div className="max-w-2xl">
-              <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Preferencie aplikácie</h3>
-
-              <div className="space-y-6">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Téma</label>
-                  <select
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'auto')}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                  >
-                    <option value="light">Svetlá</option>
-                    <option value="dark">Tmavá</option>
-                    <option value="auto">Automatická</option>
-                  </select>
-                </div>
               </div>
             </div>
           )}

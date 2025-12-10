@@ -18,12 +18,13 @@ const Kontakty = () => {
     psc: '',
     ico: '',
     icDph: '',
+    dic: '',
     kontaktnaPriezvisko: '',
     kontaktnaMeno: '',
     kontaktnaTelefon: '',
     kontaktnaEmail: '',
     popis: '',
-    typ: 'zakaznik' as 'zakaznik' | 'architekt'
+    typ: 'zakaznik' as 'zakaznik' | 'architekt' | 'fakturacna_firma'
   });
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -78,9 +79,22 @@ const Kontakty = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let newValue = value;
+
+    // Input sanitization
+    if (['telefon', 'kontaktnaTelefon'].includes(name)) {
+      newValue = value.replace(/[^0-9+\s-]/g, '');
+    } else if (['ico', 'dic'].includes(name)) {
+      newValue = value.replace(/[^0-9]/g, '');
+    } else if (name === 'psc') {
+      newValue = value.replace(/[^0-9\s]/g, '');
+    } else if (name === 'icDph') {
+      newValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: newValue
     }));
     // Clear error for this field when user starts typing
     if (formErrors[name]) {
@@ -103,6 +117,7 @@ const Kontakty = () => {
       psc: '',
       ico: '',
       icDph: '',
+      dic: '',
       kontaktnaPriezvisko: '',
       kontaktnaMeno: '',
       kontaktnaTelefon: '',
@@ -134,6 +149,7 @@ const Kontakty = () => {
           psc: formData.psc,
           ico: formData.ico,
           icDph: formData.icDph,
+          dic: formData.dic,
           typ: formData.typ,
           kontaktnaPriezvisko: formData.kontaktnaPriezvisko,
           kontaktnaMeno: formData.kontaktnaMeno,
@@ -153,6 +169,7 @@ const Kontakty = () => {
           psc: formData.psc,
           ico: formData.ico,
           icDph: formData.icDph,
+          dic: formData.dic,
           typ: formData.typ,
           kontaktnaPriezvisko: formData.kontaktnaPriezvisko,
           kontaktnaMeno: formData.kontaktnaMeno,
@@ -194,6 +211,7 @@ const Kontakty = () => {
         psc: contact.psc,
         ico: contact.ico || '',
         icDph: contact.icDph || '',
+        dic: contact.dic || '',
         kontaktnaPriezvisko: contact.kontaktnaPriezvisko || '',
         kontaktnaMeno: contact.kontaktnaMeno || '',
         kontaktnaTelefon: contact.kontaktnaTelefon || '',
@@ -221,7 +239,7 @@ const Kontakty = () => {
     return [...contacts].reverse().map(contact => ({
       id: contact.id,
       meno: `${contact.priezvisko} ${contact.meno}`.trim(),
-      firma: contact.typ === 'zakaznik' ? 'Zákazník' : 'Architekt',
+      firma: contact.typ === 'zakaznik' ? 'Zákazník' : (contact.typ === 'architekt' ? 'Architekt' : 'Fakturačná firma'),
       telefon: contact.telefon,
       email: contact.email,
       mesto: contact.mesto,
@@ -286,7 +304,7 @@ const Kontakty = () => {
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div
-            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transition-all duration-500 ease-in-out ${isDark ? 'bg-gray-800' : 'bg-white'}`}
             style={{
               boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
             }}
@@ -318,9 +336,11 @@ const Kontakty = () => {
                   <span className={`px-3 py-1 rounded text-sm font-medium ${
                     formData.typ === 'zakaznik' 
                       ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-purple-100 text-purple-800'
+                      : formData.typ === 'architekt'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-green-100 text-green-800'
                   }`}>
-                    {formData.typ === 'zakaznik' ? 'Zákazník' : 'Architekt'}
+                    {formData.typ === 'zakaznik' ? 'Zákazník' : (formData.typ === 'architekt' ? 'Architekt' : 'Fakturačná firma')}
                   </span>
                 ) : (
                   <div className="flex gap-2">
@@ -346,37 +366,67 @@ const Kontakty = () => {
                     >
                       Architekt
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, typ: 'fakturacna_firma' }))}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        formData.typ === 'fakturacna_firma'
+                          ? 'bg-green-600 text-white'
+                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      Fakturačná firma
+                    </button>
                   </div>
                 )}
               </div>
 
               {/* Main form section with 2 columns layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                <div className="flex flex-col space-y-1">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko: *</label>
-                  <input
-                    type="text"
-                    name="priezvisko"
-                    value={formData.priezvisko}
-                    onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    required
-                  />
-                  {formErrors.priezvisko && (
-                    <span className="text-xs text-red-500">{formErrors.priezvisko}</span>
-                  )}
-                </div>
+                {formData.typ === 'zakaznik' ? (
+                  <>
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko: *</label>
+                      <input
+                        type="text"
+                        name="priezvisko"
+                        value={formData.priezvisko}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                        required
+                      />
+                      {formErrors.priezvisko && (
+                        <span className="text-xs text-red-500">{formErrors.priezvisko}</span>
+                      )}
+                    </div>
 
-                <div className="flex flex-col space-y-1">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
-                  <input
-                    type="text"
-                    name="meno"
-                    value={formData.meno}
-                    onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                  />
-                </div>
+                    <div className="flex flex-col space-y-1">
+                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
+                      <input
+                        type="text"
+                        name="meno"
+                        value={formData.meno}
+                        onChange={handleInputChange}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="col-span-1 md:col-span-2 flex flex-col space-y-1">
+                    <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Odberateľ: *</label>
+                    <input
+                      type="text"
+                      name="priezvisko"
+                      value={formData.priezvisko}
+                      onChange={handleInputChange}
+                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      required
+                    />
+                    {formErrors.priezvisko && (
+                      <span className="text-xs text-red-500">{formErrors.priezvisko}</span>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-col space-y-1">
                   <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Telefón:</label>
@@ -463,66 +513,21 @@ const Kontakty = () => {
                     className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
+
+                <div className="flex flex-col space-y-1">
+                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>DIČ:</label>
+                  <input
+                    type="text"
+                    name="dic"
+                    value={formData.dic}
+                    onChange={handleInputChange}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  />
+                </div>
               </div>
 
-              {/* Kontaktná osoba section - Only for Zakaznik */}
-              {formData.typ === 'zakaznik' && (
-                <div className={`pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Kontaktná osoba:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                    <div className="flex flex-col space-y-1">
-                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priezvisko:</label>
-                      <input
-                        type="text"
-                        name="kontaktnaPriezvisko"
-                        value={formData.kontaktnaPriezvisko}
-                        onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      />
-                    </div>
-
-                    <div className="flex flex-col space-y-1">
-                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Meno:</label>
-                      <input
-                        type="text"
-                        name="kontaktnaMeno"
-                        value={formData.kontaktnaMeno}
-                        onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      />
-                    </div>
-
-                    <div className="flex flex-col space-y-1">
-                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Telefón:</label>
-                      <input
-                        type="tel"
-                        name="kontaktnaTelefon"
-                        value={formData.kontaktnaTelefon}
-                        onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaTelefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      />
-                      {formErrors.kontaktnaTelefon && (
-                        <span className="text-xs text-red-500">{formErrors.kontaktnaTelefon}</span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col space-y-1">
-                      <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email:</label>
-                      <input
-                        type="email"
-                        name="kontaktnaEmail"
-                        value={formData.kontaktnaEmail}
-                        onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.kontaktnaEmail ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      />
-                      {formErrors.kontaktnaEmail && (
-                        <span className="text-xs text-red-500">{formErrors.kontaktnaEmail}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              {/* Kontaktná osoba section - Removed for all types based on request */}
+              
               {/* Popis section - Only for Zakaznik */}
               {formData.typ === 'zakaznik' && (
                 <div className="pt-4">
@@ -575,7 +580,11 @@ const Kontakty = () => {
       <SortableTable
         columns={columns}
         data={tableData}
-        rowClassName={(item) => item.rawContact.typ === 'architekt' ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
+        rowClassName={(item) => {
+          if (item.rawContact.typ === 'architekt') return isDark ? 'bg-red-900/20' : 'bg-red-50';
+          if (item.rawContact.typ === 'fakturacna_firma') return isDark ? 'bg-blue-900/20' : 'bg-blue-50';
+          return '';
+        }}
         onRowClick={(item) => handleNavigateToSpis(item.id)}
       />
     </div>

@@ -10,16 +10,6 @@ interface Employee {
   lastOnline: string;
   ordersCreated: number;
   projectsCompleted: number;
-  averageResponseTime: string;
-}
-
-interface ActivityLog {
-  id: number;
-  employeeId: number;
-  employeeName: string;
-  action: string;
-  timestamp: string;
-  details: string;
 }
 
 const Zamestnanci: React.FC = () => {
@@ -35,8 +25,7 @@ const Zamestnanci: React.FC = () => {
       status: 'online',
       lastOnline: '',
       ordersCreated: 145,
-      projectsCompleted: 89,
-      averageResponseTime: '2.5 hod'
+      projectsCompleted: 89
     },
     {
       id: 2,
@@ -46,8 +35,7 @@ const Zamestnanci: React.FC = () => {
       status: 'online',
       lastOnline: '',
       ordersCreated: 98,
-      projectsCompleted: 67,
-      averageResponseTime: '3.1 hod'
+      projectsCompleted: 67
     },
     {
       id: 3,
@@ -57,8 +45,7 @@ const Zamestnanci: React.FC = () => {
       status: 'offline',
       lastOnline: '2 hodiny',
       ordersCreated: 203,
-      projectsCompleted: 124,
-      averageResponseTime: '1.8 hod'
+      projectsCompleted: 124
     },
     {
       id: 4,
@@ -68,8 +55,7 @@ const Zamestnanci: React.FC = () => {
       status: 'offline',
       lastOnline: '5 minút',
       ordersCreated: 67,
-      projectsCompleted: 45,
-      averageResponseTime: '4.2 hod'
+      projectsCompleted: 45
     },
     {
       id: 5,
@@ -79,76 +65,7 @@ const Zamestnanci: React.FC = () => {
       status: 'online',
       lastOnline: '',
       ordersCreated: 178,
-      projectsCompleted: 98,
-      averageResponseTime: '2.1 hod'
-    }
-  ]);
-
-  // Dummy activity logs
-  const [activityLogs] = useState<ActivityLog[]>([
-    {
-      id: 1,
-      employeeId: 1,
-      employeeName: 'Peter Novák',
-      action: 'Vytvoril novú objednávku',
-      timestamp: '2025-12-02 14:23',
-      details: 'Objednávka #OBJ-2024-156'
-    },
-    {
-      id: 2,
-      employeeId: 3,
-      employeeName: 'Ján Horák',
-      action: 'Aktualizoval projekt',
-      timestamp: '2025-12-02 13:45',
-      details: 'Projekt CP-2024-089 - zmenený stav na "V realizácii"'
-    },
-    {
-      id: 3,
-      employeeId: 2,
-      employeeName: 'Mária Kováčová',
-      action: 'Pridal kontakt',
-      timestamp: '2025-12-02 12:18',
-      details: 'Nový kontakt: Stavebná firma XYZ s.r.o.'
-    },
-    {
-      id: 4,
-      employeeId: 5,
-      employeeName: 'Tomáš Varga',
-      action: 'Vytvoril cenovú ponuku',
-      timestamp: '2025-12-02 11:32',
-      details: 'Cenová ponuka pre projekt CP-2024-091'
-    },
-    {
-      id: 5,
-      employeeId: 4,
-      employeeName: 'Eva Szabová',
-      action: 'Nahral dokumenty',
-      timestamp: '2025-12-02 10:55',
-      details: 'Technická dokumentácia - 3 súbory'
-    },
-    {
-      id: 6,
-      employeeId: 1,
-      employeeName: 'Peter Novák',
-      action: 'Zmenil nastavenia',
-      timestamp: '2025-12-02 09:12',
-      details: 'Aktualizované používateľské preferencie'
-    },
-    {
-      id: 7,
-      employeeId: 3,
-      employeeName: 'Ján Horák',
-      action: 'Vytvoril novú objednávku',
-      timestamp: '2025-12-02 08:47',
-      details: 'Objednávka #OBJ-2024-155'
-    },
-    {
-      id: 8,
-      employeeId: 2,
-      employeeName: 'Mária Kováčová',
-      action: 'Odoslal email',
-      timestamp: '2025-12-01 16:34',
-      details: 'Email klientovi - potvrdenie objednávky'
+      projectsCompleted: 98
     }
   ]);
 
@@ -286,36 +203,7 @@ const Zamestnanci: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Performance Chart */}
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-          style={{
-            boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-          }}
-        >
-          <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Výkonnosť zamestnancov</h3>
-          <div className="space-y-3">
-            {employees.map((employee) => {
-              const percentage = (employee.ordersCreated / 203) * 100;
-              return (
-                <div key={employee.id}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{employee.name}</span>
-                    <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{employee.ordersCreated}</span>
-                  </div>
-                  <div className={`w-full h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                    <div
-                      className="h-2 bg-[#e11b28] rounded-full transition-all duration-300"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6 mb-6">
         {/* Monthly Revenue Chart */}
         <div
           className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
@@ -386,52 +274,6 @@ const Zamestnanci: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Activity Logs */}
-      <div
-        className={`rounded-lg overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-        style={{
-          boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
-        }}
-      >
-        <div className="p-4 border-b border-gray-200">
-          <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Aktivity zamestnancov</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <tr>
-                <th className={`px-4 py-3 text-left font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Zamestnanec</th>
-                <th className={`px-4 py-3 text-left font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Akcia</th>
-                <th className={`px-4 py-3 text-left font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Detaily</th>
-                <th className={`px-4 py-3 text-left font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Čas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  className={`border-t ${isDark ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'}`}
-                >
-                  <td className={`px-4 py-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-[#e11b28] rounded-full flex items-center justify-center">
-                        <span className="text-white font-medium text-xs">
-                          {log.employeeName.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      {log.employeeName}
-                    </div>
-                  </td>
-                  <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{log.action}</td>
-                  <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{log.details}</td>
-                  <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{log.timestamp}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

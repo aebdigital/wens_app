@@ -19,16 +19,7 @@ const Spis = () => {
     try {
       const saved = localStorage.getItem(key);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        // 1. Hard Delete: Filter out corrupted/dummy items containing '0367'
-        const cleaned = parsed.filter((item: any) => !item.cisloCP?.includes('0367'));
-        
-        // 2. Migration: Ensure EVERY entry has a unique ID
-        const migrated = cleaned.map((item: any) => ({
-           ...item,
-           id: item.id || Date.now().toString() + Math.random().toString(36).substr(2, 9)
-        }));
-        return migrated;
+        return JSON.parse(saved);
       }
     } catch (error) {
       console.error('Failed to load entries:', error);

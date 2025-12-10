@@ -21,11 +21,26 @@ interface AddTemplateModalProps {
   email: string;
   vypracoval: string;
   predmet: string;
+  fullCisloCP?: string;
+  creatorPhone?: string;
+  creatorEmail?: string;
+  architectInfo?: {
+    priezvisko: string;
+    meno: string;
+    firma: string;
+    ulica: string;
+    mesto: string;
+    psc: string;
+    telefon: string;
+    email: string;
+  };
   // Initial data for editing
   editingData?: {
     type: 'dvere' | 'nabytok' | 'puzdra';
     data: any;
   };
+  visibleTabs?: ('dvere' | 'nabytok' | 'puzdra')[];
+  isLocked?: boolean;
 }
 
 export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
@@ -43,10 +58,19 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   email,
   vypracoval,
   predmet,
-  editingData
+  fullCisloCP,
+  creatorPhone,
+  creatorEmail,
+  architectInfo,
+  editingData,
+  visibleTabs = ['dvere', 'nabytok', 'puzdra'],
+  isLocked = false
 }) => {
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'puzdra'>(initialTab);
+  
+  // Ensure initialTab is valid within visibleTabs
+  const validInitialTab = visibleTabs.includes(initialTab) ? initialTab : visibleTabs[0];
+  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'puzdra'>(validInitialTab);
 
   // Initialize state with default values or editing data
   const [dvereData, setDvereData] = useState<DvereData>(() => {
@@ -54,9 +78,15 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       return editingData.data;
     }
     return {
-      popisVyrobkov: 'Dyhované dvere s masívnou smrekovou výplňou. Všetky hrany dverí sú chránené náglejkom z tvrdého dreva.',
+      popisVyrobkov: '',
       dvereTyp: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne',
       zarubnaTyp: 'obložková, spoj „T", dyha dub bielený',
+      specifications: [
+        { id: 1, type: 'dvere', value: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne' },
+        { id: 2, type: 'zarubna', value: 'obložková, spoj „T", dyha dub bielený' }
+      ],
+      showCustomerInfo: true,
+      showArchitectInfo: false,
       vyrobky: Array(1).fill(null).map((_, i) => ({
         id: i + 1,
         miestnost: i === 0 ? 'Izba' : '',
@@ -68,10 +98,17 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         povrch: 'dub bielený/bezfalcové',
         poznamkaDvere: '',
         poznamkaZarubna: 'dub bielený/T',
+        poznamkaObklad: '',
         ks: 1,
         ksZarubna: 1,
+        ksObklad: 0,
         cenaDvere: 380,
         cenaZarubna: 310,
+        cenaObklad: 0,
+        typObklad: '', // For Obklad input
+        hasDvere: true,
+        hasZarubna: true,
+        hasObklad: false,
       })),
       priplatky: [
         { id: 1, nazov: 'dyha dub bielený + 15%', ks: 1, cenaKs: 828, cenaCelkom: 828 },
@@ -193,9 +230,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               />
             </div>
             <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-2">
-              {(editingData 
-                ? [activeTab] 
-                : ['dvere', 'nabytok', 'puzdra'] as const
+              {(editingData || visibleTabs.length > 1
+                ? (editingData ? [activeTab] : visibleTabs)
+                : [] // If only one visible tab and not editing, don't show tab buttons
               ).map((tab) => (
                 <button
                   key={tab}
@@ -215,7 +252,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
           </div>
           <div className="flex items-center gap-4">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Cenová ponuka č.: <span className="font-semibold">{predmet}</span>
+              Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
             </span>
             <button
               onClick={onClose}
@@ -236,13 +273,20 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               onChange={setDvereData} 
               isDark={isDark}
               headerInfo={{
-                firma: firma || priezvisko + ' ' + meno,
-                ulica,
-                mesto,
-                psc,
-                telefon,
-                email,
-                vypracoval
+                customer: {
+                  firma: firma,
+                  meno: meno,
+                  priezvisko: priezvisko,
+                  ulica,
+                  mesto,
+                  psc,
+                  telefon,
+                  email,
+                },
+                architect: architectInfo,
+                vypracoval,
+                telefon: creatorPhone || '',
+                email: creatorEmail || ''
               }}
             />
           )}
@@ -286,7 +330,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] shadow-lg"
+            disabled={isLocked}
+            className={`px-6 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] shadow-lg ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Uložiť
           </button>

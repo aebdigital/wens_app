@@ -6,16 +6,20 @@ interface VseobecneSidebarProps {
   setFormData: React.Dispatch<React.SetStateAction<SpisFormData>>;
   isDark: boolean;
   firmaOptions: string[];
+  isLocked?: boolean;
 }
 
-export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({ 
-  formData, 
-  setFormData, 
-  isDark, 
-  firmaOptions 
+export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
+  formData,
+  setFormData,
+  isDark,
+  firmaOptions,
+  isLocked = false
 }) => {
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
   const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>([]);
+
+  const inputClass = `text-xs border border-gray-300 px-1 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`;
 
   return (
     <div
@@ -25,30 +29,31 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
       }}
     >
       <div className="p-2">
-        {/* Ochrana section */}
+        {/* Main info section */}
         <div className="mb-2">
-          <h3 className={`text-xs font-semibold mb-1 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Ochrana</h3>
           <div className="space-y-1 text-xs">
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
                 <label className="text-gray-600 text-xs w-24 flex-shrink-0">Číslo CP</label>
-                <input 
-                  type="text" 
-                  value={formData.predmet} 
+                <input
+                  type="text"
+                  value={formData.predmet}
                   onChange={(e) => setFormData(prev => ({...prev, predmet: e.target.value}))}
                   placeholder="CP2025/xxxx"
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded" 
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
                 <label className="text-gray-600 text-xs w-24 flex-shrink-0">Číslo zákazky</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={formData.cisloZakazky}
-                  onChange={(e) => setFormData(prev => ({...prev, cisloZakazky: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded" 
+                  onChange={(e) => setFormData(prev => ({...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '')}))}
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
@@ -60,14 +65,16 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     type="text"
                     value={formData.odsuhlesenaKS1}
                     onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS1: e.target.value}))}
-                    className="w-12 text-xs border border-gray-300 px-1 py-1 rounded"
+                    disabled={true}
+                    className={`w-20 ${inputClass}`}
                   />
                   <span className="text-gray-600 text-xs px-1">KS</span>
                   <input
                     type="text"
                     value={formData.odsuhlesenaKS2}
                     onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS2: e.target.value}))}
-                    className="w-12 text-xs border border-gray-300 px-1 py-1 rounded"
+                    disabled={true}
+                    className={`w-20 ${inputClass}`}
                   />
                 </div>
               </div>
@@ -79,7 +86,8 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="date"
                   value={formData.ochranaDatum}
                   onChange={(e) => setFormData(prev => ({...prev, ochranaDatum: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
@@ -102,17 +110,20 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                       setShowFirmaDropdown(value.length > 0 && filtered.length > 0);
                     }}
                     onFocus={() => {
-                      setFilteredFirmaOptions(firmaOptions);
-                      setShowFirmaDropdown(firmaOptions.length > 0);
+                      if (!isLocked) {
+                        setFilteredFirmaOptions(firmaOptions);
+                        setShowFirmaDropdown(firmaOptions.length > 0);
+                      }
                     }}
                     onBlur={() => {
                       // Delay hiding to allow click on dropdown
                       setTimeout(() => setShowFirmaDropdown(false), 150);
                     }}
                     placeholder="Zadajte alebo vyberte firmu"
-                    className="w-full text-xs border border-gray-300 px-1 py-1 rounded"
+                    disabled={isLocked}
+                    className={`w-full ${inputClass}`}
                   />
-                  {showFirmaDropdown && filteredFirmaOptions.length > 0 && (
+                  {showFirmaDropdown && filteredFirmaOptions.length > 0 && !isLocked && (
                     <div
                       className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded z-50 max-h-32 overflow-y-auto"
                       style={{
@@ -139,21 +150,23 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
                 <label className="text-gray-600 text-xs w-24 flex-shrink-0">Vypracoval</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={formData.vypracoval}
                   onChange={(e) => setFormData(prev => ({...prev, vypracoval: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded" 
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
                 <label className="text-gray-600 text-xs w-24 flex-shrink-0">Stav</label>
-                <select 
+                <select
                   value={formData.stav}
                   onChange={(e) => setFormData(prev => ({...prev, stav: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 >
                   <option value="CP">CP</option>
                   <option value="Výroba">Výroba</option>
@@ -171,7 +184,8 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <select
                   value={formData.kategoria}
                   onChange={(e) => setFormData(prev => ({...prev, kategoria: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 >
                   <option value=""></option>
                   <option value="Dvere">Dvere</option>
@@ -189,38 +203,13 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Sprostredkovateľ</label>
-                <select
-                  value={formData.sprostredkovatel}
-                  onChange={(e) => setFormData(prev => ({...prev, sprostredkovatel: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
-                >
-                  <option value=""></option>
-                </select>
-              </div>
-            </div>
-            <div className="px-1 py-1">
-              <div className="flex items-center gap-2">
-                <div className="w-24 flex-shrink-0"></div>
-                <div className="flex items-center text-xs">
-                  <input
-                    type="checkbox"
-                    checked={formData.vybavene}
-                    onChange={(e) => setFormData(prev => ({...prev, vybavene: e.target.checked}))}
-                    className="mr-1"
-                  />
-                  <label>Vybavené</label>
-                </div>
-              </div>
-            </div>
-            <div className="px-1 py-1">
-              <div className="flex items-center gap-2">
                 <label className="text-gray-600 text-xs w-24 flex-shrink-0">Termín dokončenia</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={formData.terminDokoncenia || ''}
                   onChange={(e) => setFormData(prev => ({...prev, terminDokoncenia: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded" 
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
@@ -238,7 +227,8 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.cena}
                   onChange={(e) => setFormData(prev => ({...prev, cena: e.target.value}))}
-                  className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={true}
+                  className={`w-24 ${inputClass}`}
                 />
               </div>
             </div>
@@ -248,9 +238,20 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.provizia}
-                  onChange={(e) => setFormData(prev => ({...prev, provizia: e.target.value}))}
-                  className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
+                  onChange={(e) => setFormData(prev => ({...prev, provizia: e.target.value.replace(/[^0-9.,]/g, '')}))}
+                  disabled={isLocked}
+                  className={`w-24 ${inputClass}`}
                 />
+                <div className="flex items-center text-xs ml-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.vybavene}
+                    onChange={(e) => setFormData(prev => ({...prev, vybavene: e.target.checked}))}
+                    disabled={isLocked}
+                    className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
+                  />
+                  <label>Vybavené</label>
+                </div>
               </div>
             </div>
             <div className="px-1 py-1">
@@ -260,13 +261,15 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.zaloha1}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
-                  className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={true}
+                  className={`w-24 ${inputClass}`}
                 />
                 <input
                   type="date"
                   value={formData.zaloha1Datum}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha1Datum: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
@@ -277,13 +280,15 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.zaloha2}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
-                  className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={true}
+                  className={`w-24 ${inputClass}`}
                 />
                 <input
                   type="date"
                   value={formData.zaloha2Datum}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha2Datum: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>
@@ -294,13 +299,15 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.doplatok}
                   onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
-                  className="w-24 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={true}
+                  className={`w-24 ${inputClass}`}
                 />
                 <input
                   type="date"
                   value={formData.doplatokDatum}
                   onChange={(e) => setFormData(prev => ({...prev, doplatokDatum: e.target.value}))}
-                  className="flex-1 text-xs border border-gray-300 px-1 py-1 rounded"
+                  disabled={isLocked}
+                  className={`flex-1 ${inputClass}`}
                 />
               </div>
             </div>

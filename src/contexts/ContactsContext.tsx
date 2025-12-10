@@ -12,24 +12,28 @@ export interface Contact {
   psc: string;
   ico: string;
   icDph: string;
+  dic?: string;
   kontaktnaPriezvisko?: string;
   kontaktnaMeno?: string;
   kontaktnaTelefon?: string;
   kontaktnaEmail?: string;
   popis?: string;
-  typ: 'zakaznik' | 'architekt';
+  typ: 'zakaznik' | 'architekt' | 'fakturacna_firma';
   projectIds: string[]; // Array of project IDs this contact is associated with
   dateAdded: string;
+  originalContactId?: string; // New field to track original if forked
 }
 
 interface ContactsContextType {
   contacts: Contact[];
-  addContact: (contact: Omit<Contact, 'id' | 'dateAdded'>) => Contact;
+  addContact: (contact: Omit<Contact, 'dateAdded' | 'id'> & { id?: string }) => Contact;
   updateContact: (id: string, contact: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
   getContactById: (id: string) => Contact | undefined;
   getContactsByProject: (projectId: string) => Contact[];
   associateContactWithProject: (contactId: string, projectId: string) => void;
+  // New method to get contact by name and type, to be used by useSpisEntryLogic for initial lookup
+  getContactByNameAndType: (priezvisko: string, meno: string, typ: 'zakaznik' | 'architekt' | 'fakturacna_firma') => Contact | undefined;
 }
 
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
@@ -40,25 +44,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const storageKey = user ? `contacts_${user.id}` : 'contacts';
       const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.reduce((acc: Contact[], c: any) => {
-           // check if it had the bad project
-           const hadBadProject = c.projectIds && c.projectIds.some((pid: string) => pid.includes('0367'));
-           // clean the project ids
-           const cleanedProjectIds = c.projectIds ? c.projectIds.filter((pid: string) => !pid.includes('0367')) : [];
-           
-           // If it had the bad project AND now has no projects, it's likely a dummy contact we want to remove.
-           if (hadBadProject && cleanedProjectIds.length === 0) {
-               return acc; // Skip this contact (delete it)
-           }
-           
-           // Otherwise keep it with cleaned IDs
-           acc.push({ ...c, projectIds: cleanedProjectIds });
-           return acc;
-        }, []);
-      }
-      return [];
+      return saved ? JSON.parse(saved) : [];
     } catch (error) {
       console.error('Failed to parse contacts from localStorage:', error);
       return [];
@@ -70,27 +56,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const storageKey = user ? `contacts_${user.id}` : 'contacts';
       const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const cleaned = parsed.reduce((acc: Contact[], c: any) => {
-           // check if it had the bad project
-           const hadBadProject = c.projectIds && c.projectIds.some((pid: string) => pid.includes('0367'));
-           // clean the project ids
-           const cleanedProjectIds = c.projectIds ? c.projectIds.filter((pid: string) => !pid.includes('0367')) : [];
-           
-           // If it had the bad project AND now has no projects, it's likely a dummy contact we want to remove.
-           if (hadBadProject && cleanedProjectIds.length === 0) {
-               return acc; // Skip this contact (delete it)
-           }
-           
-           // Otherwise keep it with cleaned IDs
-           acc.push({ ...c, projectIds: cleanedProjectIds });
-           return acc;
-        }, []);
-        setContacts(cleaned);
-      } else {
-        setContacts([]);
-      }
+      setContacts(saved ? JSON.parse(saved) : []);
     } catch (error) {
       console.error('Failed to load contacts for user:', error);
       setContacts([]);
@@ -109,160 +75,43 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [contacts, user]);
 
-  const addContact = (contactData: Omit<Contact, 'id' | 'dateAdded'> & { id?: string }): Contact => {
-    let nextContacts = [...contacts];
-    const projectId = contactData.projectIds[0];
+  const getContactByNameAndType = (priezvisko: string, meno: string, typ: 'zakaznik' | 'architekt' | 'fakturacna_firma') => {
+    return contacts.find(c =>
+      c.typ === typ &&
+      (c.priezvisko || '').toLowerCase().trim() === (priezvisko || '').toLowerCase().trim() &&
+      (c.meno || '').toLowerCase().trim() === (meno || '').toLowerCase().trim()
+    );
+  };
 
+  const addContact = (contactData: Omit<Contact, 'dateAdded' | 'id'> & { id?: string }): Contact => {
+    let nextContacts = [...contacts];
     let resultContact: Contact | undefined;
 
-    // Helper to update local state
-    const updateLocal = (id: string, updates: Partial<Contact>) => {
-        const idx = nextContacts.findIndex(c => c.id === id);
-        if (idx !== -1) {
-            nextContacts[idx] = { ...nextContacts[idx], ...updates };
-        }
-    };
-    
-    // Helper to delete from local state
-    const deleteLocal = (id: string) => {
-        nextContacts = nextContacts.filter(c => c.id !== id);
-    };
-
-    // 0. Explicit ID provided (e.g. from autocomplete)
+    // 1. If explicit ID provided, try to update existing
     if (contactData.id) {
-      const explicit = nextContacts.find(c => c.id === contactData.id);
-      if (explicit) {
-        // FORKING LOGIC
-        const isNameChanged = 
-            (explicit.priezvisko || '').toLowerCase().trim() !== (contactData.priezvisko || '').toLowerCase().trim() ||
-            (explicit.meno || '').toLowerCase().trim() !== (contactData.meno || '').toLowerCase().trim();
-        
-        const otherProjects = explicit.projectIds.filter(pid => pid !== projectId);
-        
-        if (isNameChanged && otherProjects.length > 0) {
-            // "Fork" - Unlink old contact from this project
-            updateLocal(explicit.id, { projectIds: otherProjects });
-            
-            // Now we proceed to find/create NEW contact for this project (fall through to step 1-4 logic below)
-            // We do this by NOT setting resultContact here, and ensuring the code below runs.
-            // effectively treating this as if no ID was provided for the *new* identity.
-            
-            // NOTE: We must NOT pass 'contactData.id' to the logic below, as that ID belongs to the old contact we just forked away from.
-            // We will let the standard matching logic run.
-        } else {
-            // Normal Update (Same name OR unique to this project)
-            
-            // Deduplication logic
-            const contactsToRemove: string[] = [];
-            let projectsToMerge: string[] = [];
-    
-            if (projectId) {
-                const linkedContacts = nextContacts.filter(c => 
-                    c.projectIds.includes(projectId) && 
-                    c.id !== contactData.id &&
-                    c.typ === contactData.typ
-                );
-    
-                linkedContacts.forEach(duplicate => {
-                    projectsToMerge = [...projectsToMerge, ...duplicate.projectIds];
-                    const remainingProjects = duplicate.projectIds.filter(p => p !== projectId);
-                    if (remainingProjects.length === 0) {
-                        contactsToRemove.push(duplicate.id);
-                    } else {
-                        updateLocal(duplicate.id, { projectIds: remainingProjects });
-                    }
-                });
-            }
-    
-            if (contactsToRemove.length > 0) {
-                contactsToRemove.forEach(id => deleteLocal(id));
-            }
-    
-            const mergedProjectIds = Array.from(new Set([
-                ...explicit.projectIds, 
-                ...contactData.projectIds,
-                ...projectsToMerge 
-            ]));
-            
-            updateLocal(explicit.id, {
-               ...contactData,
-               projectIds: mergedProjectIds
-            });
-            
-            resultContact = nextContacts.find(c => c.id === explicit.id);
-        }
-      }
-    }
-
-    // If we haven't resolved a contact yet (either no ID provided, or we Forked), proceed to standard logic
-    if (!resultContact) {
-        // 1. Try to find a contact already linked to this project
-        const existingByProject = projectId 
-          ? nextContacts.find(c => c.projectIds.includes(projectId) && c.typ === contactData.typ)
-          : undefined;
-
-        if (existingByProject) {
-           const mergedProjectIds = Array.from(new Set([...existingByProject.projectIds, ...contactData.projectIds]));
-           
-           const hasDataChanged = 
-            existingByProject.meno !== contactData.meno ||
-            existingByProject.priezvisko !== contactData.priezvisko ||
-            existingByProject.ulica !== contactData.ulica ||
-            existingByProject.mesto !== contactData.mesto ||
-            existingByProject.psc !== contactData.psc ||
-            existingByProject.ico !== contactData.ico ||
-            existingByProject.icDph !== contactData.icDph ||
-            existingByProject.email !== contactData.email ||
-            existingByProject.telefon !== contactData.telefon ||
-            existingByProject.kontaktnaPriezvisko !== contactData.kontaktnaPriezvisko ||
-            existingByProject.kontaktnaMeno !== contactData.kontaktnaMeno ||
-            existingByProject.kontaktnaTelefon !== contactData.kontaktnaTelefon ||
-            existingByProject.kontaktnaEmail !== contactData.kontaktnaEmail ||
-            existingByProject.popis !== contactData.popis;
-
-           if (hasDataChanged) {
-             updateLocal(existingByProject.id, {
-               ...contactData,
-               projectIds: mergedProjectIds
-             });
-           }
-           resultContact = nextContacts.find(c => c.id === existingByProject.id);
-        }
-    }
-
-    if (!resultContact) {
-        // 2. Lookup by unique identifiers (email/phone)
-        let existing = nextContacts.find(
-          c => (c.email && contactData.email && c.email === contactData.email) ||
-               (c.telefon && contactData.telefon && c.telefon === contactData.telefon)
-        );
-
-        // 3. Fallback: Lookup by Name
-        if (!existing) {
-            existing = nextContacts.find(c => {
-                if (c.typ !== contactData.typ) return false;
-                const matchMeno = (c.meno || '').toLowerCase().trim() === (contactData.meno || '').toLowerCase().trim();
-                const matchPriezvisko = (c.priezvisko || '').toLowerCase().trim() === (contactData.priezvisko || '').toLowerCase().trim();
-                return matchMeno && matchPriezvisko;
-            });
-        }
-
+        const existing = nextContacts.find(c => c.id === contactData.id);
         if (existing) {
-          const mergedProjectIds = Array.from(new Set([...existing.projectIds, ...contactData.projectIds]));
-          updateLocal(existing.id, {
-              ...contactData,
-              projectIds: mergedProjectIds
-          });
-          resultContact = nextContacts.find(c => c.id === existing!.id);
+            const mergedProjectIds = Array.from(new Set([...existing.projectIds, ...contactData.projectIds]));
+            const updatedContact = {
+                ...existing, // Keep existing fields unless explicitly overridden
+                ...contactData,
+                projectIds: mergedProjectIds,
+                // Ensure originalContactId is preserved if it exists
+                originalContactId: existing.originalContactId || contactData.originalContactId
+            };
+            const idx = nextContacts.findIndex(c => c.id === contactData.id);
+            nextContacts[idx] = updatedContact;
+            resultContact = updatedContact;
         }
     }
 
+    // 2. If no ID or not found, always create a new contact
     if (!resultContact) {
-        // 4. Create new contact
         const newContact: Contact = {
-          ...contactData,
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          dateAdded: new Date().toISOString()
+            ...contactData,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            dateAdded: new Date().toISOString(),
+            originalContactId: contactData.originalContactId // Preserve if passed
         };
         nextContacts.push(newContact);
         resultContact = newContact;
@@ -310,7 +159,8 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
         deleteContact,
         getContactById,
         getContactsByProject,
-        associateContactWithProject
+        associateContactWithProject,
+        getContactByNameAndType
       }}
     >
       {children}

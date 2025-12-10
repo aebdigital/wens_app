@@ -69,6 +69,7 @@ export interface SpisFormData {
   architektonickyDic: string;
 
   // Realizátor
+  realizatorId?: string;
   realizatorPriezvisko: string;
   realizatorMeno: string;
   realizatorTelefon: string;
@@ -88,13 +89,14 @@ export interface SpisFormData {
 
   // Fakturácia
   fakturaciaTyp: string;
+  fakturaciaSource?: string; // To remember which button was clicked
   fakturaciaK10: boolean;
   fakturaciaPriezvisko: string;
   fakturaciaMeno: string;
   fakturaciaAdresa: string;
 
   // Items
-  popisItems: {datum: string, popis: string, pridat: string, zodpovedny: string}[];
+  popisItems: {datum: string, popis: string, pridal: string}[];
   cenovePonukyItems: CenovaPonukaItem[];
   objednavkyItems: {id?: string, nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string}[];
   emailKomu: string;
@@ -119,12 +121,16 @@ export interface CenovaPonukaItem {
   cenaBezDPH: number;
   cenaSDPH: number;
   data: any; // We can refine this later with DvereData | NabytokData | PuzdraData
+  selected?: boolean;
 }
 
 export interface DvereData {
   popisVyrobkov: string;
-  dvereTyp: string;
-  zarubnaTyp: string;
+  dvereTyp: string; // Deprecated or kept for compatibility
+  zarubnaTyp: string; // Deprecated or kept for compatibility
+  specifications: { id: number, type: 'dvere' | 'zarubna' | 'obklad', value: string }[];
+  showCustomerInfo: boolean;
+  showArchitectInfo: boolean;
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;

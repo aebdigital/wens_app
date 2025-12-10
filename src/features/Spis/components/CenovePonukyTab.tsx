@@ -7,21 +7,39 @@ interface CenovePonukyTabProps {
   onEdit: (item: CenovaPonukaItem) => void;
   onGeneratePDF: (item: CenovaPonukaItem) => void;
   isDark: boolean;
+  isLocked?: boolean;
+  onAddVzor: () => void;
+  onToggleSelect: (item: CenovaPonukaItem) => void;
+  onUpdate: (items: CenovaPonukaItem[]) => void;
 }
 
-export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({ 
-  items, 
-  onDelete, 
-  onEdit, 
-  onGeneratePDF, 
-  isDark 
+export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
+  items,
+  onDelete,
+  onEdit,
+  onGeneratePDF,
+  isDark,
+  isLocked = false,
+  onAddVzor,
+  onToggleSelect,
+  onUpdate
 }) => {
   return (
     <div className="p-2 h-full">
+      <div className="mb-4">
+        <button
+          onClick={onAddVzor}
+          disabled={isLocked}
+          className={`px-3 py-1 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded text-xs hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Pridať vzor
+        </button>
+      </div>
       <div className="h-full overflow-auto">
         <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white w-10"></th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Typ</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Verzia</th>
@@ -35,11 +53,21 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr 
-                key={item.id} 
+              <tr
+                key={item.id}
                 className={`${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} cursor-pointer`}
                 onClick={() => onEdit(item)}
               >
+                <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                  <input
+                    type="radio"
+                    checked={item.selected || false}
+                    onChange={() => onToggleSelect(item)}
+                    disabled={isLocked}
+                    className="cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cisloCP}
                 </td>
@@ -69,8 +97,19 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                 <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.vytvoril}
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-600'}`}>
-                  {item.popis}
+                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                  <input
+                    type="text"
+                    value={item.popis}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index] = { ...newItems[index], popis: e.target.value };
+                      onUpdate(newItems);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={isLocked}
+                    className={`w-full text-xs border-0 bg-transparent px-2 py-1 focus:ring-0 ${isDark ? 'text-gray-300' : 'text-gray-600'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                  />
                 </td>
                 <td className={`border px-2 py-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                   <div className="flex items-center justify-center gap-2">
@@ -89,9 +128,10 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDelete(index);
+                        if (!isLocked) onDelete(index);
                       }}
-                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                      disabled={isLocked}
+                      className={`p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title="Odstrániť"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +144,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={9} className={`border px-3 py-8 text-center ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
+                <td colSpan={10} className={`border px-3 py-8 text-center ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
                   Žiadne cenové ponuky. Kliknite na "Pridať vzor" pre vytvorenie novej cenovej ponuky.
                 </td>
               </tr>
