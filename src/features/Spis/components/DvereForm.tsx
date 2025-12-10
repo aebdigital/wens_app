@@ -10,13 +10,34 @@ interface DvereFormProps {
   onChange: (data: DvereData) => void;
   isDark: boolean;
   headerInfo: {
-    firma: string;
-    ulica: string;
-    mesto: string;
-    psc: string;
-    telefon: string;
-    email: string;
-    vypracoval: string;
+    customer?: {
+      firma: string;
+      ulica: string;
+      mesto: string;
+      psc: string;
+      telefon: string;
+      email: string;
+      meno: string;
+      priezvisko: string;
+    };
+    architect?: {
+      priezvisko: string;
+      meno: string;
+      firma: string;
+      ulica: string;
+      mesto: string;
+      psc: string;
+      telefon: string;
+      email: string;
+    };
+    vypracoval?: string;
+    // Legacy / Flat support
+    firma?: string;
+    ulica?: string;
+    mesto?: string;
+    psc?: string;
+    telefon?: string;
+    email?: string;
   };
 }
 
