@@ -268,7 +268,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         return {
             ...prev,
             cenovePonukyItems: newItems,
-            odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? selectedItem.cisloCP.split('/').pop() : '') : '',
+            odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? (selectedItem.cisloCP.split('/').pop() || '') : '') : '',
             odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : ''
         };
     });
