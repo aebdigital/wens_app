@@ -329,7 +329,7 @@ export const useSpisEntryLogic = (
           projectIds: [currentCisloCP]
         };
 
-        let customerContact;
+        let customerContact: Contact;
         if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
              customerContact = forkContact(existingCustomer.id, customerData);
         } else {
@@ -385,7 +385,7 @@ export const useSpisEntryLogic = (
           projectIds: [currentCisloCP]
         };
 
-        let architectContact;
+        let architectContact: Contact;
         if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
              architectContact = forkContact(existingArchitect.id, architectData);
         } else {
@@ -439,7 +439,7 @@ export const useSpisEntryLogic = (
           projectIds: [currentCisloCP]
         };
 
-        let realizatorContact;
+        let realizatorContact: Contact;
         if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
              realizatorContact = forkContact(existingRealizator.id, realizatorData);
         } else {
