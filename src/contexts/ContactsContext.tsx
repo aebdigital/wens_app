@@ -34,6 +34,7 @@ interface ContactsContextType {
   associateContactWithProject: (contactId: string, projectId: string) => void;
   // New method to get contact by name and type, to be used by useSpisEntryLogic for initial lookup
   getContactByNameAndType: (priezvisko: string, meno: string, typ: 'zakaznik' | 'architekt' | 'fakturacna_firma') => Contact | undefined;
+  forkContact: (originalId: string, newContactData: Omit<Contact, 'dateAdded' | 'id'>) => Contact;
 }
 
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
@@ -121,6 +122,37 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     return resultContact!;
   };
 
+  const forkContact = (originalId: string, newContactData: Omit<Contact, 'dateAdded' | 'id'>): Contact => {
+    const nextContacts = [...contacts];
+    const originalIndex = nextContacts.findIndex(c => c.id === originalId);
+    
+    if (originalIndex === -1) {
+        return addContact(newContactData);
+    }
+    
+    const originalContact = nextContacts[originalIndex];
+    const projectIdsToMove = newContactData.projectIds;
+    
+    // Remove these projects from original
+    const updatedOriginal = {
+        ...originalContact,
+        projectIds: originalContact.projectIds.filter(pid => !projectIdsToMove.includes(pid))
+    };
+    nextContacts[originalIndex] = updatedOriginal;
+    
+    // Create new contact
+    const newContact: Contact = {
+        ...newContactData,
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        dateAdded: new Date().toISOString(),
+        originalContactId: originalId
+    };
+    nextContacts.push(newContact);
+    
+    setContacts(nextContacts);
+    return newContact;
+  };
+
   const updateContact = (id: string, updates: Partial<Contact>) => {
     setContacts(prev =>
       prev.map(contact =>
@@ -155,6 +187,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
       value={{
         contacts,
         addContact,
+        forkContact,
         updateContact,
         deleteContact,
         getContactById,

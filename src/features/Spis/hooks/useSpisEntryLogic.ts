@@ -57,7 +57,7 @@ export const useSpisEntryLogic = (
   onSave: (entryData: SpisEntry) => void
 ) => {
   const { user } = useAuth();
-  const { addContact, getContactById, getContactByNameAndType } = useContacts();
+  const { addContact, getContactById, getContactByNameAndType, forkContact } = useContacts();
   const [activeTab, setActiveTab] = useState('vseobecne');
   const [uploadedPhotos, setUploadedPhotos] = useState<{id: string, file: File, url: string, description: string}[]>([]);
   const [userPhone, setUserPhone] = useState('');
@@ -309,18 +309,7 @@ export const useSpisEntryLogic = (
               'zakaznik'
             ) : false; // If no initial data, it's considered new or fully changed
 
-        // Decision logic for "copy on modify"
-        let finalCustomerContactId = customerContactIdToSave;
-        let originalCustomerForkId: string | undefined;
-
-        if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
-          // If existing contact is shared and modified, create a new one ("fork")
-          finalCustomerContactId = undefined; // Force addContact to create new
-          originalCustomerForkId = existingCustomer.id; // Link to original
-        }
-        
-        const customerContact = addContact({
-          ...(finalCustomerContactId ? { id: finalCustomerContactId } : {}),
+        const customerData = {
           meno: formData.meno || '',
           priezvisko: formData.priezvisko || '',
           telefon: formData.telefon || '',
@@ -331,15 +320,25 @@ export const useSpisEntryLogic = (
           ico: formData.ico || '',
           icDph: formData.icDph || '',
           dic: formData.dic || '',
-          typ: 'zakaznik',
+          typ: 'zakaznik' as const,
           kontaktnaPriezvisko: formData.kontaktnaPriezvisko || '',
           kontaktnaMeno: formData.kontaktnaMeno || '',
           kontaktnaTelefon: formData.kontaktnaTelefon || '',
           kontaktnaEmail: formData.kontaktnaEmail || '',
           popis: formData.popisProjektu || '',
-          projectIds: [currentCisloCP],
-          originalContactId: originalCustomerForkId
-        });
+          projectIds: [currentCisloCP]
+        };
+
+        let customerContact;
+        if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
+             customerContact = forkContact(existingCustomer.id, customerData);
+        } else {
+             customerContact = addContact({
+                ...customerData,
+                ...(customerContactIdToSave ? { id: customerContactIdToSave } : {})
+             });
+        }
+        
         // Update formData with the ID of the contact that was actually saved/created
         setFormData(prev => ({ ...prev, zakaznikId: customerContact.id }));
         if (entryData.fullFormData) {
@@ -371,16 +370,7 @@ export const useSpisEntryLogic = (
               'architekt'
             ) : false;
 
-        let finalArchitectContactId = architectContactIdToSave;
-        let originalArchitectForkId: string | undefined;
-
-        if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
-          finalArchitectContactId = undefined;
-          originalArchitectForkId = existingArchitect.id;
-        }
-
-        const architectContact = addContact({
-          ...(finalArchitectContactId ? { id: finalArchitectContactId } : {}),
+        const architectData = {
           meno: formData.architektonickeMeno || '',
           priezvisko: formData.architektonickyPriezvisko || '',
           telefon: formData.architektonickyTelefon || '',
@@ -391,10 +381,20 @@ export const useSpisEntryLogic = (
           ico: formData.architektonickyIco || '',
           icDph: formData.architektonickyIcDph || '',
           dic: formData.architektonickyDic || '',
-          typ: 'architekt',
-          projectIds: [currentCisloCP],
-          originalContactId: originalArchitectForkId
-        });
+          typ: 'architekt' as const,
+          projectIds: [currentCisloCP]
+        };
+
+        let architectContact;
+        if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
+             architectContact = forkContact(existingArchitect.id, architectData);
+        } else {
+             architectContact = addContact({
+                ...architectData,
+                ...(architectContactIdToSave ? { id: architectContactIdToSave } : {})
+             });
+        }
+        
         setFormData(prev => ({ ...prev, architektId: architectContact.id }));
         if (entryData.fullFormData) {
           entryData.fullFormData.architektId = architectContact.id;
@@ -424,16 +424,7 @@ export const useSpisEntryLogic = (
               'realizator'
             ) : false;
 
-        let finalRealizatorContactId = realizatorContactIdToSave;
-        let originalRealizatorForkId: string | undefined;
-
-        if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
-          finalRealizatorContactId = undefined;
-          originalRealizatorForkId = existingRealizator.id;
-        }
-
-        const realizatorContact = addContact({
-          ...(finalRealizatorContactId ? { id: finalRealizatorContactId } : {}),
+        const realizatorData = {
           meno: formData.realizatorMeno || '',
           priezvisko: formData.realizatorPriezvisko || '',
           telefon: formData.realizatorTelefon || '',
@@ -444,10 +435,20 @@ export const useSpisEntryLogic = (
           ico: formData.realizatorIco || '',
           icDph: formData.realizatorIcDph || '',
           dic: formData.realizatorDic || '',
-          typ: 'fakturacna_firma',
-          projectIds: [currentCisloCP],
-          originalContactId: originalRealizatorForkId
-        });
+          typ: 'fakturacna_firma' as const,
+          projectIds: [currentCisloCP]
+        };
+
+        let realizatorContact;
+        if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
+             realizatorContact = forkContact(existingRealizator.id, realizatorData);
+        } else {
+             realizatorContact = addContact({
+                ...realizatorData,
+                ...(realizatorContactIdToSave ? { id: realizatorContactIdToSave } : {})
+             });
+        }
+        
         setFormData(prev => ({ ...prev, realizatorId: realizatorContact.id }));
         if (entryData.fullFormData) {
           entryData.fullFormData.realizatorId = realizatorContact.id;
