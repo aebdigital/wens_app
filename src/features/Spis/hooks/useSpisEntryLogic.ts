@@ -482,6 +482,7 @@ export const useSpisEntryLogic = (
     internalId, 
     getContactById, // Added as dependency
     getContactByNameAndType, // Added as dependency
+    forkContact, // Added as dependency
     initialFormDataRef // Added as dependency for comparison
   ]);
 

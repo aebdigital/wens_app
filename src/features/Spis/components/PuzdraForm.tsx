@@ -28,6 +28,56 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>BIC (SWIFT): LUBASKBX</p>
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>tel/fax :046/542 2057 e-mail: info@wens.sk</p>
         </div>
+
+        {/* Right - Dodávateľ */}
+        <div className="text-xs space-y-2">
+          <p className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Dodávateľ:</p>
+          <div className="flex gap-2 items-center">
+             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Firma:</span>
+             <input
+                type="text"
+                value={data.dodavatel?.nazov || ''}
+                onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, nazov: e.target.value}})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+             />
+          </div>
+          <div className="flex gap-2 items-center">
+             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ulica:</span>
+             <input
+                type="text"
+                value={data.dodavatel?.ulica || ''}
+                onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, ulica: e.target.value}})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+             />
+          </div>
+          <div className="flex gap-2 items-center">
+             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Mesto:</span>
+             <input
+                type="text"
+                value={data.dodavatel?.mesto || ''}
+                onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, mesto: e.target.value}})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+             />
+          </div>
+          <div className="flex gap-2 items-center">
+             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Tel:</span>
+             <input
+                type="text"
+                value={data.dodavatel?.tel || ''}
+                onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, tel: e.target.value}})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+             />
+          </div>
+          <div className="flex gap-2 items-center">
+             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Email:</span>
+             <input
+                type="text"
+                value={data.dodavatel?.email || ''}
+                onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, email: e.target.value}})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+             />
+          </div>
+        </div>
       </div>
 
       {/* Objednávame u nás */}
