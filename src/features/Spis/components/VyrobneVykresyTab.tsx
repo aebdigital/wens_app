@@ -21,7 +21,6 @@ export const VyrobneVykresyTab: React.FC<VyrobneVykresyTabProps> = ({ isDark, it
   const handleDrop = (files: File[]) => {
     if (isLocked) return;
     const userName = user ? `${user.firstName} ${user.lastName}` : '';
-    const today = new Date().toISOString().split('T')[0];
     
     const newItems = files.map(file => ({
       popis: '',

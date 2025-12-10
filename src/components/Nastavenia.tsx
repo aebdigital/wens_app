@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const Nastavenia = () => {
   const { user, changePassword } = useAuth();
-  const { theme, setTheme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('account');
   const [formData, setFormData] = useState({
     firstName: '',

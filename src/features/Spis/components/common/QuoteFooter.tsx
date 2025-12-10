@@ -27,7 +27,6 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
     let p3 = data.platba3Percent;
 
     const currentAmount1 = total * p1 / 100;
-    const currentAmount2 = total * p2 / 100;
     const currentAmount3 = total * p3 / 100;
 
     if (index === 1) {

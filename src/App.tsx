@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContactsProvider } from './contexts/ContactsContext';
-import { TasksProvider, useTasks } from './contexts/TasksContext';
+import { TasksProvider } from './contexts/TasksContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AuthWrapper from './components/AuthWrapper';
 import Spis from './components/Spis';

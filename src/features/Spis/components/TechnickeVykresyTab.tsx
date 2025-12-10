@@ -21,11 +21,6 @@ export const TechnickeVykresyTab: React.FC<TechnickeVykresyTabProps> = ({ isDark
     onUpdate(newItems);
   };
 
-  const handleAddItem = () => {
-    if (isLocked) return;
-    onUpdate([...items, { datum: '', kategoria: '', dodavatel: '' }]);
-  };
-
   const handleDeleteItem = (index: number) => {
     if (isLocked) return;
     onUpdate(items.filter((_, i) => i !== index));

@@ -479,7 +479,6 @@ export const useSpisEntryLogic = (
     onSave, 
     setFirmaOptions, 
     internalId, 
-    contacts, // Added contacts as dependency for getContactById/getContactByNameAndType
     getContactById, // Added as dependency
     getContactByNameAndType, // Added as dependency
     initialFormDataRef // Added as dependency for comparison
