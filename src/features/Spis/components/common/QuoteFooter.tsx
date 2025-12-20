@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface QuoteFooterProps {
   isDark: boolean;
@@ -17,6 +18,11 @@ interface QuoteFooterProps {
 }
 
 export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange, headerInfo, totals }) => {
+  // Local state for euro amount inputs to prevent cursor jumping
+  const [localAmount1, setLocalAmount1] = useState<string>('');
+  const [localAmount2, setLocalAmount2] = useState<string>('');
+  const [localAmount3, setLocalAmount3] = useState<string>('');
+  const [editingAmount, setEditingAmount] = useState<1 | 2 | 3 | null>(null);
   
   const handleAmountChange = (index: 1 | 2 | 3, newAmount: number) => {
     const total = totals.cenaSDPH;
@@ -78,6 +84,61 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
     });
   };
 
+  const handleTotalChange = (newTotal: number) => {
+    // If newTotal is 0 or empty, maybe revert to null (auto)?
+    // For now, assume user wants to set a specific price.
+    onChange({
+        ...data,
+        manualCenaSDPH: newTotal
+    });
+  };
+
+  const handlePercentageChange = (index: 1 | 2 | 3, newPercent: number) => {
+    let p1 = data.platba1Percent;
+    let p2 = data.platba2Percent;
+    let p3 = data.platba3Percent;
+
+    if (index === 1) {
+      p1 = newPercent;
+      const remaining = 100 - p1;
+      // Adjust p2 and p3 to fit remaining
+      if (p2 + p3 === 0) {
+         p2 = remaining; 
+      } else {
+         const ratio = p2 / (p2 + p3);
+         p2 = remaining * ratio;
+         p3 = remaining - p2;
+      }
+    } else if (index === 2) {
+      p2 = newPercent;
+      const remaining = 100 - p2;
+      // Adjust p1 and p3. Usually keep p1 fixed if possible?
+      // "Higher hierarchy": change only subsequent if possible?
+      // Let's adjust p3 first.
+      p3 = 100 - p1 - p2;
+      if (p3 < 0) {
+         // If negative, reduce p1
+         p3 = 0;
+         p1 = 100 - p2;
+      }
+    } else if (index === 3) {
+      p3 = newPercent;
+      const remaining = 100 - p3;
+      p2 = 100 - p1 - p3;
+      if (p2 < 0) {
+         p2 = 0;
+         p1 = 100 - p3;
+      }
+    }
+
+    onChange({
+        ...data,
+        platba1Percent: parseFloat(p1.toFixed(2)),
+        platba2Percent: parseFloat(p2.toFixed(2)),
+        platba3Percent: parseFloat(p3.toFixed(2))
+    });
+  };
+
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} p-4`}>
       {/* Left side - delivery info */}
@@ -91,14 +152,27 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
-        <div className="flex gap-2">
-          <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Miesto dodávky:</span>
-          <input
-            type="text"
-            value={data.miestoDodavky}
-            onChange={(e) => onChange({...data, miestoDodavky: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
-          />
+        <div className="flex flex-col gap-1">
+            <div className="flex gap-2">
+            <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Miesto dodávky:</span>
+            <input
+                type="text"
+                value={data.miestoDodavky}
+                onChange={(e) => onChange({...data, miestoDodavky: e.target.value})}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            />
+            </div>
+            {data.miestoDodavky && (
+                <div className="flex justify-end pr-0 mt-2">
+                    <div className="p-2 bg-white rounded shadow border border-gray-200">
+                        <QRCodeSVG 
+                            value={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.miestoDodavky)}`}
+                            size={100}
+                        />
+                        <div className="text-[10px] text-center mt-1 text-gray-500">Google Maps</div>
+                    </div>
+                </div>
+            )}
         </div>
         <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Zameranie:</span>
@@ -120,19 +194,39 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
         </div>
         <div className="flex gap-2 mt-4">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Vypracoval:</span>
-          <span className={isDark ? 'text-white' : 'text-gray-800'}>{headerInfo.vypracoval}</span>
+          <input
+            type="text"
+            value={data.vypracoval !== undefined ? data.vypracoval : headerInfo.vypracoval}
+            onChange={(e) => onChange({...data, vypracoval: e.target.value})}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+          />
         </div>
         <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Kontakt:</span>
-          <span className={isDark ? 'text-white' : 'text-gray-800'}>{headerInfo.telefon}</span>
+          <input
+            type="text"
+            value={data.kontakt !== undefined ? data.kontakt : headerInfo.telefon}
+            onChange={(e) => onChange({...data, kontakt: e.target.value})}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+          />
         </div>
         <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>E-mail:</span>
-          <span className={isDark ? 'text-white' : 'text-gray-800'}>{headerInfo.email}</span>
+          <input
+            type="text"
+            value={data.emailVypracoval !== undefined ? data.emailVypracoval : headerInfo.email}
+            onChange={(e) => onChange({...data, emailVypracoval: e.target.value})}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+          />
         </div>
         <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dátum:</span>
-          <span className={isDark ? 'text-white' : 'text-gray-800'}>{new Date().toLocaleDateString('sk-SK')}</span>
+          <input
+            type="text"
+            value={data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK')}
+            onChange={(e) => onChange({...data, datum: e.target.value})}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+          />
         </div>
       </div>
       {/* Right side - totals and payment */}
@@ -145,21 +239,46 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>DPH 23%:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.dph.toFixed(2)} €</span>
         </div>
-        <div className={`flex justify-between text-lg p-2 rounded ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
+        <div className={`flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
           <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Cena s DPH:</span>
-          <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.cenaSDPH.toFixed(2)} €</span>
+          <div className="flex items-center gap-1">
+            <input
+                type="number"
+                value={totals.cenaSDPH.toFixed(2)}
+                onChange={(e) => handleTotalChange(parseFloat(e.target.value) || 0)}
+                className={`w-32 px-1 py-0.5 text-right font-bold rounded bg-transparent border-b ${isDark ? 'text-white border-gray-400 focus:border-white' : 'text-gray-800 border-gray-400 focus:border-black'} focus:outline-none`}
+            />
+            <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
+          </div>
         </div>
         <div className="mt-4 space-y-2 text-xs">
           <p className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Platby:</p>
           
           <div className="flex items-center justify-between">
             <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>1. záloha - pri objednávke</span>
-            <span className={`w-12 text-right ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{data.platba1Percent.toFixed(0)}%</span>
-            <div className="flex items-center justify-end gap-1 w-32">
+            <div className="flex items-center gap-1 w-16 justify-end">
                 <input
                     type="number"
-                    value={(totals.cenaSDPH * data.platba1Percent / 100).toFixed(2)}
-                    onChange={(e) => handleAmountChange(1, parseFloat(e.target.value) || 0)}
+                    value={data.platba1Percent.toFixed(0)}
+                    onChange={(e) => handlePercentageChange(1, parseFloat(e.target.value) || 0)}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                />
+                <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
+            </div>
+            <div className="flex items-center justify-end gap-1 w-32">
+                <input
+                    type="text"
+                    inputMode="decimal"
+                    value={editingAmount === 1 ? localAmount1 : (totals.cenaSDPH * data.platba1Percent / 100).toFixed(2)}
+                    onFocus={() => {
+                      setEditingAmount(1);
+                      setLocalAmount1((totals.cenaSDPH * data.platba1Percent / 100).toFixed(2));
+                    }}
+                    onChange={(e) => setLocalAmount1(e.target.value)}
+                    onBlur={() => {
+                      handleAmountChange(1, parseFloat(localAmount1) || 0);
+                      setEditingAmount(null);
+                    }}
                     className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
@@ -168,12 +287,29 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
 
           <div className="flex items-center justify-between">
             <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>2. platba - pred montážou</span>
-            <span className={`w-12 text-right ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{data.platba2Percent.toFixed(0)}%</span>
-            <div className="flex items-center justify-end gap-1 w-32">
+            <div className="flex items-center gap-1 w-16 justify-end">
                 <input
                     type="number"
-                    value={(totals.cenaSDPH * data.platba2Percent / 100).toFixed(2)}
-                    onChange={(e) => handleAmountChange(2, parseFloat(e.target.value) || 0)}
+                    value={data.platba2Percent.toFixed(0)}
+                    onChange={(e) => handlePercentageChange(2, parseFloat(e.target.value) || 0)}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                />
+                <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
+            </div>
+            <div className="flex items-center justify-end gap-1 w-32">
+                <input
+                    type="text"
+                    inputMode="decimal"
+                    value={editingAmount === 2 ? localAmount2 : (totals.cenaSDPH * data.platba2Percent / 100).toFixed(2)}
+                    onFocus={() => {
+                      setEditingAmount(2);
+                      setLocalAmount2((totals.cenaSDPH * data.platba2Percent / 100).toFixed(2));
+                    }}
+                    onChange={(e) => setLocalAmount2(e.target.value)}
+                    onBlur={() => {
+                      handleAmountChange(2, parseFloat(localAmount2) || 0);
+                      setEditingAmount(null);
+                    }}
                     className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
@@ -182,12 +318,29 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
 
           <div className="flex items-center justify-between">
             <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>3. platba - po montáži</span>
-            <span className={`w-12 text-right ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{data.platba3Percent.toFixed(0)}%</span>
-            <div className="flex items-center justify-end gap-1 w-32">
+            <div className="flex items-center gap-1 w-16 justify-end">
                 <input
                     type="number"
-                    value={(totals.cenaSDPH * data.platba3Percent / 100).toFixed(2)}
-                    onChange={(e) => handleAmountChange(3, parseFloat(e.target.value) || 0)}
+                    value={data.platba3Percent.toFixed(0)}
+                    onChange={(e) => handlePercentageChange(3, parseFloat(e.target.value) || 0)}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                />
+                <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
+            </div>
+            <div className="flex items-center justify-end gap-1 w-32">
+                <input
+                    type="text"
+                    inputMode="decimal"
+                    value={editingAmount === 3 ? localAmount3 : (totals.cenaSDPH * data.platba3Percent / 100).toFixed(2)}
+                    onFocus={() => {
+                      setEditingAmount(3);
+                      setLocalAmount3((totals.cenaSDPH * data.platba3Percent / 100).toFixed(2));
+                    }}
+                    onChange={(e) => setLocalAmount3(e.target.value)}
+                    onBlur={() => {
+                      handleAmountChange(3, parseFloat(localAmount3) || 0);
+                      setEditingAmount(null);
+                    }}
                     className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>

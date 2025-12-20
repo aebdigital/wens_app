@@ -25,21 +25,11 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onUpdate
 }) => {
   return (
-    <div className="p-2 h-full">
-      <div className="mb-4">
-        <button
-          onClick={onAddVzor}
-          disabled={isLocked}
-          className={`px-3 py-1 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded text-xs hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          Pridať vzor
-        </button>
-      </div>
-      <div className="h-full overflow-auto">
+    <div className="p-2 h-full flex flex-col">
+      <div className="flex-1 overflow-auto">
         <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white w-10"></th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Typ</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Verzia</th>
@@ -49,6 +39,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white w-20">Akcie</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white w-24">Schválené</th>
             </tr>
           </thead>
           <tbody>
@@ -58,16 +49,6 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                 className={`${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} cursor-pointer`}
                 onClick={() => onEdit(item)}
               >
-                <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                  <input
-                    type="radio"
-                    checked={item.selected || false}
-                    onChange={() => onToggleSelect(item)}
-                    disabled={isLocked}
-                    className="cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cisloCP}
                 </td>
@@ -77,9 +58,11 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                       ? 'bg-blue-100 text-blue-800'
                       : item.typ === 'nabytok'
                       ? 'bg-green-100 text-green-800'
+                      : item.typ === 'schody'
+                      ? 'bg-purple-100 text-purple-800'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : 'Púzdra'}
+                    {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
                   </span>
                 </td>
                 <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
@@ -140,17 +123,41 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     </button>
                   </div>
                 </td>
+                <td
+                  className={`border px-3 py-2 text-center cursor-pointer ${isDark ? 'border-gray-600' : 'border-gray-300'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isLocked) onToggleSelect(item);
+                  }}
+                >
+                  <input
+                    type="radio"
+                    checked={item.selected || false}
+                    onChange={() => {}}
+                    disabled={isLocked}
+                    className="cursor-pointer pointer-events-none"
+                  />
+                </td>
               </tr>
             ))}
             {items.length === 0 && (
               <tr>
                 <td colSpan={10} className={`border px-3 py-8 text-center ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
-                  Žiadne cenové ponuky. Kliknite na "Pridať vzor" pre vytvorenie novej cenovej ponuky.
+                  Žiadne cenové ponuky. Kliknite na "Pridať cenovú ponuku" pre vytvorenie novej cenovej ponuky.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+      <div className="mt-2 flex justify-start">
+        <button
+          onClick={onAddVzor}
+          disabled={isLocked}
+          className={`px-6 py-3 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg text-sm hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Pridať cenovú ponuku
+        </button>
       </div>
     </div>
   );

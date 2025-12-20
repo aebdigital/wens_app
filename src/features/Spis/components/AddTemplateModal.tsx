@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { DvereForm } from './DvereForm';
 import { NabytokForm } from './NabytokForm';
+import { SchodyForm } from './SchodyForm';
 import { PuzdraForm } from './PuzdraForm';
-import { DvereData, NabytokData, PuzdraData } from '../types';
+import { DvereData, NabytokData, SchodyData, PuzdraData } from '../types';
 
 interface AddTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (type: 'dvere' | 'nabytok' | 'puzdra', data: any) => void;
-  initialTab?: 'dvere' | 'nabytok' | 'puzdra';
+  onSave: (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any) => void;
+  initialTab?: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
   // Props for header info
   firma: string;
   priezvisko: string;
@@ -36,10 +37,10 @@ interface AddTemplateModalProps {
   };
   // Initial data for editing
   editingData?: {
-    type: 'dvere' | 'nabytok' | 'puzdra';
+    type: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
     data: any;
   };
-  visibleTabs?: ('dvere' | 'nabytok' | 'puzdra')[];
+  visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'puzdra')[];
   isLocked?: boolean;
 }
 
@@ -63,14 +64,14 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   creatorEmail,
   architectInfo,
   editingData,
-  visibleTabs = ['dvere', 'nabytok', 'puzdra'],
+  visibleTabs = ['dvere', 'nabytok', 'schody', 'puzdra'],
   isLocked = false
 }) => {
   const { isDark } = useTheme();
   
   // Ensure initialTab is valid within visibleTabs
   const validInitialTab = visibleTabs.includes(initialTab) ? initialTab : visibleTabs[0];
-  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'puzdra'>(validInitialTab);
+  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'schody' | 'puzdra'>(validInitialTab);
 
   // Initialize state with default values or editing data
   const [dvereData, setDvereData] = useState<DvereData>(() => {
@@ -136,9 +137,51 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       return editingData.data;
     }
     return {
-      popisVyrobkov: 'Dyhované stupne s DTD výplňou. Hrany stupňov a podstupňov sú chránené náglejkom z tvrdého dreva.',
+      popisVyrobkov: '',
       vyrobkyTyp: 'Stupeň',
       vyrobkyPopis: 'neviditeľný spoj, DTD + dyhy dub prírodný',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      vyrobky: Array(1).fill(null).map((_, i) => ({
+        id: i + 1,
+        nazov: i === 0 ? 'stupeň' : '',
+        rozmer: i === 0 ? '1000x280x40' : '',
+        material: i < 3 ? 'DTD - dyha dub prírodný' : '',
+        poznamka: '',
+        ks: i < 3 ? 1 : 0,
+        cenaKs: i === 0 ? 89 : 0,
+        cenaCelkom: i === 0 ? 89 : 0,
+      })),
+      priplatky: [
+        { id: 1, nazov: 'dyha dub prírodný + 5%', ks: 1, cenaKs: 16.35, cenaCelkom: 16.35 },
+      ],
+      zlavaPercent: 5,
+      kovanie: [
+        { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
+      ],
+      montaz: [
+        { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },
+      ],
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+  });
+
+  const [schodyData, setSchodyData] = useState<SchodyData>(() => {
+    if (editingData?.type === 'schody' && editingData.data) {
+      return editingData.data;
+    }
+    return {
+      popisVyrobkov: '',
+      vyrobkyTyp: 'Stupeň',
+      vyrobkyPopis: 'neviditeľný spoj, DTD + dyhy dub prírodný',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
       vyrobky: Array(1).fill(null).map((_, i) => ({
         id: i + 1,
         nazov: i === 0 ? 'stupeň' : '',
@@ -194,10 +237,20 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     };
   });
 
-  // Update active tab if editing data changes (though usually modal is remounted)
+  // Update active tab and form data if editing data changes
   useEffect(() => {
     if (editingData?.type) {
       setActiveTab(editingData.type);
+      // Update the corresponding form data when editing
+      if (editingData.type === 'dvere' && editingData.data) {
+        setDvereData(editingData.data);
+      } else if (editingData.type === 'nabytok' && editingData.data) {
+        setNabytokData(editingData.data);
+      } else if (editingData.type === 'schody' && editingData.data) {
+        setSchodyData(editingData.data);
+      } else if (editingData.type === 'puzdra' && editingData.data) {
+        setPuzdraData(editingData.data);
+      }
     }
   }, [editingData]);
 
@@ -205,6 +258,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     let dataToSave;
     if (activeTab === 'dvere') dataToSave = dvereData;
     else if (activeTab === 'nabytok') dataToSave = nabytokData;
+    else if (activeTab === 'schody') dataToSave = schodyData;
     else dataToSave = puzdraData;
 
     onSave(activeTab, dataToSave);
@@ -245,7 +299,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : 'Púzdra'}
+                  {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : tab === 'schody' ? 'Schody' : 'Púzdra'}
                 </button>
               ))}
             </div>
@@ -291,18 +345,48 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             />
           )}
           {activeTab === 'nabytok' && (
-            <NabytokForm 
-              data={nabytokData} 
-              onChange={setNabytokData} 
+            <NabytokForm
+              data={nabytokData}
+              onChange={setNabytokData}
               isDark={isDark}
               headerInfo={{
-                firma: firma || priezvisko + ' ' + meno,
-                ulica,
-                mesto,
-                psc,
-                telefon,
-                email,
-                vypracoval
+                customer: {
+                  firma: firma,
+                  meno: meno,
+                  priezvisko: priezvisko,
+                  ulica,
+                  mesto,
+                  psc,
+                  telefon,
+                  email,
+                },
+                architect: architectInfo,
+                vypracoval,
+                telefon: creatorPhone || '',
+                email: creatorEmail || ''
+              }}
+            />
+          )}
+          {activeTab === 'schody' && (
+            <SchodyForm
+              data={schodyData}
+              onChange={setSchodyData}
+              isDark={isDark}
+              headerInfo={{
+                customer: {
+                  firma: firma,
+                  meno: meno,
+                  priezvisko: priezvisko,
+                  ulica,
+                  mesto,
+                  psc,
+                  telefon,
+                  email,
+                },
+                architect: architectInfo,
+                vypracoval,
+                telefon: creatorPhone || '',
+                email: creatorEmail || ''
               }}
             />
           )}

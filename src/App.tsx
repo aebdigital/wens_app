@@ -4,12 +4,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContactsProvider } from './contexts/ContactsContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ProductsProvider } from './contexts/ProductsContext';
 import AuthWrapper from './components/AuthWrapper';
 import Spis from './components/Spis';
 import Objednavky from './components/Objednavky';
 import Kontakty from './components/Kontakty';
 import Nastavenia from './components/Nastavenia';
 import Zamestnanci from './components/Zamestnanci';
+import Dovolenky from './components/Dovolenky';
 import Ulohy from './components/Ulohy';
 import Layout from './components/layout/Layout';
 import { TaskPopup } from './components/tasks/TaskPopup';
@@ -35,6 +37,7 @@ const AppContent: React.FC = () => {
         <Route path="/objednavky" element={<Objednavky />} />
         <Route path="/kontakty" element={<Kontakty />} />
         <Route path="/zamestnanci" element={<Zamestnanci />} />
+        <Route path="/dovolenky" element={<Dovolenky />} />
         <Route path="/nastavenia" element={<Nastavenia />} />
         <Route path="/ulohy" element={<Ulohy />} />
       </Routes>
@@ -49,7 +52,9 @@ function App() {
         <AuthProvider>
           <ContactsProvider>
             <TasksProvider>
-              <AppContent />
+              <ProductsProvider>
+                <AppContent />
+              </ProductsProvider>
             </TasksProvider>
           </ContactsProvider>
         </AuthProvider>

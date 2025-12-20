@@ -46,7 +46,9 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   showArchitectInfo,
   onToggleArchitectInfo
 }) => {
-  const customerName = headerInfo.customer ? (headerInfo.customer.firma || `${headerInfo.customer.priezvisko} ${headerInfo.customer.meno}`) : headerInfo.firma;
+  const customerName = headerInfo.customer
+    ? (`${headerInfo.customer.priezvisko || ''} ${headerInfo.customer.meno || ''}`.trim() || headerInfo.customer.firma)
+    : headerInfo.firma;
   const customerAddress = headerInfo.customer ? headerInfo.customer.ulica : headerInfo.ulica;
   const customerCity = headerInfo.customer ? `${headerInfo.customer.mesto} ${headerInfo.customer.psc}` : `${headerInfo.mesto} ${headerInfo.psc}`;
   const customerPhone = headerInfo.customer ? headerInfo.customer.telefon : headerInfo.telefon;
@@ -77,7 +79,7 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
             </div>
             <div className={`text-xs space-y-1 ${!showCustomerInfo ? 'opacity-50' : ''}`}>
                 <div className="flex gap-2">
-                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>#firma:</span>
+                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>#meno:</span>
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{customerName}</span>
                 </div>
                 <div className="flex gap-2">

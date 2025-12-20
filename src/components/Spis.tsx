@@ -199,9 +199,9 @@ const Spis = () => {
   // --- Table Configuration ---
 
   const columns: Column<SpisEntry>[] = [
-    { 
-      key: 'stav', 
-      label: 'Stav', 
+    {
+      key: 'stav',
+      label: 'Stav',
       render: (val, item) => (
         <span className={`px-2 py-1 rounded ${
           item.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
@@ -209,27 +209,27 @@ const Spis = () => {
         }`}>
           {val}
         </span>
-      ) 
+      )
     },
-    { 
-      key: 'cisloCP', 
-      label: 'Číslo CP', 
-      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span> 
+    {
+      key: 'cisloCP',
+      label: 'Číslo CP',
+      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span>
     },
     { key: 'cisloZakazky', label: 'Číslo zákazky' },
-    { key: 'datum', label: 'Dátum' },
+    { key: 'datum', label: 'Dátum', isDate: true },
     { key: 'kontaktnaOsoba', label: 'Konečný zákazník' },
     { key: 'architekt', label: 'Architekt' },
     { key: 'realizator', label: 'Realizátor' },
-    { 
-      key: 'popis', 
-      label: 'Popis', 
-      render: (val) => <div className="max-w-xs truncate" title={val}>{val}</div> 
+    {
+      key: 'popis',
+      label: 'Popis',
+      render: (val) => <div className="max-w-xs truncate" title={val}>{val}</div>
     },
     { key: 'firma', label: 'Firma' },
     { key: 'spracovatel', label: 'Vypracoval' },
     { key: 'kategoria', label: 'Kategória' },
-    { key: 'terminDodania', label: 'Termín dokončenia' }
+    { key: 'terminDodania', label: 'Termín dokončenia', isDate: true }
   ];
 
   return (
@@ -259,6 +259,7 @@ const Spis = () => {
         onRowClick={handleRowClick}
         highlightedIds={highlightedProjectIds}
         highlightKey="cisloCP"
+        rowClassName={(item) => item.cisloZakazky ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
       />
 
       {/* Modal */}

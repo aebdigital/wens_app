@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useProducts } from '../../../contexts/ProductsContext';
 import { PuzdraForm } from './PuzdraForm';
 import { PuzdraData } from '../types';
 
@@ -29,6 +30,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   orderNumber
 }) => {
   const { isDark } = useTheme();
+  const { addProduct, products } = useProducts();
 
   // Initialize state with default values or editing data
   const [orderData, setOrderData] = useState<PuzdraData>(() => {
@@ -64,6 +66,25 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   }, [editingData]);
 
   const handleSave = () => {
+    // Save new products
+    if (orderData.dodavatel?.nazov) {
+        orderData.polozky.forEach(item => {
+            if (item.nazov && item.nazov.trim() !== '') {
+                addProduct({
+                    name: item.nazov,
+                    kod: item.kod, // Save the code
+                    supplier: orderData.dodavatel.nazov,
+                    supplierDetails: {
+                        ulica: orderData.dodavatel.ulica,
+                        mesto: orderData.dodavatel.mesto,
+                        tel: orderData.dodavatel.tel,
+                        email: orderData.dodavatel.email
+                    }
+                });
+            }
+        });
+    }
+
     onSave(orderData);
     onClose();
   };
@@ -85,15 +106,6 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
                 alt="WENS door"
                 className="h-8"
               />
-            </div>
-            <div>
-                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                Nová Objednávka
-                </h2>
-                <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'} flex gap-4`}>
-                    <span>Kontakt: <span className={isDark ? 'text-gray-300' : 'text-gray-800'}>{telefon}</span></span>
-                    <span>Email: <span className={isDark ? 'text-gray-300' : 'text-gray-800'}>{email}</span></span>
-                </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -122,6 +134,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
               telefon,
               email
             }}
+            availableProducts={products}
           />
         </div>
 

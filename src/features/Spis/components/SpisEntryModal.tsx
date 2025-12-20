@@ -13,9 +13,11 @@ import { VyrobneVykresyTab } from './VyrobneVykresyTab';
 import { TechnickeVykresyTab } from './TechnickeVykresyTab';
 import { AddTemplateModal } from './AddTemplateModal';
 import { AddOrderModal } from './AddOrderModal';
+import { ContactChangesModal } from './ContactChangesModal';
 import { generatePDF } from '../utils/pdfGenerator';
 import { useSpisEntryLogic } from '../hooks/useSpisEntryLogic';
 import { TaskCreateModal } from '../../../components/tasks/TaskCreateModal';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 // Custom confirmation dialog component
 interface ConfirmDialogProps {
@@ -150,7 +152,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showDeleteNoteConfirm, setShowDeleteNoteConfirm] = useState(false);
   const [noteToDeleteIndex, setNoteToDeleteIndex] = useState<number | null>(null);
-  const [vzorModalTabs, setVzorModalTabs] = useState<('dvere' | 'nabytok' | 'puzdra')[]>(['dvere', 'nabytok', 'puzdra']);
+  const [vzorModalTabs, setVzorModalTabs] = useState<('dvere' | 'nabytok' | 'schody' | 'puzdra')[]>(['dvere', 'nabytok', 'schody', 'puzdra']);
   const [isSaving, setIsSaving] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
 
@@ -179,7 +181,12 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     lastSavedJson,
     nextVariantCP,
     nextOrderNumber,
-    userPhone
+    userPhone,
+    // Contact changes modal
+    showContactChangesModal,
+    pendingContactChanges,
+    handleApplyContactChanges,
+    handleCancelContactChanges
   } = useSpisEntryLogic(initialEntry, entries, isOpen, setFirmaOptions, firmaOptions, onSave);
 
   const handleSaveClick = async () => {
@@ -246,8 +253,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             totalQuantity = selectedItem.data.vyrobky.reduce((sum: number, p: any) => {
                 return sum + (Number(p.ks) || 0) + (Number(p.ksZarubna) || 0);
             }, 0);
-        } else if (selectedItem.typ === 'nabytok' && selectedItem.data.vyrobky) {
-             // For furniture, quantity logic assumes 'ks' field
+        } else if ((selectedItem.typ === 'nabytok' || selectedItem.typ === 'schody') && selectedItem.data.vyrobky) {
+             // For furniture and stairs, quantity logic uses 'ks' field
              totalQuantity = selectedItem.data.vyrobky.reduce((sum: number, p: any) => sum + (Number(p.ks) || 0), 0);
         }
         // Puzdra typically don't have this specific KS mapping request mentioned, but if so:
@@ -289,9 +296,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
               {[
                 { id: 'vseobecne', label: 'Všeobecné' },
                 { id: 'cenove-ponuky', label: 'Cenové ponuky' },
-                { id: 'vzor-nabytok', label: 'Vzor - Nábytok' },
                 { id: 'objednavky', label: 'Objednávky' },
-                { id: 'emaily', label: 'Emaily' },
                 { id: 'meranie-dokumenty', label: 'Meranie a Dokumenty' },
                 { id: 'fotky', label: 'Fotky' },
                 { id: 'vyrobne-vykresy', label: 'Výrobné výkresy' },
@@ -387,12 +392,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                                  <input
-                                    type="date"
+                                  <CustomDatePicker
                                     value={item.datum || ''}
-                                    onChange={(e) => {
+                                    onChange={(val) => {
                                       const newItems = [...formData.popisItems];
-                                      newItems[index].datum = e.target.value;
+                                      newItems[index].datum = val;
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
                                     disabled={isLocked}
@@ -479,21 +483,19 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       isDark={isDark}
                       isLocked={isLocked}
                       onAddVzor={() => {
-                        setVzorModalTabs(['dvere', 'nabytok']);
+                        setVzorModalTabs(['dvere', 'nabytok', 'schody']);
                         setEditingOfferId(null);
-                        setEditingOfferData(undefined);
+                        // Pre-fill with data from last quote if one exists
+                        if (formData.cenovePonukyItems.length > 0) {
+                          const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
+                          setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
+                        } else {
+                          setEditingOfferData(undefined);
+                        }
                         setShowVzorModal(true);
                       }}
                       onToggleSelect={handleToggleSelect}
                     />
-                  )}
-
-                  {activeTab === 'vzor-nabytok' && (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-gray-500 text-lg">Bude doplnené neskôr s AI automatizáciou</p>
-                      </div>
-                    </div>
                   )}
 
                   {activeTab === 'objednavky' && (
@@ -509,14 +511,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         setShowOrderModal(true);
                       }}
                       onEdit={handleEditOrderAction}
-                    />
-                  )}
-
-                  {activeTab === 'emaily' && (
-                    <EmailyTab 
-                      isDark={isDark} 
-                      items={formData.emailItems}
-                      onUpdate={(items: any) => setFormData(prev => ({...prev, emailItems: items}))}
+                      headerInfo={{
+                        vypracoval: formData.vypracoval,
+                        telefon: userPhone,
+                        email: user?.email || ''
+                      }}
                     />
                   )}
 
@@ -650,6 +649,23 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                 </svg>
                 {isLocked ? 'Odomknúť' : 'Zamknúť'}
               </button>
+              <button
+                onClick={() => setShowTaskModal(true)}
+                className="flex-1 px-2 py-3 text-xs flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition-colors font-semibold shadow-sm"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Úloha
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                disabled={isLocked}
+                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                Vymazať
+              </button>
             </div>
           </div>
         </div>
@@ -677,7 +693,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         email={formData.email}
         vypracoval={formData.vypracoval}
         predmet={formData.predmet}
-        fullCisloCP={editingOfferData ? editingOfferData.cisloCP : nextVariantCP}
+        fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
         creatorPhone={userPhone}
         creatorEmail={user?.email}
         architectInfo={{
@@ -747,6 +763,15 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
           setShowCloseConfirm(false);
           onClose();
         }}
+        isDark={isDark}
+      />
+
+      {/* Contact Changes Modal */}
+      <ContactChangesModal
+        isOpen={showContactChangesModal}
+        onClose={handleCancelContactChanges}
+        onApply={handleApplyContactChanges}
+        changes={pendingContactChanges}
         isDark={isDark}
       />
     </>

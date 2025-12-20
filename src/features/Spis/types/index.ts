@@ -117,10 +117,10 @@ export interface CenovaPonukaItem {
   odoslane: string;
   vytvoril: string;
   popis: string;
-  typ: 'dvere' | 'nabytok' | 'puzdra';
+  typ: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
   cenaBezDPH: number;
   cenaSDPH: number;
-  data: any; // We can refine this later with DvereData | NabytokData | PuzdraData
+  data: any; // We can refine this later with DvereData | NabytokData | SchodyData | PuzdraData
   selected?: boolean;
 }
 
@@ -144,12 +144,20 @@ export interface DvereData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
+  manualCenaSDPH?: number | null; // Override for total price
+  // Editable footer fields
+  vypracoval?: string;
+  kontakt?: string;
+  emailVypracoval?: string;
+  datum?: string;
 }
 
 export interface NabytokData {
   popisVyrobkov: string;
   vyrobkyTyp: string;
   vyrobkyPopis: string;
+  showCustomerInfo: boolean;
+  showArchitectInfo: boolean;
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
@@ -162,6 +170,45 @@ export interface NabytokData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
+  manualCenaSDPH?: number | null; // Override for total price
+  // Editable footer fields
+  vypracoval?: string;
+  kontakt?: string;
+  emailVypracoval?: string;
+  datum?: string;
+}
+
+export interface SchodyData {
+  popisVyrobkov: string;
+  vyrobkyTyp: string;
+  vyrobkyPopis: string;
+  showCustomerInfo: boolean;
+  showArchitectInfo: boolean;
+  vyrobky: any[];
+  priplatky: any[];
+  zlavaPercent: number;
+  kovanie: any[];
+  montaz: any[];
+  platnostPonuky: string;
+  miestoDodavky: string;
+  zameranie: string;
+  terminDodania: string;
+  platba1Percent: number;
+  platba2Percent: number;
+  platba3Percent: number;
+  manualCenaSDPH?: number | null; // Override for total price
+  // Editable footer fields
+  vypracoval?: string;
+  kontakt?: string;
+  emailVypracoval?: string;
+  datum?: string;
+}
+
+export interface PuzdraPolozka {
+  id: number;
+  nazov: string;
+  kod?: string;
+  mnozstvo: number;
 }
 
 export interface PuzdraData {
@@ -174,10 +221,15 @@ export interface PuzdraData {
     email2: string;
   };
   zakazka: string;
-  polozky: any[];
+  polozky: PuzdraPolozka[];
   tovarDorucitNaAdresu: {
     firma: string;
     ulica: string;
     mesto: string;
   };
+  // Editable header fields
+  datum?: string;
+  spracoval?: string;
+  kontakt?: string;
+  emailSpracoval?: string;
 }

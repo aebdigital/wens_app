@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SpisFormData } from '../types';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface VseobecneSidebarProps {
   formData: SpisFormData;
@@ -19,13 +20,23 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
   const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>([]);
 
-  const inputClass = `text-xs border border-gray-300 px-1 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`;
+  const getInputClass = (widthClass = 'flex-1') => {
+    const base = `text-xs border px-1 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28] ${widthClass}`;
+    if (isLocked) {
+        return `${base} cursor-not-allowed ${isDark ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+    }
+    return `${base} ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
+  };
+
+  const labelClass = `text-xs w-24 flex-shrink-0 ${isDark ? 'text-white' : 'text-gray-600'}`;
 
   return (
     <div
       className={`w-full h-full border rounded-lg overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
       style={{
-        boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+        boxShadow: isDark 
+          ? 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3)' 
+          : 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
       }}
     >
       <div className="p-2">
@@ -34,66 +45,67 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
           <div className="space-y-1 text-xs">
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Číslo CP</label>
+                <label className={labelClass}>Číslo CP</label>
                 <input
                   type="text"
                   value={formData.predmet}
                   onChange={(e) => setFormData(prev => ({...prev, predmet: e.target.value}))}
                   placeholder="CP2025/xxxx"
                   disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
+                  className={getInputClass()}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Číslo zákazky</label>
+                <label className={labelClass}>Číslo zákazky</label>
                 <input
                   type="text"
                   value={formData.cisloZakazky}
                   onChange={(e) => setFormData(prev => ({...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '')}))}
                   disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
+                  className={getInputClass()}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <span className="text-gray-600 text-xs w-24 flex-shrink-0">Odsúhlasená CP</span>
+                <span className={labelClass}>Odsúhlasená CP</span>
                 <div className="flex gap-1 items-center">
                   <input
                     type="text"
                     value={formData.odsuhlesenaKS1}
                     onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS1: e.target.value}))}
                     disabled={true}
-                    className={`w-20 ${inputClass}`}
+                    className={getInputClass('w-20')}
                   />
-                  <span className="text-gray-600 text-xs px-1">KS</span>
+                  <span className={`text-xs px-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>KS</span>
                   <input
                     type="text"
                     value={formData.odsuhlesenaKS2}
                     onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS2: e.target.value}))}
                     disabled={true}
-                    className={`w-20 ${inputClass}`}
+                    className={getInputClass('w-20')}
                   />
                 </div>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Dátum</label>
-                <input
-                  type="date"
-                  value={formData.ochranaDatum}
-                  onChange={(e) => setFormData(prev => ({...prev, ochranaDatum: e.target.value}))}
-                  disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
-                />
+                <label className={labelClass}>Dátum</label>
+                <div className="flex-1">
+                  <CustomDatePicker
+                    value={formData.ochranaDatum}
+                    onChange={(val) => setFormData(prev => ({...prev, ochranaDatum: val}))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                  />
+                </div>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Firma</label>
+                <label className={labelClass}>Firma</label>
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -121,11 +133,11 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     }}
                     placeholder="Zadajte alebo vyberte firmu"
                     disabled={isLocked}
-                    className={`w-full ${inputClass}`}
+                    className={getInputClass('w-full')}
                   />
                   {showFirmaDropdown && filteredFirmaOptions.length > 0 && !isLocked && (
                     <div
-                      className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded z-50 max-h-32 overflow-y-auto"
+                      className={`absolute top-full left-0 right-0 border rounded z-50 max-h-32 overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                       style={{
                         boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
                       }}
@@ -137,7 +149,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                             setFormData(prev => ({...prev, firma: option}));
                             setShowFirmaDropdown(false);
                           }}
-                          className="px-2 py-1 text-xs cursor-pointer hover:bg-gray-100"
+                          className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-200 hover:bg-gray-600' : 'text-gray-800 hover:bg-gray-100'}`}
                         >
                           {option}
                         </div>
@@ -149,43 +161,43 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Vypracoval</label>
+                <label className={labelClass}>Vypracoval</label>
                 <input
                   type="text"
                   value={formData.vypracoval}
                   onChange={(e) => setFormData(prev => ({...prev, vypracoval: e.target.value}))}
                   disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
+                  className={getInputClass()}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Stav</label>
+                <label className={labelClass}>Stav</label>
                 <select
                   value={formData.stav}
                   onChange={(e) => setFormData(prev => ({...prev, stav: e.target.value}))}
                   disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
+                  className={getInputClass()}
                 >
                   <option value="CP">CP</option>
+                  <option value="Záloha FA">Záloha</option>
                   <option value="Výroba">Výroba</option>
-                  <option value="Záloha FA">Záloha FA</option>
-                  <option value="Zrušené">Zrušené</option>
-                  <option value="Dokončené">Dokončené</option>
                   <option value="Rozpracované">Rozpracované</option>
+                  <option value="Dokončené">Dokončené</option>
                   <option value="Uzavreté">Uzavreté</option>
+                  <option value="Zrušené">Zrušené</option>
                 </select>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Kategória</label>
+                <label className={labelClass}>Kategória</label>
                 <select
                   value={formData.kategoria}
                   onChange={(e) => setFormData(prev => ({...prev, kategoria: e.target.value}))}
                   disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
+                  className={getInputClass()}
                 >
                   <option value=""></option>
                   <option value="Dvere">Dvere</option>
@@ -203,14 +215,15 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-24 flex-shrink-0">Termín dokončenia</label>
-                <input
-                  type="date"
-                  value={formData.terminDokoncenia || ''}
-                  onChange={(e) => setFormData(prev => ({...prev, terminDokoncenia: e.target.value}))}
-                  disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
-                />
+                <label className={labelClass}>Termín dokončenia</label>
+                <div className="flex-1">
+                  <CustomDatePicker
+                    value={formData.terminDokoncenia || ''}
+                    onChange={(val) => setFormData(prev => ({...prev, terminDokoncenia: val}))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -218,29 +231,29 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
 
         {/* Financie section */}
         <div className="mb-2">
-          <div className="space-y-1 text-xs bg-gray-200 rounded p-2 border">
-            <h3 className="text-xs font-semibold text-gray-700 mb-1">Financie</h3>
+          <div className={`space-y-1 text-xs rounded p-2 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-gray-200 border-gray-300'}`}>
+            <h3 className={`text-xs font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Financie</h3>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-20 flex-shrink-0">Cena</label>
+                <label className={`${labelClass} w-20`}>Cena</label>
                 <input
                   type="text"
                   value={formData.cena}
                   onChange={(e) => setFormData(prev => ({...prev, cena: e.target.value}))}
                   disabled={true}
-                  className={`w-24 ${inputClass}`}
+                  className={getInputClass('w-24')}
                 />
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-20 flex-shrink-0">Provízia</label>
+                <label className={`${labelClass} w-20`}>Provízia</label>
                 <input
                   type="text"
                   value={formData.provizia}
                   onChange={(e) => setFormData(prev => ({...prev, provizia: e.target.value.replace(/[^0-9.,]/g, '')}))}
                   disabled={isLocked}
-                  className={`w-24 ${inputClass}`}
+                  className={getInputClass('w-24')}
                 />
                 <div className="flex items-center text-xs ml-2">
                   <input
@@ -250,65 +263,68 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     disabled={isLocked}
                     className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
-                  <label>Vybavené</label>
+                  <label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Vybavené</label>
                 </div>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-20 flex-shrink-0">Záloha 1</label>
+                <label className={`${labelClass} w-20`}>Záloha 1</label>
                 <input
                   type="text"
                   value={formData.zaloha1}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
                   disabled={true}
-                  className={`w-24 ${inputClass}`}
+                  className={getInputClass('w-24')}
                 />
-                <input
-                  type="date"
-                  value={formData.zaloha1Datum}
-                  onChange={(e) => setFormData(prev => ({...prev, zaloha1Datum: e.target.value}))}
-                  disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
-                />
+                <div className="flex-1">
+                  <CustomDatePicker
+                    value={formData.zaloha1Datum}
+                    onChange={(val) => setFormData(prev => ({...prev, zaloha1Datum: val}))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                  />
+                </div>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-20 flex-shrink-0">Záloha 2</label>
+                <label className={`${labelClass} w-20`}>Záloha 2</label>
                 <input
                   type="text"
                   value={formData.zaloha2}
                   onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
                   disabled={true}
-                  className={`w-24 ${inputClass}`}
+                  className={getInputClass('w-24')}
                 />
-                <input
-                  type="date"
-                  value={formData.zaloha2Datum}
-                  onChange={(e) => setFormData(prev => ({...prev, zaloha2Datum: e.target.value}))}
-                  disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
-                />
+                <div className="flex-1">
+                  <CustomDatePicker
+                    value={formData.zaloha2Datum}
+                    onChange={(val) => setFormData(prev => ({...prev, zaloha2Datum: val}))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                  />
+                </div>
               </div>
             </div>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">
-                <label className="text-gray-600 text-xs w-20 flex-shrink-0">Doplatok</label>
+                <label className={`${labelClass} w-20`}>Doplatok</label>
                 <input
                   type="text"
                   value={formData.doplatok}
                   onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
                   disabled={true}
-                  className={`w-24 ${inputClass}`}
+                  className={getInputClass('w-24')}
                 />
-                <input
-                  type="date"
-                  value={formData.doplatokDatum}
-                  onChange={(e) => setFormData(prev => ({...prev, doplatokDatum: e.target.value}))}
-                  disabled={isLocked}
-                  className={`flex-1 ${inputClass}`}
-                />
+                <div className="flex-1">
+                  <CustomDatePicker
+                    value={formData.doplatokDatum}
+                    onChange={(val) => setFormData(prev => ({...prev, doplatokDatum: val}))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                  />
+                </div>
               </div>
             </div>
           </div>

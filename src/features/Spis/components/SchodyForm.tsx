@@ -1,13 +1,13 @@
 import React from 'react';
-import { NabytokData } from '../types';
+import { SchodyData } from '../types';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
 import { GenericItemsTable } from './common/GenericItemsTable';
-import { calculateNabytokTotals } from '../utils/priceCalculations';
+import { calculateSchodyTotals } from '../utils/priceCalculations';
 
-interface NabytokFormProps {
-  data: NabytokData;
-  onChange: (data: NabytokData) => void;
+interface SchodyFormProps {
+  data: SchodyData;
+  onChange: (data: SchodyData) => void;
   isDark: boolean;
   headerInfo: {
     customer?: {
@@ -46,11 +46,11 @@ const DEFAULT_PLATBA1 = 60;
 const DEFAULT_PLATBA2 = 22;
 const DEFAULT_PLATBA3 = 18;
 
-export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark, headerInfo }) => {
-  const totals = calculateNabytokTotals(data);
+export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, headerInfo }) => {
+  const totals = calculateSchodyTotals(data);
 
   // Helper to reset payment overrides when items change
-  const onChangeWithPaymentReset = (newData: NabytokData) => {
+  const onChangeWithPaymentReset = (newData: SchodyData) => {
     onChange({
       ...newData,
       manualCenaSDPH: undefined,
@@ -63,10 +63,10 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
     { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov' },
-    { 
-      key: 'ks' as keyof typeof data.priplatky[0], 
-      label: 'ks', 
-      width: 'w-16', 
+    {
+      key: 'ks' as keyof typeof data.priplatky[0],
+      label: 'ks',
+      width: 'w-16',
       align: 'center' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
@@ -80,10 +80,10 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         />
       )
     },
-    { 
-      key: 'cenaKs' as keyof typeof data.priplatky[0], 
-      label: 'cena / ks', 
-      width: 'w-24', 
+    {
+      key: 'cenaKs' as keyof typeof data.priplatky[0],
+      label: 'cena / ks',
+      width: 'w-24',
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
          <div className="flex items-center justify-end">
@@ -100,10 +100,10 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
          </div>
       )
     },
-    { 
-      key: 'cenaCelkom' as keyof typeof data.priplatky[0], 
-      label: 'cena celkom', 
-      width: 'w-24', 
+    {
+      key: 'cenaCelkom' as keyof typeof data.priplatky[0],
+      label: 'cena celkom',
+      width: 'w-24',
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }
@@ -112,10 +112,10 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
   const commonColumns = createColumns();
 
   return (
-    <QuoteLayout 
-        isDark={isDark} 
-        headerInfo={headerInfo} 
-        data={data} 
+    <QuoteLayout
+        isDark={isDark}
+        headerInfo={headerInfo}
+        data={data}
         onChange={onChange}
         totals={totals}
     >

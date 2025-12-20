@@ -16,6 +16,7 @@ interface GenericItemsTableProps<T extends { id: string | number }> {
   isDark: boolean;
   title?: string;
   footerContent?: React.ReactNode;
+  mergeFirstTwoHeaders?: boolean; // If true, merge first two column headers into title
 }
 
 export const GenericItemsTable = <T extends { id: string | number }>({
@@ -25,25 +26,49 @@ export const GenericItemsTable = <T extends { id: string | number }>({
   onAddItem,
   isDark,
   title,
-  footerContent
+  footerContent,
+  mergeFirstTwoHeaders = false
 }: GenericItemsTableProps<T>) => {
   return (
     <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} overflow-hidden`}>
-      <div className={`px-4 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
-        <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>{title}</h3>
-      </div>
+      {/* Only show title header if not merging into table header */}
+      {!mergeFirstTwoHeaders && (
+        <div className={`px-4 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
+          <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>{title}</h3>
+        </div>
+      )}
       <div className="overflow-x-visible">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
-              {columns.map((col, idx) => (
-                <th 
-                  key={String(col.key) + idx} 
-                  className={`px-2 py-2 text-${col.align || 'left'} border-r border-white/20 ${col.width || ''} ${idx === 0 ? 'pl-4' : ''}`}
-                >
-                  {col.label}
-                </th>
-              ))}
+              {mergeFirstTwoHeaders ? (
+                <>
+                  {/* First column shows table title instead of column label */}
+                  <th
+                    className="px-2 py-2 text-left border-r border-white/20 pl-4"
+                  >
+                    {title?.replace(':', '')}
+                  </th>
+                  {/* Remaining columns from index 1 onwards */}
+                  {columns.slice(1).map((col, idx) => (
+                    <th
+                      key={String(col.key) + idx}
+                      className={`px-2 py-2 text-${col.align || 'left'} border-r border-white/20 ${col.width || ''}`}
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </>
+              ) : (
+                columns.map((col, idx) => (
+                  <th
+                    key={String(col.key) + idx}
+                    className={`px-2 py-2 text-${col.align || 'left'} border-r border-white/20 ${col.width || ''} ${idx === 0 ? 'pl-4' : ''}`}
+                  >
+                    {col.label}
+                  </th>
+                ))
+              )}
               <th className="px-2 py-2 text-center w-8"></th>
             </tr>
           </thead>

@@ -58,3 +58,21 @@ code {
     transform: translateX(-10px);
   }
 }
+
+/* White date picker icons for table header date inputs */
+.date-input-white::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.date-input-white::-webkit-datetime-edit {
+  color: white;
+}
+
+.date-input-white::-webkit-datetime-edit-fields-wrapper {
+  color: white;
+}
+
+.date-input-white::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}

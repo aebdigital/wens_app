@@ -1,4 +1,6 @@
 import React from 'react';
+import { generateOrderPDF, OrderPDFData } from '../utils/pdfGenerator';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface ObjednavkyTabProps {
   items: any[];
@@ -10,6 +12,11 @@ interface ObjednavkyTabProps {
   isLocked?: boolean;
   onAddVzor: () => void;
   onEdit?: (item: any) => void;
+  headerInfo?: {
+    vypracoval: string;
+    telefon: string;
+    email: string;
+  };
 }
 
 export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
@@ -21,20 +28,31 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
   selectedOrderIndex,
   isLocked = false,
   onAddVzor,
-  onEdit
+  onEdit,
+  headerInfo
 }) => {
+  const handleGeneratePDF = async (item: any) => {
+    if (!item.puzdraData) {
+      alert('Táto objednávka nemá dáta na export do PDF.');
+      return;
+    }
+
+    const pdfData: OrderPDFData = {
+      orderNumber: item.cisloObjednavky || item.id || 'N/A',
+      nazov: item.nazov,
+      data: item.puzdraData,
+      headerInfo: headerInfo || {
+        vypracoval: item.vypracoval || user?.name || '',
+        telefon: user?.telefon || '',
+        email: user?.email || ''
+      }
+    };
+
+    await generateOrderPDF(pdfData);
+  };
   return (
-    <div className="p-2 h-full">
-      <div className="mb-4 flex gap-2">
-        <button
-          onClick={onAddVzor}
-          disabled={isLocked}
-          className={`px-3 py-1 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded text-xs hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          Pridať objednávku
-        </button>
-      </div>
-      <div className="h-full overflow-auto">
+    <div className="p-2 h-full flex flex-col">
+      <div className="flex-1 overflow-auto">
         <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
@@ -52,109 +70,76 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
               // Check if this is the highlighted order from navigation
               const isHighlighted = selectedOrderIndex === index;
 
+              // Format date for display
+              const formatDate = (dateStr: string) => {
+                if (!dateStr) return '-';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('sk-SK');
+              };
+
               return (
-                <tr 
-                  key={item.id || `objednavka-${index}`} 
-                  className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
+                <tr
+                  key={item.id || `objednavka-${index}`}
+                  className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
                   onClick={() => onEdit && onEdit(item)}
                 >
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="text"
-                      value={item.nazov}
-                      onChange={(e) => {
+                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {item.nazov || '-'}
+                  </td>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {item.vypracoval || '-'}
+                  </td>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {formatDate(item.datum)}
+                  </td>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {item.popis || '-'}
+                  </td>
+                  <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {item.cisloObjednavky || '-'}
+                  </td>
+                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
+                    <CustomDatePicker
+                      value={item.dorucene || ''}
+                      onChange={(val) => {
                         const updated = [...items];
-                        updated[index].nazov = e.target.value;
+                        updated[index].dorucene = val;
                         onUpdate(updated);
                       }}
                       disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()} // Prevent row click when editing inline
                       className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
                     />
                   </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="text"
-                      value={item.vypracoval}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[index].vypracoval = e.target.value;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="date"
-                      value={item.datum}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[index].datum = e.target.value;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="text"
-                      value={item.popis}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[index].popis = e.target.value;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="text"
-                      value={item.cisloObjednavky}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[index].cisloObjednavky = e.target.value;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <input
-                      type="text"
-                      value={item.dorucene}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[index].dorucene = e.target.value;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className="border border-gray-300 px-1 py-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isLocked) return;
-                        const updated = items.filter((_, i) => i !== index);
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
-                      className={`px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 font-semibold ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      Odstrániť
-                    </button>
+                  <td className={`border px-2 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGeneratePDF(item);
+                        }}
+                        className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+                        title="Stiahnuť PDF"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLocked) return;
+                          const updated = items.filter((_, i) => i !== index);
+                          onUpdate(updated);
+                        }}
+                        disabled={isLocked}
+                        className={`p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Odstrániť"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -168,6 +153,15 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
             )}
           </tbody>
         </table>
+      </div>
+      <div className="mt-2 flex justify-start">
+        <button
+          onClick={onAddVzor}
+          disabled={isLocked}
+          className={`px-6 py-3 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg text-sm hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Pridať objednávku
+        </button>
       </div>
     </div>
   );

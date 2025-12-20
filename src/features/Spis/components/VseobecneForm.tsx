@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SpisFormData } from '../types';
 import { useContacts } from '../../../contexts/ContactsContext';
+import { RpoAutocomplete } from './common/RpoAutocomplete';
+import { RpoEntity } from '../utils/rpoApi';
 
 interface VseobecneFormProps {
   formData: SpisFormData;
@@ -13,6 +15,16 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
   const { contacts } = useContacts();
   // Removed local activeSource state, now using formData.fakturaciaSource
   const [activeAutocomplete, setActiveAutocomplete] = useState<{field: string, type: string} | null>(null);
+
+  const getInputClass = (customWidth = 'w-full') => {
+    const base = `${customWidth} text-xs border px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28]`;
+    if (isLocked) {
+        return `${base} cursor-not-allowed ${isDark ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+    }
+    return `${base} ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
+  };
+
+  const getHeaderClass = () => `text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`;
 
   const fillFrom = (type: 'zakaznik' | 'architekt' | 'realizator') => {
     // setActiveSource(type); // Removed
@@ -41,6 +53,48 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
         fakturaciaMeno: meno,
         fakturaciaAdresa: adresa
     }));
+  };
+
+  const handleRpoSelect = (entity: RpoEntity, section: 'zakaznik' | 'architekt' | 'realizator') => {
+    const address = entity.address || {};
+    const street = [address.street, address.buildingNumber].filter(Boolean).join(' ');
+    const city = address.municipality || '';
+    const zip = address.postalCode || '';
+    const ico = entity.ico || '';
+    const dic = entity.dic || '';
+    const name = entity.name;
+
+    if (section === 'zakaznik') {
+      setFormData(prev => ({
+        ...prev,
+        priezvisko: name,
+        ulica: street,
+        mesto: city,
+        psc: zip,
+        ico: ico,
+        dic: dic
+      }));
+    } else if (section === 'architekt') {
+      setFormData(prev => ({
+        ...prev,
+        architektonickyPriezvisko: name,
+        architektonickyUlica: street,
+        architektonickyMesto: city,
+        architektonickyPsc: zip,
+        architektonickyIco: ico,
+        architektonickyDic: dic
+      }));
+    } else if (section === 'realizator') {
+      setFormData(prev => ({
+        ...prev,
+        realizatorPriezvisko: name,
+        realizatorUlica: street,
+        realizatorMesto: city,
+        realizatorPsc: zip,
+        realizatorIco: ico,
+        realizatorDic: dic
+      }));
+    }
   };
 
   const handleContactSelect = (contact: any, section: 'zakaznik' | 'architekt' | 'realizator') => {
@@ -99,6 +153,8 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
     placeholder: string,
     section: 'zakaznik' | 'architekt' | 'realizator'
   ) => {
+    const normalizeString = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
     const filteredContacts = contacts.filter(c => {
         // Filter by type
         if (section === 'realizator') {
@@ -107,12 +163,12 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
             if (c.typ !== section) return false;
         }
 
-        const needle = value.toLowerCase();
+        const needle = normalizeString(value);
         if (!needle) return false;
 
         // Search in both Priezvisko and Meno
-        const p = (c.priezvisko || '').toLowerCase();
-        const m = (c.meno || '').toLowerCase();
+        const p = normalizeString(c.priezvisko || '');
+        const m = normalizeString(c.meno || '');
 
         return p.includes(needle) || m.includes(needle);
     });
@@ -134,18 +190,18 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               }
           }}
           onBlur={() => setTimeout(() => setActiveAutocomplete(null), 200)} // Delay to allow click
-          className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={getInputClass()}
         />
         {activeAutocomplete?.field === field && filteredContacts.length > 0 && !isLocked && (
-          <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-y-auto">
+          <div className={`absolute z-50 left-0 right-0 mt-1 border rounded shadow-lg max-h-40 overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
             {filteredContacts.map(c => (
               <div
                 key={c.id}
-                className="px-2 py-1.5 hover:bg-gray-100 cursor-pointer text-xs text-gray-700"
+                className={`px-2 py-1.5 cursor-pointer text-xs ${isDark ? 'text-gray-200 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-100'}`}
                 onClick={() => handleContactSelect(c, section)}
               >
                 <span className="font-semibold">{c.priezvisko}</span> {c.meno}
-                {c.mesto && <span className="text-gray-400 ml-1">({c.mesto})</span>}
+                {c.mesto && <span className={`ml-1 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>({c.mesto})</span>}
               </div>
             ))}
           </div>
@@ -158,7 +214,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
     <div className="p-2 pb-4">
       {/* Konečný zákazník section */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Konečný zákazník</h3>
+        <h3 className={getHeaderClass()}>Konečný zákazník</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
             {renderAutocompleteInput(formData.priezvisko, 'priezvisko', 'Priezvisko', 'zakaznik')}
@@ -174,7 +230,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.telefon}
               onChange={(e) => setFormData(prev => ({...prev, telefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -184,7 +240,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.email}
               onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
 
@@ -195,17 +251,18 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.ulica}
               onChange={(e) => setFormData(prev => ({...prev, ulica: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
-            <input
-              type="text"
-              placeholder="IČO"
+            <RpoAutocomplete
               value={formData.ico}
-              onChange={(e) => setFormData(prev => ({...prev, ico: e.target.value.replace(/[^0-9]/g, '')}))}
-              disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              onChange={(val) => setFormData(prev => ({...prev, ico: val.replace(/[^0-9]/g, '')}))}
+              onSelect={(entity) => handleRpoSelect(entity, 'zakaznik')}
+              getItemValue={(entity) => entity.ico || ''}
+              placeholder="IČO"
+              isLocked={isLocked}
+              isDark={isDark}
             />
           </div>
 
@@ -217,7 +274,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.mesto}
                 onChange={(e) => setFormData(prev => ({...prev, mesto: e.target.value}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -225,7 +282,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.psc}
                 onChange={(e) => setFormData(prev => ({...prev, psc: e.target.value.replace(/[^0-9\s]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -237,7 +294,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.icDph}
                 onChange={(e) => setFormData(prev => ({...prev, icDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -245,7 +302,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.dic}
                 onChange={(e) => setFormData(prev => ({...prev, dic: e.target.value.replace(/[^0-9]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -256,7 +313,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
 
       {/* Architekt - sprostredkovateľ section */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Architekt - sprostredkovateľ</h3>
+        <h3 className={getHeaderClass()}>Architekt - sprostredkovateľ</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="md:col-span-2">
             {renderAutocompleteInput(formData.architektonickyPriezvisko, 'architektonickyPriezvisko', 'Odberateľ', 'architekt')}
@@ -269,7 +326,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.architektonickyTelefon}
               onChange={(e) => setFormData(prev => ({...prev, architektonickyTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -279,7 +336,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.architektonickyEmail}
               onChange={(e) => setFormData(prev => ({...prev, architektonickyEmail: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
 
@@ -290,17 +347,18 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.architektonickyUlica}
               onChange={(e) => setFormData(prev => ({...prev, architektonickyUlica: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
-            <input
-              type="text"
-              placeholder="IČO"
+            <RpoAutocomplete
               value={formData.architektonickyIco}
-              onChange={(e) => setFormData(prev => ({...prev, architektonickyIco: e.target.value.replace(/[^0-9]/g, '')}))}
-              disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              onChange={(val) => setFormData(prev => ({...prev, architektonickyIco: val.replace(/[^0-9]/g, '')}))}
+              onSelect={(entity) => handleRpoSelect(entity, 'architekt')}
+              getItemValue={(entity) => entity.ico || ''}
+              placeholder="IČO"
+              isLocked={isLocked}
+              isDark={isDark}
             />
           </div>
 
@@ -312,7 +370,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.architektonickyMesto}
                 onChange={(e) => setFormData(prev => ({...prev, architektonickyMesto: e.target.value}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -320,7 +378,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.architektonickyPsc}
                 onChange={(e) => setFormData(prev => ({...prev, architektonickyPsc: e.target.value.replace(/[^0-9\s]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -332,7 +390,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.architektonickyIcDph}
                 onChange={(e) => setFormData(prev => ({...prev, architektonickyIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -340,7 +398,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.architektonickyDic}
                 onChange={(e) => setFormData(prev => ({...prev, architektonickyDic: e.target.value.replace(/[^0-9]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -349,7 +407,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
 
       {/* Fakturačná firma section */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Fakturačná firma / Realizátor</h3>
+        <h3 className={getHeaderClass()}>Fakturačná firma / Realizátor</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="md:col-span-2">
             {renderAutocompleteInput(formData.realizatorPriezvisko, 'realizatorPriezvisko', 'Odberateľ', 'realizator')}
@@ -362,7 +420,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.realizatorTelefon}
               onChange={(e) => setFormData(prev => ({...prev, realizatorTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -372,7 +430,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.realizatorEmail}
               onChange={(e) => setFormData(prev => ({...prev, realizatorEmail: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
 
@@ -383,17 +441,18 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.realizatorUlica}
               onChange={(e) => setFormData(prev => ({...prev, realizatorUlica: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
-            <input
-              type="text"
-              placeholder="IČO"
+            <RpoAutocomplete
               value={formData.realizatorIco}
-              onChange={(e) => setFormData(prev => ({...prev, realizatorIco: e.target.value.replace(/[^0-9]/g, '')}))}
-              disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              onChange={(val) => setFormData(prev => ({...prev, realizatorIco: val.replace(/[^0-9]/g, '')}))}
+              onSelect={(entity) => handleRpoSelect(entity, 'realizator')}
+              getItemValue={(entity) => entity.ico || ''}
+              placeholder="IČO"
+              isLocked={isLocked}
+              isDark={isDark}
             />
           </div>
 
@@ -405,7 +464,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.realizatorMesto}
                 onChange={(e) => setFormData(prev => ({...prev, realizatorMesto: e.target.value}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -413,7 +472,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.realizatorPsc}
                 onChange={(e) => setFormData(prev => ({...prev, realizatorPsc: e.target.value.replace(/[^0-9\s]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -425,7 +484,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.realizatorIcDph}
                 onChange={(e) => setFormData(prev => ({...prev, realizatorIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
                 disabled={isLocked}
-                className={`flex-1 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('flex-1')}
               />
               <input
                 type="text"
@@ -433,7 +492,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 value={formData.realizatorDic}
                 onChange={(e) => setFormData(prev => ({...prev, realizatorDic: e.target.value.replace(/[^0-9]/g, '')}))}
                 disabled={isLocked}
-                className={`w-16 text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={getInputClass('w-16')}
               />
             </div>
           </div>
@@ -442,7 +501,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
 
       {/* Kontaktná osoba section */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Kontaktná osoba</h3>
+        <h3 className={getHeaderClass()}>Kontaktná osoba</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
             <input
@@ -451,7 +510,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.kontaktnaPriezvisko}
               onChange={(e) => setFormData(prev => ({...prev, kontaktnaPriezvisko: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -461,7 +520,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.kontaktnaMeno}
               onChange={(e) => setFormData(prev => ({...prev, kontaktnaMeno: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -471,7 +530,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.kontaktnaTelefon}
               onChange={(e) => setFormData(prev => ({...prev, kontaktnaTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
           <div>
@@ -481,7 +540,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               value={formData.kontaktnaEmail}
               onChange={(e) => setFormData(prev => ({...prev, kontaktnaEmail: e.target.value}))}
               disabled={isLocked}
-              className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={getInputClass()}
             />
           </div>
         </div>
@@ -489,7 +548,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
 
       {/* Fakturácia section */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Fakturácia</h3>
+        <h3 className={getHeaderClass()}>Fakturácia</h3>
 
         {/* Toggle Switch */}
         <div
@@ -512,27 +571,45 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                             disabled={isLocked}
                             className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                             />
-                            <span className="font-medium text-gray-700">K10</span>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>K10</span>
                         </label>
 
                         <button
                             onClick={() => fillFrom('zakaznik')}
                             disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'zakaznik' ? 'bg-red-500 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
+                                formData.fakturaciaSource === 'zakaznik' 
+                                    ? 'bg-red-500 text-white border-red-600' 
+                                    : isDark 
+                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                            }`}
                         >
                             Konečný zákazník
                         </button>
                         <button
                             onClick={() => fillFrom('architekt')}
                             disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'architekt' ? 'bg-red-500 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
+                                formData.fakturaciaSource === 'architekt' 
+                                    ? 'bg-red-500 text-white border-red-600' 
+                                    : isDark
+                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                            }`}
                         >
                             Sprostredkovateľ
                         </button>
                         <button
                             onClick={() => fillFrom('realizator')}
                             disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'realizator' ? 'bg-red-500 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
+                                formData.fakturaciaSource === 'realizator' 
+                                    ? 'bg-red-500 text-white border-red-600' 
+                                    : isDark
+                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'
+                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                            }`}
                         >
                             Fakturačná firma
                         </button>
@@ -547,7 +624,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                             value={formData.fakturaciaPriezvisko}
                             onChange={(e) => setFormData(prev => ({...prev, fakturaciaPriezvisko: e.target.value}))}
                             disabled={isLocked}
-                            className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            className={getInputClass()}
                             />
                         </div>
                         <div>
@@ -557,7 +634,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                             value={formData.fakturaciaMeno}
                             onChange={(e) => setFormData(prev => ({...prev, fakturaciaMeno: e.target.value}))}
                             disabled={isLocked}
-                            className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            className={getInputClass()}
                             />
                         </div>
                     </div>
@@ -567,7 +644,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                             value={formData.fakturaciaAdresa}
                             onChange={(e) => setFormData(prev => ({...prev, fakturaciaAdresa: e.target.value}))}
                             disabled={isLocked}
-                            className={`w-full text-xs border border-gray-300 px-2 py-1 rounded ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            className={getInputClass()}
                             rows={2}
                         ></textarea>
                     </div>

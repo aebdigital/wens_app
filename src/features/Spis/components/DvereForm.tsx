@@ -41,9 +41,25 @@ interface DvereFormProps {
   };
 }
 
+// Default payment percentages
+const DEFAULT_PLATBA1 = 60;
+const DEFAULT_PLATBA2 = 22;
+const DEFAULT_PLATBA3 = 18;
+
 export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo }) => {
   const totals = calculateDvereTotals(data);
   const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // Helper to reset payment overrides when items change
+  const onChangeWithPaymentReset = (newData: DvereData) => {
+    onChange({
+      ...newData,
+      manualCenaSDPH: undefined,
+      platba1Percent: DEFAULT_PLATBA1,
+      platba2Percent: DEFAULT_PLATBA2,
+      platba3Percent: DEFAULT_PLATBA3
+    });
+  };
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
@@ -151,7 +167,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         newVyrobok.hasZarubna = false;
         newVyrobok.hasObklad = false;
     }
-    onChange({...data, vyrobky: [...data.vyrobky, newVyrobok]});
+    onChangeWithPaymentReset({...data, vyrobky: [...data.vyrobky, newVyrobok]});
     setShowAddMenu(false);
   };
 
@@ -159,7 +175,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   const toggleItemPart = (index: number, part: 'hasDvere' | 'hasZarubna' | 'hasObklad') => {
     const newVyrobky = [...data.vyrobky];
     newVyrobky[index][part] = !newVyrobky[index][part];
-    onChange({...data, vyrobky: newVyrobky});
+    onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
   };
 
   return (
@@ -185,32 +201,114 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       {/* Specifications Section */}
       <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} p-4`}>
         <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
-        <div className="space-y-2">
-          {(data.specifications || []).map((spec, index) => (
-            <div key={spec.id} className="flex items-center gap-2">
-              <span className={`w-20 text-xs text-right capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{spec.type}:</span>
-              <input
-                type="text"
-                value={spec.value}
-                onChange={(e) => handleUpdateSpecification(index, e.target.value)}
-                className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} border`}
-              />
-              <button
-                onClick={() => handleRemoveSpecification(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-          ))}
-          
-          <div className="relative inline-block">
-             {/* Add Spec Menu */}
-             <div className="flex gap-2 mt-2 ml-20">
-                <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
-                <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
-                <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
-             </div>
+        <div className="space-y-3">
+          {/* Dvere group */}
+          {(() => {
+            const dvereSpecs = (data.specifications || [])
+              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+              .filter(spec => spec.type === 'dvere');
+            if (dvereSpecs.length === 0) return null;
+            return (
+              <div className="flex gap-2">
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dvere:</span>
+                <div className="flex-1 space-y-1">
+                  {dvereSpecs.map((spec) => (
+                    <div key={spec.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                      />
+                      <button
+                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Zárubňa group */}
+          {(() => {
+            const zarubnaSpecs = (data.specifications || [])
+              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+              .filter(spec => spec.type === 'zarubna');
+            if (zarubnaSpecs.length === 0) return null;
+            return (
+              <div className="flex gap-2">
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Zárubňa:</span>
+                <div className="flex-1 space-y-1">
+                  {zarubnaSpecs.map((spec) => (
+                    <div key={spec.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                      />
+                      <button
+                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Obklad group */}
+          {(() => {
+            const obkladSpecs = (data.specifications || [])
+              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+              .filter(spec => spec.type === 'obklad');
+            if (obkladSpecs.length === 0) return null;
+            return (
+              <div className="flex gap-2">
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Obklad:</span>
+                <div className="flex-1 space-y-1">
+                  {obkladSpecs.map((spec) => (
+                    <div key={spec.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                      />
+                      <button
+                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Add buttons for types that don't have any entries yet */}
+          <div className="flex gap-2 ml-[88px]">
+            {!(data.specifications || []).some(s => s.type === 'dvere') && (
+              <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
+            )}
+            {!(data.specifications || []).some(s => s.type === 'zarubna') && (
+              <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
+            )}
+            {!(data.specifications || []).some(s => s.type === 'obklad') && (
+              <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
+            )}
           </div>
         </div>
       </div>
@@ -259,7 +357,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                     const newVyrobky = [...data.vyrobky];
                                     newVyrobky[index].miestnost = e.target.value;
-                                    onChange({...data, vyrobky: newVyrobky});
+                                    onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none focus:bg-gray-100`}
                                 />
@@ -281,7 +379,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                         <button
                             onClick={() => {
                                 const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
-                                onChange({...data, vyrobky: newVyrobky});
+                                onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                             }}
                             className="text-red-500 hover:text-red-700 p-1"
                         >
@@ -312,7 +410,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].dvereTypRozmer = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -323,7 +421,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].pL = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
                                 >
@@ -339,7 +437,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].zamok = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
                                 >
@@ -356,7 +454,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].sklo = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -368,7 +466,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].povrch = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -380,7 +478,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].poznamkaDvere = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -392,7 +490,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].ks = parseInt(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -404,7 +502,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].cenaDvere = parseFloat(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -437,7 +535,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].dvereOtvor = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     placeholder="otvor"
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
@@ -451,7 +549,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].povrchZarubna = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     placeholder="povrch"
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
@@ -464,7 +562,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].poznamkaZarubna = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -476,7 +574,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].ksZarubna = parseInt(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -488,7 +586,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].cenaZarubna = parseFloat(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -521,7 +619,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].typObklad = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     placeholder="typ/rozmer"
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
@@ -535,7 +633,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].povrchObklad = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     placeholder="povrch"
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
@@ -548,7 +646,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].poznamkaObklad = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -560,7 +658,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].ksObklad = parseInt(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -572,7 +670,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].cenaObklad = parseFloat(e.target.value) || 0;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
@@ -599,7 +697,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].poznamkaDvere = e.target.value;
-                                        onChange({...data, vyrobky: newVyrobky});
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
                                     placeholder="Vlastný text..."
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none italic`}
@@ -655,11 +753,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.priplatky}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChange({...data, priplatky: items})}
+        onChange={(items) => onChangeWithPaymentReset({...data, priplatky: items})}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChange({...data, priplatky: [...data.priplatky, newItem]});
+          onChangeWithPaymentReset({...data, priplatky: [...data.priplatky, newItem]});
         }}
+        mergeFirstTwoHeaders={true}
         footerContent={
           <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
@@ -684,11 +783,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.kovanie}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChange({...data, kovanie: items})}
+        onChange={(items) => onChangeWithPaymentReset({...data, kovanie: items})}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChange({...data, kovanie: [...data.kovanie, newItem]});
+          onChangeWithPaymentReset({...data, kovanie: [...data.kovanie, newItem]});
         }}
+        mergeFirstTwoHeaders={true}
         footerContent={
           <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
@@ -706,11 +806,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.montaz}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChange({...data, montaz: items})}
+        onChange={(items) => onChangeWithPaymentReset({...data, montaz: items})}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChange({...data, montaz: [...data.montaz, newItem]});
+          onChangeWithPaymentReset({...data, montaz: [...data.montaz, newItem]});
         }}
+        mergeFirstTwoHeaders={true}
         footerContent={
           <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>

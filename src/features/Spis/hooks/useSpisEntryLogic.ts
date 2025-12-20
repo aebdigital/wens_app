@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useContacts, Contact } from '../../../contexts/ContactsContext';
 import { SpisEntry, SpisFormData, CenovaPonukaItem } from '../types';
-import { calculateDvereTotals, calculateNabytokTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
+import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
+import { ContactChange, detectContactChanges } from '../components/ContactChangesModal';
 
 // Helper to compare relevant contact fields
 const hasContactChanged = (existing: Contact, formData: SpisFormData, type: 'zakaznik' | 'architekt' | 'realizator'): boolean => {
@@ -82,13 +83,17 @@ export const useSpisEntryLogic = (
   // State for the "Pridať vzor" sub-modal
   const [showVzorModal, setShowVzorModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  const [editingOfferData, setEditingOfferData] = useState<{type: 'dvere' | 'nabytok' | 'puzdra', data: any, cisloCP?: string} | undefined>(undefined);
+  const [editingOfferData, setEditingOfferData] = useState<{type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, cisloCP?: string} | undefined>(undefined);
   
   // State for "Pridať objednávku" modal
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingOrderData, setEditingOrderData] = useState<any>(undefined); // Using 'any' (PuzdraData) to avoid circular dep issues in hook if types not imported
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editingOrderNumber, setEditingOrderNumber] = useState<string | null>(null);
+
+  // State for contact changes modal
+  const [showContactChangesModal, setShowContactChangesModal] = useState(false);
+  const [pendingContactChanges, setPendingContactChanges] = useState<ContactChange[]>([]);
 
   // Ref to hold the initial formData for comparison later
   const initialFormDataRef = useRef<SpisFormData | null>(null);
@@ -254,7 +259,49 @@ export const useSpisEntryLogic = (
     }
   }, [isOpen, initialEntry, createDefaultFormData]);
 
-  const performSave = useCallback(() => {
+  // Function to detect contact changes
+  const detectAllContactChanges = useCallback((): ContactChange[] => {
+    const allChanges: ContactChange[] = [];
+    console.log('[detectAllContactChanges] Checking IDs:', {
+      zakaznikId: formData.zakaznikId,
+      architektId: formData.architektId,
+      realizatorId: formData.realizatorId
+    });
+
+    // Check customer (zakaznik)
+    if (formData.zakaznikId) {
+      const existingCustomer = getContactById(formData.zakaznikId);
+      console.log('[detectAllContactChanges] Customer found:', !!existingCustomer);
+      if (existingCustomer) {
+        const customerChanges = detectContactChanges(existingCustomer, formData, 'zakaznik');
+        allChanges.push(...customerChanges);
+      }
+    }
+
+    // Check architect
+    if (formData.architektId) {
+      const existingArchitect = getContactById(formData.architektId);
+      console.log('[detectAllContactChanges] Architect found:', !!existingArchitect);
+      if (existingArchitect) {
+        const architectChanges = detectContactChanges(existingArchitect, formData, 'architekt');
+        allChanges.push(...architectChanges);
+      }
+    }
+
+    // Check realizator
+    if (formData.realizatorId) {
+      const existingRealizator = getContactById(formData.realizatorId);
+      console.log('[detectAllContactChanges] Realizator found:', !!existingRealizator);
+      if (existingRealizator) {
+        const realizatorChanges = detectContactChanges(existingRealizator, formData, 'realizator');
+        allChanges.push(...realizatorChanges);
+      }
+    }
+
+    return allChanges;
+  }, [formData, getContactById]);
+
+  const performSaveInternal = useCallback(() => {
     try {
       // Map photos to persistent format
       const persistentPhotos = uploadedPhotos.map(p => ({
@@ -486,7 +533,37 @@ export const useSpisEntryLogic = (
     initialFormDataRef // Added as dependency for comparison
   ]);
 
-  const handleAddTemplateSave = (type: 'dvere' | 'nabytok' | 'puzdra', data: any) => {
+  // Wrapper performSave that checks for contact changes first
+  const performSave = useCallback(() => {
+    const changes = detectAllContactChanges();
+    console.log('[performSave] Detected changes:', changes.length, changes);
+
+    if (changes.length > 0) {
+      // Show modal with changes
+      setPendingContactChanges(changes);
+      setShowContactChangesModal(true);
+    } else {
+      // No changes, proceed with save
+      performSaveInternal();
+    }
+  }, [detectAllContactChanges, performSaveInternal]);
+
+  // Function called when user applies selected changes from modal
+  const handleApplyContactChanges = useCallback((selectedChanges: ContactChange[]) => {
+    // The selected changes indicate which fields should be updated in the contact
+    // For now, we just proceed with save - the existing save logic will handle updates
+    // In the future, we could selectively revert unselected changes
+    setShowContactChangesModal(false);
+    performSaveInternal();
+  }, [performSaveInternal]);
+
+  // Function called when user cancels contact changes modal
+  const handleCancelContactChanges = useCallback(() => {
+    setShowContactChangesModal(false);
+    setPendingContactChanges([]);
+  }, []);
+
+  const handleAddTemplateSave = (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any) => {
     // If we are in Objednavky tab (which uses 'puzdra' usually), save to objednavkyItems
     if (activeTab === 'objednavky') {
         // Calculate next order ID
@@ -535,6 +612,11 @@ export const useSpisEntryLogic = (
       cenaBezDPH = totals.cenaBezDPH;
       cenaSDPH = totals.cenaSDPH;
       popis = data.popisVyrobkov;
+    } else if (type === 'schody') {
+      const totals = calculateSchodyTotals(data);
+      cenaBezDPH = totals.cenaBezDPH;
+      cenaSDPH = totals.cenaSDPH;
+      popis = data.popisVyrobkov;
     } else if (type === 'puzdra') {
       const totals = calculatePuzdraTotals(data);
       cenaBezDPH = totals.cenaBezDPH;
@@ -565,7 +647,7 @@ export const useSpisEntryLogic = (
 
     // Calculate finance updates
     let financeUpdates = {};
-    if ((type === 'dvere' || type === 'nabytok') && data.platba1Percent) {
+    if ((type === 'dvere' || type === 'nabytok' || type === 'schody') && data.platba1Percent) {
         financeUpdates = {
           cena: cenaSDPH.toFixed(2),
           zaloha1: (cenaSDPH * data.platba1Percent / 100).toFixed(2),
@@ -609,19 +691,27 @@ export const useSpisEntryLogic = (
         popis: `Objednávka: ${data.polozky ? data.polozky.length : 0} položiek`,
         cisloObjednavky: nextId,
         dorucene: '',
-        data: data // Store full data for editing
+        data: data, // Store full data for editing
+        puzdraData: data // Store for PDF generation
     };
 
     setFormData(prev => {
         let newItems = [...prev.objednavkyItems];
+        const isNewOrder = !editingOrderId;
+
         if (editingOrderId) {
             newItems = newItems.map(item => item.id === editingOrderId ? { ...item, ...newItem, id: item.id } : item);
         } else {
             newItems.push(newItem);
         }
+
+        // Auto-change Stav from CP to Zakázka when first order is added
+        const shouldChangeStav = isNewOrder && prev.objednavkyItems.length === 0 && prev.stav === 'CP';
+
         return {
             ...prev,
-            objednavkyItems: newItems
+            objednavkyItems: newItems,
+            ...(shouldChangeStav ? { stav: 'Zakázka' } : {})
         };
     });
     setEditingOrderId(null);
@@ -701,6 +791,11 @@ export const useSpisEntryLogic = (
     userPhone,
     lastSavedJson,
     nextVariantCP,
-    nextOrderNumber
+    nextOrderNumber,
+    // Contact changes modal
+    showContactChangesModal,
+    pendingContactChanges,
+    handleApplyContactChanges,
+    handleCancelContactChanges
   };
 };

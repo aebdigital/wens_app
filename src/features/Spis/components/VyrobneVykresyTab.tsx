@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileDropZone } from '../../../components/common/FileDropZone';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface VyrobneVykresyTabProps {
   isDark: boolean;
@@ -83,10 +84,9 @@ export const VyrobneVykresyTab: React.FC<VyrobneVykresyTabProps> = ({ isDark, it
                   />
                 </td>
                 <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                  <input
-                    type="date"
+                  <CustomDatePicker
                     value={item.odoslane || ''}
-                    onChange={(e) => handleUpdate(index, 'odoslane', e.target.value)}
+                    onChange={(val) => handleUpdate(index, 'odoslane', val)}
                     disabled={isLocked}
                     className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
