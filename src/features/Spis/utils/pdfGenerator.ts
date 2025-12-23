@@ -235,7 +235,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const vyrobkyRows = data.vyrobky
       .filter((v: any) => (v.ks || 0) > 0 || (v.ksZarubna || 0) > 0 || (v.ksObklad || 0) > 0)
       .map((v: any, i: number) => {
-        const parts = [];
+        const parts: { typ: string; pl: string; zamok: string; sklo: string; povrch: string; poznamka: string; ks: number; cena: number; total: number }[] = [];
         // Dvere part
         if ((v.ks || 0) > 0) {
             parts.push({
@@ -410,6 +410,13 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
+    // Calculate totals for summary
+    const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+    const subtotal = vyrobkyTotalCalc + priplatkyTotal;
+    const zlavaPercent = data.zlavaPercent || 0;
+    const zlavaAmount = subtotal * zlavaPercent / 100;
+    const afterZlava = subtotal - zlavaAmount;
+
     // Summary table row 2 - Zľava - larger (fontSize 11)
     autoTable(doc, {
       startY: yPos,
@@ -579,9 +586,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Payment plan table (with gap)
     const paymentRows = [
-      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
-      [{ content: '2. platba - pred montážou', styles: { halign: 'right' } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
-      [{ content: '3. platba - po montáži', styles: { halign: 'right' } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
+      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
+      [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
+      [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
     ];
 
     // Payment table width: 45 + 12 + 28 = 85mm
@@ -953,9 +960,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Payment plan table (with gap)
     const paymentRows = [
-      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
-      [{ content: '2. platba - pred montážou', styles: { halign: 'right' } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
-      [{ content: '3. platba - po montáži', styles: { halign: 'right' } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
+      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
+      [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
+      [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
     ];
 
     // Payment table width: 45 + 12 + 28 = 85mm
@@ -1100,6 +1107,7 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
   doc.line(14, 22, pageWidth - 14, 22);
 
   let yPos = 27;
+  const rightColX = pageWidth / 2 + 10;
 
   // Company Info
   let yPosLeft = yPos;
