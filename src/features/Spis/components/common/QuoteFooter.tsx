@@ -111,7 +111,6 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       }
     } else if (index === 2) {
       p2 = newPercent;
-      const remaining = 100 - p2;
       // Adjust p1 and p3. Usually keep p1 fixed if possible?
       // "Higher hierarchy": change only subsequent if possible?
       // Let's adjust p3 first.
@@ -123,7 +122,6 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       }
     } else if (index === 3) {
       p3 = newPercent;
-      const remaining = 100 - p3;
       p2 = 100 - p1 - p3;
       if (p2 < 0) {
          p2 = 0;

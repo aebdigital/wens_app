@@ -6,7 +6,8 @@ import { VseobecneSidebar } from './VseobecneSidebar';
 import { VseobecneForm } from './VseobecneForm';
 import { CenovePonukyTab } from './CenovePonukyTab';
 import { ObjednavkyTab } from './ObjednavkyTab';
-import { EmailyTab } from './EmailyTab';
+// EmailyTab temporarily disabled
+// import { EmailyTab } from './EmailyTab';
 import { MeranieTab } from './MeranieTab';
 import { FotkyTab } from './FotkyTab';
 import { VyrobneVykresyTab } from './VyrobneVykresyTab';
