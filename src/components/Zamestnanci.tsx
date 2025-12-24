@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { supabase, DbEmployee } from '../lib/supabase';
 
 interface Employee {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
@@ -14,65 +15,75 @@ interface Employee {
 
 const Zamestnanci: React.FC = () => {
   const { isDark } = useTheme();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Dummy employee data
-  const [employees] = useState<Employee[]>([
-    {
-      id: 1,
-      name: 'Peter Novák',
-      email: 'peter.novak@wens.sk',
-      role: 'Administrátor',
-      status: 'online',
-      lastOnline: '',
-      ordersCreated: 145,
-      projectsCompleted: 89
-    },
-    {
-      id: 2,
-      name: 'Mária Kováčová',
-      email: 'maria.kovacova@wens.sk',
-      role: 'Manažér projektu',
-      status: 'online',
-      lastOnline: '',
-      ordersCreated: 98,
-      projectsCompleted: 67
-    },
-    {
-      id: 3,
-      name: 'Ján Horák',
-      email: 'jan.horak@wens.sk',
-      role: 'Obchodník',
-      status: 'offline',
-      lastOnline: '2 hodiny',
-      ordersCreated: 203,
-      projectsCompleted: 124
-    },
-    {
-      id: 4,
-      name: 'Eva Szabová',
-      email: 'eva.szabo@wens.sk',
-      role: 'Technik',
-      status: 'offline',
-      lastOnline: '5 minút',
-      ordersCreated: 67,
-      projectsCompleted: 45
-    },
-    {
-      id: 5,
-      name: 'Tomáš Varga',
-      email: 'tomas.varga@wens.sk',
-      role: 'Obchodník',
-      status: 'online',
-      lastOnline: '',
-      ordersCreated: 178,
-      projectsCompleted: 98
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          console.error('Error loading employees:', error);
+          setEmployees([]);
+        } else {
+          setEmployees((data || []).map((emp: DbEmployee) => ({
+            id: emp.id,
+            name: emp.name,
+            email: emp.email,
+            role: emp.role,
+            status: emp.status,
+            lastOnline: emp.last_online ? formatLastOnline(emp.last_online) : '',
+            ordersCreated: emp.orders_created,
+            projectsCompleted: emp.projects_completed,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load employees:', error);
+        setEmployees([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEmployees();
+  }, []);
+
+  const formatLastOnline = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 60) {
+      return `${diffMins} minút`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hodín`;
+    } else {
+      return date.toLocaleDateString('sk-SK');
     }
-  ]);
+  };
 
   // Calculate statistics
   const totalOrders = employees.reduce((sum, emp) => sum + emp.ordersCreated, 0);
   const totalProjects = employees.reduce((sum, emp) => sum + emp.projectsCompleted, 0);
   const onlineEmployees = employees.filter(emp => emp.status === 'online').length;
+
+  if (isLoading) {
+    return (
+      <div className={`h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>

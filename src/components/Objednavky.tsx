@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useSpis } from '../contexts/SpisContext';
 import { useProducts, Product } from '../contexts/ProductsContext';
 import { SortableTable, Column } from './common/SortableTable';
 import { ProductDetailModal } from './ProductDetailModal';
@@ -9,41 +9,15 @@ import { ProductDetailModal } from './ProductDetailModal';
 const Objednavky = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { entries, isLoading } = useSpis();
   const { products, updateProduct, deleteProduct } = useProducts();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'objednavky' | 'produkty'>('objednavky');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // --- Objednávky Logic ---
-  const [spisEntries, setSpisEntries] = useState<any[]>(() => {
-    try {
-      const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Failed to parse spisEntries from localStorage:', error);
-      return [];
-    }
-  });
-
-  // Reload entries when user changes
-  useEffect(() => {
-    if (user) {
-      try {
-        const storageKey = `spisEntries_${user.id}`;
-        const saved = localStorage.getItem(storageKey);
-        setSpisEntries(saved ? JSON.parse(saved) : []);
-      } catch (error) {
-        console.error('Failed to reload entries for user:', error);
-        setSpisEntries([]);
-      }
-    }
-  }, [user]);
-
   const objednavkyData = useMemo(() => {
-    return spisEntries.flatMap(entry => {
+    return entries.flatMap(entry => {
       // Filter out the problematic parent entry if it somehow still exists in the loop
       if (entry.cisloCP === 'CP2025/0367') return [];
 
@@ -64,13 +38,11 @@ const Objednavky = () => {
         rawOrder: { ...order, parentSpisId: entry.cisloCP }
       }));
     });
-  }, [spisEntries]);
+  }, [entries]);
 
   const handleOrderClick = (order: any) => {
-    // Store the clicked order info for navigation
-    localStorage.setItem('selectedOrder', JSON.stringify(order));
-    // Navigate to Spis page using React Router
-    navigate('/spis');
+    // Navigate to Spis page - the highlighting is handled via location state
+    navigate('/spis', { state: { highlightProjectIds: [order.parentSpisId] } });
   };
 
   const tableData = useMemo(() => {
@@ -93,20 +65,20 @@ const Objednavky = () => {
 
   // --- Produkty Logic ---
   const productColumns: Column<Product>[] = [
-    { 
-      key: 'name', 
-      label: 'Názov produktu', 
-      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span> 
+    {
+      key: 'name',
+      label: 'Názov produktu',
+      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span>
     },
-    { 
-      key: 'kod', 
-      label: 'Kód', 
-      render: (val) => <span className="text-xs text-gray-500">{val || '-'}</span> 
+    {
+      key: 'kod',
+      label: 'Kód',
+      render: (val) => <span className="text-xs text-gray-500">{val || '-'}</span>
     },
     { key: 'supplier', label: 'Dodávateľ' },
-    { 
-      key: 'supplierDetails', 
-      label: 'Kontakt dodávateľa', 
+    {
+      key: 'supplierDetails',
+      label: 'Kontakt dodávateľa',
       render: (val, item) => (
          <div className="text-xs text-gray-500">
              {item.supplierDetails?.tel && <div>Tel: {item.supplierDetails.tel}</div>}
@@ -116,12 +88,23 @@ const Objednavky = () => {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title & Tabs */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Objednávky</h1>
-        
+
          {/* Tabs */}
         <div className={`flex gap-2 p-1 rounded-lg self-start ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
             <button

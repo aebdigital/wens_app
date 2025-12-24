@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 const Nastavenia = () => {
   const { user, changePassword } = useAuth();
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('account');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,63 +24,91 @@ const Nastavenia = () => {
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
-    if (user) {
-      // Load saved preferences from localStorage
-      try {
-        const savedPreferences = localStorage.getItem(`preferences_${user.id}`);
-        if (savedPreferences) {
-          const prefs = JSON.parse(savedPreferences);
+    const loadPreferences = async () => {
+      if (user) {
+        setIsLoading(true);
+        try {
+          // Load saved preferences from Supabase
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.error('Error loading preferences:', error);
+          }
+
           setFormData(prev => ({
             ...prev,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            phone: prefs.phone || '',
-            language: prefs.language || 'sk',
+            phone: data?.phone || '',
+            language: data?.language || 'sk',
           }));
-        } else {
+        } catch (error) {
+          console.error('Failed to load preferences:', error);
           setFormData(prev => ({
             ...prev,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
           }));
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Failed to load preferences:', error);
-        setFormData(prev => ({
-          ...prev,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-        }));
       }
-    }
+    };
+
+    loadPreferences();
   }, [user]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) return;
 
+    setIsSaving(true);
     try {
-      // Save user preferences to localStorage
+      // Check if preferences exist
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
       const preferences = {
+        user_id: user.id,
         phone: formData.phone,
         language: formData.language,
       };
 
-      localStorage.setItem(`preferences_${user.id}`, JSON.stringify(preferences));
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('user_preferences')
+          .update(preferences)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert(preferences);
+
+        if (error) throw error;
+      }
+
       alert('Nastavenia boli úspešne uložené');
     } catch (error) {
       console.error('Failed to save preferences:', error);
-      if (error instanceof DOMException && error.code === 22) {
-        alert('Nedostatok miesta v úložisku. Vymažte prosím niektoré dáta.');
-      } else {
-        alert('Chyba pri ukladaní nastavení. Skúste to znova.');
-      }
+      alert('Chyba pri ukladaní nastavení. Skúste to znova.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -101,7 +132,7 @@ const Nastavenia = () => {
     }
 
     const success = await changePassword(formData.currentPassword, formData.newPassword);
-    
+
     if (success) {
       setPasswordSuccess('Heslo bolo úspešne zmenené');
       setFormData(prev => ({
@@ -114,6 +145,17 @@ const Nastavenia = () => {
       setPasswordError('Súčasné heslo nie je správne');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className={`h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
@@ -293,9 +335,10 @@ const Nastavenia = () => {
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-md hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
+            disabled={isSaving}
+            className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-md hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50"
           >
-            Uložiť zmeny
+            {isSaving ? 'Ukladám...' : 'Uložiť zmeny'}
           </button>
         </div>
       </div>

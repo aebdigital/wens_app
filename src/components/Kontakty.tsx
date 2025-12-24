@@ -6,8 +6,9 @@ import { SortableTable, Column } from './common/SortableTable';
 
 const Kontakty = () => {
   const navigate = useNavigate();
-  const { contacts, addContact, updateContact, deleteContact } = useContacts();
+  const { contacts, isLoading, addContact, updateContact, deleteContact } = useContacts();
   const { isDark } = useTheme();
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     priezvisko: '',
     meno: '',
@@ -129,17 +130,18 @@ const Kontakty = () => {
     setEditingContactId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
+    setIsSaving(true);
     try {
       if (editingContactId) {
         // Update existing contact
-        updateContact(editingContactId, {
+        await updateContact(editingContactId, {
           meno: formData.meno,
           priezvisko: formData.priezvisko,
           telefon: formData.telefon,
@@ -159,7 +161,7 @@ const Kontakty = () => {
         });
       } else {
         // Add new contact
-        addContact({
+        await addContact({
           meno: formData.meno,
           priezvisko: formData.priezvisko,
           telefon: formData.telefon,
@@ -185,14 +187,21 @@ const Kontakty = () => {
     } catch (error) {
       console.error('Error saving contact:', error);
       alert('Chyba pri ukladaní kontaktu. Skúste to znova.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteContact = () => {
+  const handleDeleteContact = async () => {
     if (editingContactId && window.confirm('Naozaj chcete odstrániť tento kontakt?')) {
-      deleteContact(editingContactId);
-      setIsPopupOpen(false);
-      resetForm();
+      try {
+        await deleteContact(editingContactId);
+        setIsPopupOpen(false);
+        resetForm();
+      } catch (error) {
+        console.error('Error deleting contact:', error);
+        alert('Chyba pri mazaní kontaktu. Skúste to znova.');
+      }
     }
   };
 
@@ -283,6 +292,17 @@ const Kontakty = () => {
       )
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
@@ -566,9 +586,10 @@ const Kontakty = () => {
                 )}
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50"
                 >
-                  Uložiť
+                  {isSaving ? 'Ukladám...' : 'Uložiť'}
                 </button>
               </div>
             </form>

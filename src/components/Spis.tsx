@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useContacts } from '../contexts/ContactsContext';
+import { useSpis } from '../contexts/SpisContext';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,46 +10,10 @@ import { SpisEntry } from '../features/Spis/types';
 
 const Spis = () => {
   const { addContact } = useContacts();
+  const { entries, isLoading, firmaOptions, addEntry, deleteEntry, addFirmaOption } = useSpis();
   const location = useLocation();
   const { isDark } = useTheme();
   const { user } = useAuth();
-
-  // --- Data State ---
-  // Helper to load and migrate data
-  const loadEntries = (key: string): SpisEntry[] => {
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Failed to load entries:', error);
-    }
-    return [];
-  };
-
-  // --- Data State ---
-  const [entries, setEntries] = useState<SpisEntry[]>(() => {
-    const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
-    return loadEntries(storageKey);
-  });
-
-  const [firmaOptions, setFirmaOptions] = useState<string[]>(() => {
-    try {
-      const storageKey = user ? `firmaOptions_${user.id}` : 'firmaOptions';
-      const saved = localStorage.getItem(storageKey);
-      let options = saved ? JSON.parse(saved) : ['R1 Bratislava', 'WENS DOOR Prievidza'];
-      if (options.includes('Slavo Zdenko')) {
-        options = options.filter((o: string) => o !== 'Slavo Zdenko');
-        if (!options.includes('R1 Bratislava')) options.push('R1 Bratislava');
-        if (!options.includes('WENS DOOR Prievidza')) options.push('WENS DOOR Prievidza');
-      }
-      return options;
-    } catch (error) {
-      console.error('Failed to parse firmaOptions from localStorage:', error);
-      return ['R1 Bratislava', 'WENS DOOR Prievidza'];
-    }
-  });
 
   // --- UI State ---
   const [showModal, setShowModal] = useState(false);
@@ -57,57 +22,12 @@ const Spis = () => {
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
 
-  // --- Effects ---
-
-  // Reload data when user changes
-  useEffect(() => {
-    if (user) {
-      try {
-        const storageKey = `spisEntries_${user.id}`;
-        setEntries(loadEntries(storageKey));
-
-        const firmaKey = `firmaOptions_${user.id}`;
-        const firmaSaved = localStorage.getItem(firmaKey);
-        let loadedFirma = firmaSaved ? JSON.parse(firmaSaved) : ['R1 Bratislava', 'WENS DOOR Prievidza'];
-        if (loadedFirma.includes('Slavo Zdenko')) {
-          loadedFirma = loadedFirma.filter((o: string) => o !== 'Slavo Zdenko');
-          if (!loadedFirma.includes('R1 Bratislava')) loadedFirma.push('R1 Bratislava');
-          if (!loadedFirma.includes('WENS DOOR Prievidza')) loadedFirma.push('WENS DOOR Prievidza');
-        }
-        setFirmaOptions(loadedFirma);
-      } catch (error) {
-        console.error('Failed to reload user data:', error);
-      }
-    }
-  }, [user]);
-
-  // Auto-save entries to localStorage
-  useEffect(() => {
-    try {
-      // Don't save empty array if we haven't loaded yet? 
-      // No, entries initial state is loaded from storage.
-      // But we must ensure we don't save BEFORE loading completes if it was async (it's sync here).
-      const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
-      
-      // Prevent saving empty list if we just started and haven't potentially loaded?
-      // loadEntries is synchronous so initial state is correct.
-      // However, let's log to be sure.
-      // console.log('Saving entries:', entries.length);
-      localStorage.setItem(storageKey, JSON.stringify(entries));
-    } catch (error) {
-      console.error('Failed to save spisEntries:', error);
-      if (error instanceof DOMException && error.code === 22) {
-        alert('Nedostatok miesta v úložisku. Záznam nemožno uložiť.');
-      }
-    }
-  }, [entries, user]);
-
   // Handle highlighting rows when navigating from Kontakty page
   useEffect(() => {
     if (location.state?.highlightProjectIds) {
       const projectIds = location.state.highlightProjectIds as string[];
       setHighlightedProjectIds(projectIds);
-      
+
       // Clear highlights after 5 seconds
       const timer = setTimeout(() => {
         setHighlightedProjectIds([]);
@@ -116,85 +36,51 @@ const Spis = () => {
     }
   }, [location.state]);
 
-  // Check for selected order from navigation
-  useEffect(() => {
-    try {
-      const selectedOrder = localStorage.getItem('selectedOrder');
-      if (selectedOrder) {
-        const orderData = JSON.parse(selectedOrder);
-        // Find the parent Spis entry
-        const parentEntry = entries.find(entry => entry.cisloCP === orderData.parentSpisId);
-        if (parentEntry) {
-          // We just want to highlight the row in Spis table, NOT open the modal/tab
-          // Set highlighted IDs which SortableTable uses
-          setHighlightedProjectIds([parentEntry.cisloCP]);
-          
-          // Clear the selection after highlight duration
-          setTimeout(() => {
-            setHighlightedProjectIds([]);
-            localStorage.removeItem('selectedOrder');
-          }, 3000);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to process selected order:', error);
-      localStorage.removeItem('selectedOrder');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]); // Depend on entries so we run when they load
-
   // --- Handlers ---
 
   const handleRowClick = (item: SpisEntry, index: number) => {
     setSelectedEntry(item);
     setEditingIndex(index);
-    setSelectedOrderIndex(null); // Reset highlighted order when opening manually
+    setSelectedOrderIndex(null);
     setShowModal(true);
   };
 
-  const handleSaveEntry = (entryData: SpisEntry) => {
-    // If we have an ID, look for existing entry to update
-    if (entryData.id) {
-      setEntries(prev => {
-        const index = prev.findIndex(e => e.id === entryData.id);
-        if (index !== -1) {
-          // Update existing
-          const updated = [...prev];
-          updated[index] = entryData;
-          return updated;
-        } else {
-          // Add new (ID provided but not found)
-          return [...prev, entryData];
-        }
-      });
-    } else {
-      // Fallback for legacy entries without ID or if somehow ID is missing
-      if (editingIndex !== null) {
-        setEntries(prev => {
-          const updated = [...prev];
-          updated[editingIndex] = entryData;
-          return updated;
-        });
-      } else {
-        setEntries(prev => [...prev, entryData]);
-      }
+  const handleSaveEntry = useCallback(async (entryData: SpisEntry) => {
+    try {
+      const savedEntry = await addEntry(entryData);
+      setSelectedEntry(savedEntry);
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert('Chyba pri ukladaní záznamu. Skúste to znova.');
     }
-    
-    // We don't rely on editingIndex for identification anymore, but we update it if we can find the new index
-    // Note: Since setEntries is async, we can't get the new index immediately here easily for 'new' items
-    // But since the Modal now manages its own identity via internalId, we don't strictly need to update editingIndex 
-    // for the *Modal's* sake during the session.
-    setSelectedEntry(entryData);
-  };
+  }, [addEntry]);
 
-  const handleDeleteEntry = (id: string | null) => {
+  const handleDeleteEntry = useCallback(async (id: string | null) => {
     if (id) {
-      setEntries(prev => prev.filter(item => item.id !== id));
+      try {
+        await deleteEntry(id);
+      } catch (error) {
+        console.error('Failed to delete entry:', error);
+        alert('Chyba pri mazaní záznamu. Skúste to znova.');
+      }
     }
     setShowModal(false);
     setEditingIndex(null);
     setSelectedEntry(null);
-  };
+  }, [deleteEntry]);
+
+  const handleSetFirmaOptions = useCallback(async (options: string[]) => {
+    // Find new options that don't exist yet
+    for (const option of options) {
+      if (!firmaOptions.includes(option)) {
+        try {
+          await addFirmaOption(option);
+        } catch (error) {
+          console.error('Failed to add firma option:', error);
+        }
+      }
+    }
+  }, [firmaOptions, addFirmaOption]);
 
   // --- Table Configuration ---
 
@@ -231,6 +117,17 @@ const Spis = () => {
     { key: 'kategoria', label: 'Kategória' },
     { key: 'terminDodania', label: 'Termín dokončenia', isDate: true }
   ];
+
+  if (isLoading) {
+    return (
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
@@ -277,7 +174,7 @@ const Spis = () => {
           editingIndex={editingIndex}
           user={user}
           firmaOptions={firmaOptions}
-          setFirmaOptions={setFirmaOptions}
+          setFirmaOptions={handleSetFirmaOptions}
           entries={entries}
           addContact={addContact}
           selectedOrderIndex={selectedOrderIndex}

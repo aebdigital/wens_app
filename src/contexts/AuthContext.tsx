@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase, DbUser } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -31,42 +32,66 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// Helper to convert DB user to app user format
+const dbUserToUser = (dbUser: DbUser): User => ({
+  id: dbUser.id,
+  email: dbUser.email,
+  firstName: dbUser.first_name,
+  lastName: dbUser.last_name,
+  createdAt: dbUser.created_at,
+});
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    // Check for stored session
+    const checkSession = async () => {
+      try {
+        const storedUserId = localStorage.getItem('currentUserId');
+        if (storedUserId) {
+          // Verify user still exists in Supabase
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', storedUserId)
+            .single();
+
+          if (!error && data) {
+            setUser(dbUserToUser(data));
+          } else {
+            // User no longer exists, clear session
+            localStorage.removeItem('currentUserId');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check session:', error);
+        localStorage.removeItem('currentUserId');
       }
-    } catch (error) {
-      console.error('Failed to parse user from localStorage:', error);
-      localStorage.removeItem('currentUser');
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    checkSession();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const usersData = localStorage.getItem('users') || '[]';
-      const users = JSON.parse(usersData);
-      const foundUser = users.find((u: any) => u.email === email && u.password === password);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
 
-      if (foundUser) {
-        const userWithoutPassword = {
-          id: foundUser.id,
-          email: foundUser.email,
-          firstName: foundUser.firstName,
-          lastName: foundUser.lastName,
-          createdAt: foundUser.createdAt
-        };
-        setUser(userWithoutPassword);
-        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-        return true;
+      if (error || !data) {
+        return false;
       }
-      return false;
+
+      const appUser = dbUserToUser(data);
+      setUser(appUser);
+      localStorage.setItem('currentUserId', appUser.id);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -75,35 +100,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     try {
-      const usersData = localStorage.getItem('users') || '[]';
-      const users = JSON.parse(usersData);
-      
-      if (users.find((u: any) => u.email === email)) {
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        return false; // User already exists
+      }
+
+      // Create new user
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error('Registration error:', error);
         return false;
       }
 
-      const newUser = {
-        id: Date.now().toString(),
-        email,
-        password,
-        firstName,
-        lastName,
-        createdAt: new Date().toISOString()
-      };
-
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-      
-      const userWithoutPassword = {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        createdAt: newUser.createdAt
-      };
-      setUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-      
+      const appUser = dbUserToUser(data);
+      setUser(appUser);
+      localStorage.setItem('currentUserId', appUser.id);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
@@ -113,23 +140,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('currentUserId');
   };
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
       if (!user) return false;
 
-      const usersData = localStorage.getItem('users') || '[]';
-      const users = JSON.parse(usersData);
-      const userIndex = users.findIndex((u: any) => u.id === user.id && u.password === currentPassword);
-      
-      if (userIndex === -1) {
+      // Verify current password
+      const { data: existingUser, error: verifyError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .eq('password', currentPassword)
+        .single();
+
+      if (verifyError || !existingUser) {
+        return false; // Current password is incorrect
+      }
+
+      // Update password
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ password: newPassword })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
         return false;
       }
 
-      users[userIndex].password = newPassword;
-      localStorage.setItem('users', JSON.stringify(users));
       return true;
     } catch (error) {
       console.error('Password change error:', error);

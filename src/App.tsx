@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContactsProvider } from './contexts/ContactsContext';
+import { SpisProvider } from './contexts/SpisContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProductsProvider } from './contexts/ProductsContext';
@@ -51,11 +52,13 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ContactsProvider>
-            <TasksProvider>
-              <ProductsProvider>
-                <AppContent />
-              </ProductsProvider>
-            </TasksProvider>
+            <SpisProvider>
+              <TasksProvider>
+                <ProductsProvider>
+                  <AppContent />
+                </ProductsProvider>
+              </TasksProvider>
+            </SpisProvider>
           </ContactsProvider>
         </AuthProvider>
       </ThemeProvider>

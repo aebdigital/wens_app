@@ -4,6 +4,7 @@ import { useContacts, Contact } from '../../../contexts/ContactsContext';
 import { SpisEntry, SpisFormData, CenovaPonukaItem } from '../types';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
 import { ContactChange, detectContactChanges } from '../components/ContactChangesModal';
+import { supabase } from '../../../lib/supabase';
 
 // Helper to compare relevant contact fields
 const hasContactChanged = (existing: Contact, formData: SpisFormData, type: 'zakaznik' | 'architekt' | 'realizator'): boolean => {
@@ -60,21 +61,28 @@ export const useSpisEntryLogic = (
   const { user } = useAuth();
   const { addContact, getContactById, getContactByNameAndType, forkContact } = useContacts();
   const [activeTab, setActiveTab] = useState('vseobecne');
-  const [uploadedPhotos, setUploadedPhotos] = useState<{id: string, file: File, url: string, description: string}[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<{id: string, file: File, url: string, description: string, storagePath?: string}[]>([]);
   const [userPhone, setUserPhone] = useState('');
 
   useEffect(() => {
-    if (user) {
-      try {
-        const savedPreferences = localStorage.getItem(`preferences_${user.id}`);
-        if (savedPreferences) {
-          const prefs = JSON.parse(savedPreferences);
-          setUserPhone(prefs.phone || '');
+    const loadUserPhone = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('phone')
+            .eq('user_id', user.id)
+            .single();
+
+          if (!error && data) {
+            setUserPhone(data.phone || '');
+          }
+        } catch (error) {
+          console.error('Failed to load user preferences:', error);
         }
-      } catch (error) {
-        console.error('Failed to load user preferences:', error);
       }
-    }
+    };
+    loadUserPhone();
   }, [user]);
   
   // Internal ID to ensure stable identity across auto-saves
@@ -242,8 +250,9 @@ export const useSpisEntryLogic = (
            const loadedPhotos = initialEntry.fullFormData.fotky.map((p: any) => ({
              id: p.id,
              file: new File([""], p.name, { type: p.type }),
-             url: p.base64,
-             description: p.description
+             url: p.storagePath ? p.url : p.base64, // Use URL if storagePath exists, otherwise base64
+             description: p.description,
+             storagePath: p.storagePath
            }));
            setUploadedPhotos(loadedPhotos);
         } else {
@@ -301,14 +310,16 @@ export const useSpisEntryLogic = (
     return allChanges;
   }, [formData, getContactById]);
 
-  const performSaveInternal = useCallback(() => {
+  const performSaveInternal = useCallback(async () => {
     try {
       // Map photos to persistent format
       const persistentPhotos = uploadedPhotos.map(p => ({
         id: p.id,
         name: p.file.name,
         type: p.file.type,
-        base64: p.url, // We assume URL is base64 (handled in FotkyTab)
+        base64: p.storagePath ? '' : p.url, // Only store base64 if not in cloud storage
+        url: p.storagePath ? p.url : '', // Store URL if in cloud storage
+        storagePath: p.storagePath || '', // Storage path for Supabase
         description: p.description
       }));
 
@@ -330,14 +341,14 @@ export const useSpisEntryLogic = (
         color: 'white',
 
         // All form data for later retrieval
-        fullFormData: { 
+        fullFormData: {
           ...formData,
           fotky: persistentPhotos
         }
       };
 
       const currentCisloCP = formData.predmet || getNextCP();
-      
+
       // --- Contact Handling Logic (Customer) ---
       let customerContactIdToSave = formData.zakaznikId;
       if (formData.priezvisko || formData.meno || formData.email || formData.telefon) {
@@ -349,10 +360,10 @@ export const useSpisEntryLogic = (
             if (existingCustomer) customerContactIdToSave = existingCustomer.id; // Use this ID going forward
         }
 
-        const isCustomerDataChanged = initialFormDataRef.current 
+        const isCustomerDataChanged = initialFormDataRef.current
           ? hasContactChanged(
               {...existingCustomer!, id: existingCustomer?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact for helper
-              formData, 
+              formData,
               'zakaznik'
             ) : false; // If no initial data, it's considered new or fully changed
 
@@ -378,14 +389,14 @@ export const useSpisEntryLogic = (
 
         let customerContact: Contact;
         if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
-             customerContact = forkContact(existingCustomer.id, customerData);
+             customerContact = await forkContact(existingCustomer.id, customerData);
         } else {
-             customerContact = addContact({
+             customerContact = await addContact({
                 ...customerData,
                 ...(customerContactIdToSave ? { id: customerContactIdToSave } : {})
              });
         }
-        
+
         // Update formData with the ID of the contact that was actually saved/created
         setFormData(prev => ({ ...prev, zakaznikId: customerContact.id }));
         if (entryData.fullFormData) {
@@ -410,10 +421,10 @@ export const useSpisEntryLogic = (
             if (existingArchitect) architectContactIdToSave = existingArchitect.id;
         }
 
-        const isArchitectDataChanged = initialFormDataRef.current 
+        const isArchitectDataChanged = initialFormDataRef.current
           ? hasContactChanged(
               {...existingArchitect!, id: existingArchitect?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-              formData, 
+              formData,
               'architekt'
             ) : false;
 
@@ -434,14 +445,14 @@ export const useSpisEntryLogic = (
 
         let architectContact: Contact;
         if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
-             architectContact = forkContact(existingArchitect.id, architectData);
+             architectContact = await forkContact(existingArchitect.id, architectData);
         } else {
-             architectContact = addContact({
+             architectContact = await addContact({
                 ...architectData,
                 ...(architectContactIdToSave ? { id: architectContactIdToSave } : {})
              });
         }
-        
+
         setFormData(prev => ({ ...prev, architektId: architectContact.id }));
         if (entryData.fullFormData) {
           entryData.fullFormData.architektId = architectContact.id;
@@ -464,10 +475,10 @@ export const useSpisEntryLogic = (
             if (existingRealizator) realizatorContactIdToSave = existingRealizator.id;
         }
 
-        const isRealizatorDataChanged = initialFormDataRef.current 
+        const isRealizatorDataChanged = initialFormDataRef.current
           ? hasContactChanged(
               {...existingRealizator!, id: existingRealizator?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-              formData, 
+              formData,
               'realizator'
             ) : false;
 
@@ -488,14 +499,14 @@ export const useSpisEntryLogic = (
 
         let realizatorContact: Contact;
         if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
-             realizatorContact = forkContact(existingRealizator.id, realizatorData);
+             realizatorContact = await forkContact(existingRealizator.id, realizatorData);
         } else {
-             realizatorContact = addContact({
+             realizatorContact = await addContact({
                 ...realizatorData,
                 ...(realizatorContactIdToSave ? { id: realizatorContactIdToSave } : {})
              });
         }
-        
+
         setFormData(prev => ({ ...prev, realizatorId: realizatorContact.id }));
         if (entryData.fullFormData) {
           entryData.fullFormData.realizatorId = realizatorContact.id;
@@ -507,7 +518,7 @@ export const useSpisEntryLogic = (
          }
       }
 
-      // Update firma options
+      // Update firma options (handled by parent via setFirmaOptions callback)
       if (formData.firma && !firmaOptions.includes(formData.firma)) {
         setFirmaOptions([...firmaOptions, formData.firma]);
       }
@@ -519,18 +530,17 @@ export const useSpisEntryLogic = (
       alert('Nepodarilo sa uložiť záznam: ' + error.message);
     }
   }, [
-    formData, 
-    uploadedPhotos, 
-    addContact, 
-    firmaOptions, 
-    getNextCP, 
-    onSave, 
-    setFirmaOptions, 
-    internalId, 
-    getContactById, // Added as dependency
-    getContactByNameAndType, // Added as dependency
-    forkContact, // Added as dependency
-    initialFormDataRef // Added as dependency for comparison
+    formData,
+    uploadedPhotos,
+    addContact,
+    firmaOptions,
+    getNextCP,
+    onSave,
+    setFirmaOptions,
+    internalId,
+    getContactById,
+    getContactByNameAndType,
+    forkContact,
   ]);
 
   // Wrapper performSave that checks for contact changes first

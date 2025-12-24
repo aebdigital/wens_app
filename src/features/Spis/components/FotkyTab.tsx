@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { FileDropZone } from '../../../components/common/FileDropZone';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface FotkyTabProps {
-  uploadedPhotos: {id: string, file: File, url: string, description: string}[];
-  setUploadedPhotos: React.Dispatch<React.SetStateAction<{id: string, file: File, url: string, description: string}[]>>;
+  uploadedPhotos: {id: string, file: File, url: string, description: string, storagePath?: string}[];
+  setUploadedPhotos: React.Dispatch<React.SetStateAction<{id: string, file: File, url: string, description: string, storagePath?: string}[]>>;
   isLocked?: boolean;
+  spisEntryId?: string;
 }
 
-export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedPhotos, isLocked = false }) => {
+export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedPhotos, isLocked = false, spisEntryId }) => {
+  const { user } = useAuth();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDownload = (e: React.MouseEvent, photo: {url: string, file: File}) => {
     e.stopPropagation();
@@ -20,24 +25,100 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
     document.body.removeChild(link);
   };
 
-  const handleDrop = (files: File[]) => {
-      if (isLocked) return;
-      Promise.all(files.map(file => {
-          return new Promise<{id: string, file: File, url: string, description: string}>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                  resolve({
-                      id: Date.now() + Math.random().toString(),
-                      file,
-                      url: reader.result as string, // Store as Base64 immediately
-                      description: ''
-                  });
-              };
-              reader.readAsDataURL(file);
+  const uploadToSupabase = async (file: File): Promise<{url: string, storagePath: string} | null> => {
+    if (!user) return null;
+
+    try {
+      // Generate unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const storagePath = `${user.id}/${spisEntryId || 'temp'}/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('photos')
+        .getPublicUrl(storagePath);
+
+      return {
+        url: urlData.publicUrl,
+        storagePath
+      };
+    } catch (error) {
+      console.error('Failed to upload to Supabase:', error);
+      return null;
+    }
+  };
+
+  const handleDrop = async (files: File[]) => {
+    if (isLocked || !user) return;
+
+    setIsUploading(true);
+
+    try {
+      const newPhotos = await Promise.all(files.map(async (file) => {
+        // First, try to upload to Supabase Storage
+        const uploadResult = await uploadToSupabase(file);
+
+        if (uploadResult) {
+          // Successfully uploaded to Supabase
+          return {
+            id: Date.now() + Math.random().toString(),
+            file,
+            url: uploadResult.url,
+            storagePath: uploadResult.storagePath,
+            description: ''
+          };
+        } else {
+          // Fallback to base64 if upload fails
+          return new Promise<{id: string, file: File, url: string, description: string, storagePath?: string}>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                id: Date.now() + Math.random().toString(),
+                file,
+                url: reader.result as string,
+                description: ''
+              });
+            };
+            reader.readAsDataURL(file);
           });
-      })).then(newPhotos => {
-          setUploadedPhotos(prev => [...prev, ...newPhotos]);
-      });
+        }
+      }));
+
+      setUploadedPhotos(prev => [...prev, ...newPhotos]);
+    } catch (error) {
+      console.error('Error handling file drop:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async (photoId: string, storagePath?: string) => {
+    if (isLocked) return;
+
+    // If photo was stored in Supabase, delete it
+    if (storagePath) {
+      try {
+        await supabase.storage.from('photos').remove([storagePath]);
+      } catch (error) {
+        console.error('Error deleting from storage:', error);
+      }
+    }
+
+    setUploadedPhotos(prev => prev.filter(p => p.id !== photoId));
   };
 
   useEffect(() => {
@@ -81,6 +162,15 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                       </svg>
                   </div>
+                  {/* Storage indicator */}
+                  {photo.storagePath && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Cloud
+                    </div>
+                  )}
                   </div>
                   <div className="p-2">
                   <input
@@ -112,10 +202,7 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
                               Stiahnuť
                           </button>
                           <button
-                          onClick={() => {
-                              if (isLocked) return;
-                              setUploadedPhotos(prev => prev.filter(p => p.id !== photo.id));
-                          }}
+                          onClick={() => handleDelete(photo.id, photo.storagePath)}
                           disabled={isLocked}
                           className={`text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-300 rounded hover:bg-red-50 font-semibold ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
@@ -129,7 +216,7 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
           </div>
         )}
 
-        {uploadedPhotos.length === 0 && (
+        {uploadedPhotos.length === 0 && !isUploading && (
           <div className="text-center py-12 text-gray-500">
             <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -138,15 +225,22 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
             <p className="text-xs mt-1">Nahrajte fotky na zobrazenie priebehu projektu</p>
           </div>
         )}
+
+        {isUploading && (
+          <div className="text-center py-12 text-gray-500">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28] mx-auto mb-4"></div>
+            <p className="text-sm">Nahrávam fotky...</p>
+          </div>
+        )}
       </div>
-      
+
       {/* Upload Section */}
       <FileDropZone
         onDrop={handleDrop}
         accept="image/*"
         multiple={true}
-        disabled={isLocked}
-        text="Kliknite alebo potiahnite fotky sem pre nahranie"
+        disabled={isLocked || isUploading}
+        text={isUploading ? "Nahrávam..." : "Kliknite alebo potiahnite fotky sem pre nahranie"}
         icon={
             <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
