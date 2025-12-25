@@ -12,9 +12,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
-  logout: () => void;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -46,51 +45,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session
+    // Check for existing Supabase Auth session
     const checkSession = async () => {
       try {
-        const storedUserId = localStorage.getItem('currentUserId');
-        if (storedUserId) {
-          // Verify user still exists in Supabase
-          const { data, error } = await supabase
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          // Fetch user profile from users table
+          const { data: profile, error } = await supabase
             .from('users')
             .select('*')
-            .eq('id', storedUserId)
+            .eq('id', session.user.id)
             .single();
 
-          if (!error && data) {
-            setUser(dbUserToUser(data));
-          } else {
-            // User no longer exists, clear session
-            localStorage.removeItem('currentUserId');
+          if (!error && profile) {
+            setUser(dbUserToUser(profile));
           }
         }
       } catch (error) {
         console.error('Failed to check session:', error);
-        localStorage.removeItem('currentUserId');
       }
       setIsLoading(false);
     };
 
     checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Fetch user profile from users table
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!error && profile) {
+          setUser(dbUserToUser(profile));
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .single();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (error || !data) {
+      if (error || !data.user) {
+        console.error('Login error:', error);
         return false;
       }
 
-      const appUser = dbUserToUser(data);
-      setUser(appUser);
-      localStorage.setItem('currentUserId', appUser.id);
+      // User profile will be fetched by onAuthStateChange listener
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -98,75 +113,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
-    try {
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      if (existingUser) {
-        return false; // User already exists
-      }
-
-      // Create new user
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName,
-        })
-        .select()
-        .single();
-
-      if (error || !data) {
-        console.error('Registration error:', error);
-        return false;
-      }
-
-      const appUser = dbUserToUser(data);
-      setUser(appUser);
-      localStorage.setItem('currentUserId', appUser.id);
-      return true;
-    } catch (error) {
-      console.error('Registration error:', error);
-      return false;
-    }
-  };
-
-  const logout = () => {
+  const logout = async (): Promise<void> => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('currentUserId');
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+  const changePassword = async (newPassword: string): Promise<boolean> => {
     try {
-      if (!user) return false;
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
 
-      // Verify current password
-      const { data: existingUser, error: verifyError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .eq('password', currentPassword)
-        .single();
-
-      if (verifyError || !existingUser) {
-        return false; // Current password is incorrect
-      }
-
-      // Update password
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ password: newPassword })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Password update error:', updateError);
+      if (error) {
+        console.error('Password update error:', error);
         return false;
       }
 
@@ -180,7 +139,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value = {
     user,
     login,
-    register,
     logout,
     changePassword,
     isLoading

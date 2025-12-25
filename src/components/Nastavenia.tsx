@@ -14,7 +14,6 @@ const Nastavenia = () => {
     lastName: '',
     email: '',
     phone: '',
-    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
     language: 'sk',
@@ -116,7 +115,7 @@ const Nastavenia = () => {
     setPasswordError('');
     setPasswordSuccess('');
 
-    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+    if (!formData.newPassword || !formData.confirmPassword) {
       setPasswordError('Všetky polia sú povinné');
       return;
     }
@@ -131,18 +130,17 @@ const Nastavenia = () => {
       return;
     }
 
-    const success = await changePassword(formData.currentPassword, formData.newPassword);
+    const success = await changePassword(formData.newPassword);
 
     if (success) {
       setPasswordSuccess('Heslo bolo úspešne zmenené');
       setFormData(prev => ({
         ...prev,
-        currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       }));
     } else {
-      setPasswordError('Súčasné heslo nie je správne');
+      setPasswordError('Chyba pri zmene hesla. Skúste to znova.');
     }
   };
 
@@ -268,17 +266,6 @@ const Nastavenia = () => {
               )}
 
               <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Súčasné heslo</label>
-                  <input
-                    type="password"
-                    value={formData.currentPassword}
-                    onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                  />
-                </div>
                 <div>
                   <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Nové heslo</label>
                   <input
