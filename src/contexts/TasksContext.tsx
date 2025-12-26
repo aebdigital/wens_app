@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase, DbUser } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export interface Task {
   id: string;

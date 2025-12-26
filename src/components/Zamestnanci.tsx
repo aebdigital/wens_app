@@ -199,15 +199,6 @@ const Zamestnanci: React.FC = () => {
     return 'Neznámy';
   };
 
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case 'pending': return 'Čaká';
-      case 'in_progress': return 'Prebieha';
-      case 'completed': return 'Dokončené';
-      default: return status;
-    }
-  };
-
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
