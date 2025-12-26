@@ -43,11 +43,17 @@ const Zamestnanci: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Only load data when we have an authenticated user
+    console.log('Zamestnanci useEffect - currentUser:', currentUser?.id);
+    // Load data when we have an authenticated user
     if (currentUser) {
       loadData();
     } else {
-      setIsLoading(false);
+      // Still try to load after a short delay in case auth is still initializing
+      const timer = setTimeout(() => {
+        console.log('Attempting delayed load...');
+        loadData();
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [currentUser]);
 
@@ -55,11 +61,17 @@ const Zamestnanci: React.FC = () => {
     try {
       setIsLoading(true);
 
+      // Debug: Check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session?.user?.id);
+
       // Load users
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('*')
         .order('email');
+
+      console.log('Users loaded:', usersData, 'Error:', usersError);
 
       if (usersError) {
         console.error('Error loading users:', usersError);

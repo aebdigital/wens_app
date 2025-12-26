@@ -130,7 +130,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               <option value="">Vyberte používateľa</option>
               {users.map(u => (
                 <option key={u.id} value={u.id}>
-                  {u.firstName} {u.lastName} {u.id === user?.id ? '(Ja)' : ''}
+                  {u.email} {u.id === user?.id ? '(Ja)' : ''}
                 </option>
               ))}
             </select>

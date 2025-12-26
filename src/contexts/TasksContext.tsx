@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { supabase, DbUser } from '../lib/supabase';
 
 export interface Task {
   id: string;
@@ -53,6 +54,37 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [allUsers, setAllUsers] = useState<UserBasic[]>([]);
+
+  // Fetch all users from Supabase on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, email, first_name, last_name');
+
+        if (error) {
+          console.error('Error fetching users:', error);
+          return;
+        }
+
+        if (data) {
+          const users: UserBasic[] = data.map((u: any) => ({
+            id: u.id,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            email: u.email
+          }));
+          setAllUsers(users);
+        }
+      } catch (e) {
+        console.error('Error fetching users:', e);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Load tasks from localStorage on mount and when user changes
   useEffect(() => {
@@ -63,9 +95,9 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
         // Filter tasks relevant to current user (either sent to them or sent by them)
         // Actually, mostly we care about tasks SENT TO the current user for the inbox/notifications
         // But for "Sent Items" we might want those sent BY them.
-        // For now, let's just load ALL and let the UI filter, or filter here. 
+        // For now, let's just load ALL and let the UI filter, or filter here.
         // The requirement implies seeing tasks assigned TO the user.
-        
+
         // Let's keep all tasks in state and filter in UI? Or just filter here?
         // Simulating backend: we should have all tasks.
         setTasks(parsedTasks);
@@ -139,23 +171,9 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     });
   };
 
-  const getAllUsers = (): UserBasic[] => {
-    try {
-      const usersData = localStorage.getItem('users');
-      if (usersData) {
-        const users: any[] = JSON.parse(usersData);
-        return users.map(u => ({
-          id: u.id,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          email: u.email
-        }));
-      }
-    } catch (e) {
-      console.error("Error loading users", e);
-    }
-    return [];
-  };
+  const getAllUsers = useCallback((): UserBasic[] => {
+    return allUsers;
+  }, [allUsers]);
 
   return (
     <TasksContext.Provider value={{ tasks, addTask, markAsRead, deleteTask, getAllUsers, unreadCount }}>

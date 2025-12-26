@@ -103,10 +103,10 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     try {
       setIsLoading(true);
+      // Load all contacts (visible to all authenticated users)
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
-        .eq('user_id', user.id)
         .order('date_added', { ascending: false });
 
       if (error) {

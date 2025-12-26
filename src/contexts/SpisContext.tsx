@@ -72,11 +72,10 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
 
-      // Load spis entries
+      // Load spis entries (all entries visible to all authenticated users)
       const { data: entriesData, error: entriesError } = await supabase
         .from('spis_entries')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (entriesError) {
@@ -86,18 +85,19 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setEntries((entriesData || []).map(dbToSpisEntry));
       }
 
-      // Load firma options
+      // Load firma options (all options visible to all authenticated users)
       const { data: firmaData, error: firmaError } = await supabase
         .from('firma_options')
-        .select('name')
-        .eq('user_id', user.id);
+        .select('name');
 
       if (firmaError) {
         console.error('Error loading firma options:', firmaError);
       } else if (firmaData && firmaData.length > 0) {
-        setFirmaOptions(firmaData.map(f => f.name));
+        // Get unique firma names
+        const uniqueFirmas = Array.from(new Set(firmaData.map(f => f.name)));
+        setFirmaOptions(uniqueFirmas);
       } else {
-        // Insert default options for new user
+        // Insert default options
         const defaultOptions = ['R1 Bratislava', 'WENS DOOR Prievidza'];
         await supabase.from('firma_options').insert(
           defaultOptions.map(name => ({ user_id: user.id, name }))
