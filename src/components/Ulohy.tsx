@@ -10,16 +10,20 @@ const Ulohy = () => {
   const { user } = useAuth();
   const { tasks, markAsRead, deleteTask } = useTasks();
   const navigate = useNavigate();
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filter, setFilter] = useState<'dorucene' | 'odoslane'>('dorucene'); // Changed initial filter
+  const [filter, setFilter] = useState<'dorucene' | 'odoslane'>('dorucene');
+
+  // Count tasks for each filter
+  const doruceneCount = user ? tasks.filter(t => t.to.id === user.id).length : 0;
+  const odoslaneCount = user ? tasks.filter(t => t.from.id === user.id).length : 0;
 
   const displayedTasks = tasks.filter(t => {
-      if (!user) return false; // No user, no tasks
+      if (!user) return false;
 
       if (filter === 'dorucene') {
           return t.to.id === user.id;
-      } else { // filter === 'odoslane'
+      } else {
           return t.from.id === user.id;
       }
   });
@@ -44,7 +48,7 @@ const Ulohy = () => {
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Úlohy</h1>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-lg"
+          className="flex items-center px-4 py-2 bg-[#e11b28] text-white rounded-lg hover:bg-[#c71325] transition-all font-semibold shadow-lg"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -57,15 +61,21 @@ const Ulohy = () => {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setFilter('dorucene')}
-          className={`px-4 py-2 rounded-lg font-medium ${filter === 'dorucene' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
+          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${filter === 'dorucene' ? 'bg-[#e11b28]/10 text-[#e11b28]' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
         >
           Doručené
+          <span className={`px-2 py-0.5 rounded-full text-xs ${filter === 'dorucene' ? 'bg-[#e11b28] text-white' : (isDark ? 'bg-dark-600 text-gray-300' : 'bg-gray-200 text-gray-600')}`}>
+            {doruceneCount}
+          </span>
         </button>
         <button
           onClick={() => setFilter('odoslane')}
-          className={`px-4 py-2 rounded-lg font-medium ${filter === 'odoslane' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
+          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${filter === 'odoslane' ? 'bg-[#e11b28]/10 text-[#e11b28]' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
         >
           Odoslané
+          <span className={`px-2 py-0.5 rounded-full text-xs ${filter === 'odoslane' ? 'bg-[#e11b28] text-white' : (isDark ? 'bg-dark-600 text-gray-300' : 'bg-gray-200 text-gray-600')}`}>
+            {odoslaneCount}
+          </span>
         </button>
       </div>
 
@@ -77,13 +87,13 @@ const Ulohy = () => {
             </div>
         ) : (
             displayedTasks.map(task => (
-                <div 
+                <div
                     key={task.id}
                     onClick={() => handleTaskClick(task)}
                     className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                        task.read && filter === 'dorucene' // Only dim if read AND in received folder
+                        task.read && filter === 'dorucene'
                             ? (isDark ? 'bg-dark-800 border-dark-500 text-gray-400' : 'bg-white border-gray-200 text-gray-600')
-                            : (isDark ? 'bg-dark-700 border-blue-500 text-white shadow-md' : 'bg-blue-50 border-blue-200 text-gray-900 shadow-sm')
+                            : (isDark ? 'bg-dark-700 border-[#e11b28]/50 text-white shadow-md' : 'bg-[#e11b28]/5 border-[#e11b28]/20 text-gray-900 shadow-sm')
                     } hover:shadow-md`}
                 >
                     <div className="flex justify-between items-start mb-2">
@@ -91,11 +101,11 @@ const Ulohy = () => {
                             <span className={`text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 {filter === 'dorucene' ? `Od: ${task.from.name}` : `Komu: ${task.to.name}`}
                             </span>
-                            {filter === 'dorucene' && !task.read && ( // Only show unread indicator for received
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            {filter === 'dorucene' && !task.read && (
+                                <span className="w-2 h-2 rounded-full bg-[#e11b28]"></span>
                             )}
                             {task.type === 'specificka' && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                                <span className="text-xs px-2 py-0.5 rounded bg-[#e11b28]/10 text-[#e11b28]">
                                     Špecifická
                                 </span>
                             )}
@@ -112,7 +122,7 @@ const Ulohy = () => {
                             {task.type === 'specificka' && task.spisCislo && (
                                 <button
                                     onClick={(e) => handleOpenProject(e, task)}
-                                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                                    className="px-3 py-1 text-xs bg-[#e11b28] text-white rounded hover:bg-[#c71325] transition-colors"
                                 >
                                     Projekt: {task.spisCislo}
                                 </button>

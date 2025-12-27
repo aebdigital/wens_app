@@ -108,3 +108,29 @@ export interface DbPhoto {
   created_at: string;
   updated_at: string;
 }
+
+export interface DbDovolenka {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  note: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbTask {
+  id: string;
+  from_user_id: string;
+  from_user_name: string;
+  to_user_id: string;
+  to_user_name: string;
+  type: 'vseobecna' | 'specificka';
+  text: string;
+  spis_id: string | null;
+  spis_cislo: string | null;
+  read: boolean;
+  created_at: string;
+  updated_at: string;
+}

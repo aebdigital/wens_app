@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, DbTask } from '../lib/supabase';
 
 export interface Task {
   id: string;
@@ -14,8 +14,8 @@ export interface Task {
   };
   type: 'vseobecna' | 'specificka';
   text: string;
-  spisId?: string; // If specificka
-  spisCislo?: string; // For display
+  spisId?: string;
+  spisCislo?: string;
   createdAt: string;
   read: boolean;
 }
@@ -29,11 +29,12 @@ export interface UserBasic {
 
 interface TasksContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => void;
-  markAsRead: (taskId: string) => void;
-  deleteTask: (taskId: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => Promise<void>;
+  markAsRead: (taskId: string) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
   getAllUsers: () => UserBasic[];
   unreadCount: number;
+  refreshTasks: () => Promise<void>;
 }
 
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
@@ -49,6 +50,25 @@ export const useTasks = () => {
 interface TasksProviderProps {
   children: React.ReactNode;
 }
+
+// Helper to convert DB task to app task
+const dbToTask = (db: DbTask): Task => ({
+  id: db.id,
+  from: {
+    id: db.from_user_id,
+    name: db.from_user_name
+  },
+  to: {
+    id: db.to_user_id,
+    name: db.to_user_name
+  },
+  type: db.type,
+  text: db.text,
+  spisId: db.spis_id || undefined,
+  spisCislo: db.spis_cislo || undefined,
+  createdAt: db.created_at,
+  read: db.read
+});
 
 export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
   const { user } = useAuth();
@@ -86,38 +106,40 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     fetchUsers();
   }, []);
 
-  // Load tasks from localStorage on mount and when user changes
-  useEffect(() => {
-    const loadTasks = () => {
-      const storedTasks = localStorage.getItem('tasks');
-      if (storedTasks) {
-        const parsedTasks: Task[] = JSON.parse(storedTasks);
-        // Filter tasks relevant to current user (either sent to them or sent by them)
-        // Actually, mostly we care about tasks SENT TO the current user for the inbox/notifications
-        // But for "Sent Items" we might want those sent BY them.
-        // For now, let's just load ALL and let the UI filter, or filter here.
-        // The requirement implies seeing tasks assigned TO the user.
+  // Load tasks from Supabase
+  const loadTasks = useCallback(async () => {
+    if (!user) {
+      setTasks([]);
+      return;
+    }
 
-        // Let's keep all tasks in state and filter in UI? Or just filter here?
-        // Simulating backend: we should have all tasks.
-        setTasks(parsedTasks);
-      } else {
+    try {
+      // Load tasks where user is sender or recipient
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading tasks:', error);
         setTasks([]);
+        return;
       }
-    };
 
+      if (data) {
+        setTasks(data.map(dbToTask));
+      }
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      setTasks([]);
+    }
+  }, [user]);
+
+  // Load tasks when user changes
+  useEffect(() => {
     loadTasks();
-
-    // Listen for storage events to update across tabs (simulating real-time)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tasks') {
-        loadTasks();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [loadTasks]);
 
   // Update unread count for current user
   useEffect(() => {
@@ -129,54 +151,86 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     }
   }, [tasks, user]);
 
-  const addTask = (newTaskData: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => {
+  const addTask = async (newTaskData: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => {
     if (!user) return;
 
-    const newTask: Task = {
-      ...newTaskData,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      read: false,
-      from: {
-        id: user.id,
-        name: `${user.firstName} ${user.lastName}`
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          from_user_id: user.id,
+          from_user_name: `${user.firstName} ${user.lastName}`,
+          to_user_id: newTaskData.to.id,
+          to_user_name: newTaskData.to.name,
+          type: newTaskData.type,
+          text: newTaskData.text,
+          spis_id: newTaskData.spisId || null,
+          spis_cislo: newTaskData.spisCislo || null,
+          read: false
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding task:', error);
+        return;
       }
-    };
 
-    setTasks(prev => {
-      const updated = [newTask, ...prev];
-      localStorage.setItem('tasks', JSON.stringify(updated));
-      return updated;
-    });
-    
-    // Dispatch a storage event manually for the current window so other components update immediately if they listen to it, 
-    // although React state update handles this context.
-    // However, if we want to simulate "receiving" a task in the SAME window if I send it to myself:
-    // The state update above triggers re-render, so unread count updates.
+      if (data) {
+        const newTask = dbToTask(data);
+        setTasks(prev => [newTask, ...prev]);
+      }
+    } catch (error) {
+      console.error('Failed to add task:', error);
+    }
   };
 
-  const markAsRead = (taskId: string) => {
-    setTasks(prev => {
-      const updated = prev.map(t => t.id === taskId ? { ...t, read: true } : t);
-      localStorage.setItem('tasks', JSON.stringify(updated));
-      return updated;
-    });
+  const markAsRead = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ read: true })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error marking task as read:', error);
+        return;
+      }
+
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, read: true } : t));
+    } catch (error) {
+      console.error('Failed to mark task as read:', error);
+    }
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(prev => {
-      const updated = prev.filter(t => t.id !== taskId);
-      localStorage.setItem('tasks', JSON.stringify(updated));
-      return updated;
-    });
+  const deleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+        return;
+      }
+
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
   };
 
   const getAllUsers = useCallback((): UserBasic[] => {
     return allUsers;
   }, [allUsers]);
 
+  const refreshTasks = useCallback(async () => {
+    await loadTasks();
+  }, [loadTasks]);
+
   return (
-    <TasksContext.Provider value={{ tasks, addTask, markAsRead, deleteTask, getAllUsers, unreadCount }}>
+    <TasksContext.Provider value={{ tasks, addTask, markAsRead, deleteTask, getAllUsers, unreadCount, refreshTasks }}>
       {children}
     </TasksContext.Provider>
   );

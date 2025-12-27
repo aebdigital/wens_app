@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { CustomDatePicker } from './common/CustomDatePicker';
+import { supabase, DbDovolenka } from '../lib/supabase';
 
 // Types
 interface VacationEntry {
@@ -10,28 +11,15 @@ interface VacationEntry {
   startDate: string;
   endDate: string;
   note?: string;
-  createdBy: string; // user.id
+  createdBy: string;
 }
 
 const Dovolenky: React.FC = () => {
   const { isDark } = useTheme();
   const { user } = useAuth();
-  
-  // --- Dovolenky State ---
-  const [vacations, setVacations] = useState<VacationEntry[]>(() => {
-    try {
-      const saved = localStorage.getItem('dovolenkyData');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Failed to load vacations', e);
-      return [];
-    }
-  });
 
-  // Load/Save Vacations
-  useEffect(() => {
-    localStorage.setItem('dovolenkyData', JSON.stringify(vacations));
-  }, [vacations]);
+  const [vacations, setVacations] = useState<VacationEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // New Vacation Form State
   const [newVacation, setNewVacation] = useState({
@@ -41,30 +29,123 @@ const Dovolenky: React.FC = () => {
     note: ''
   });
 
-  const handleAddVacation = () => {
+  // Load vacations from Supabase
+  const loadVacations = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('dovolenky')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (error) {
+        console.error('Error loading vacations:', error);
+        return;
+      }
+
+      if (data) {
+        setVacations(data.map((d: DbDovolenka) => ({
+          id: d.id,
+          name: d.name,
+          startDate: d.start_date,
+          endDate: d.end_date,
+          note: d.note || undefined,
+          createdBy: d.created_by
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load vacations:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadVacations();
+  }, [loadVacations]);
+
+  const handleAddVacation = async () => {
     if (!newVacation.name || !newVacation.startDate || !newVacation.endDate) {
       alert('Prosím vyplňte meno a dátumy.');
       return;
     }
 
-    const entry: VacationEntry = {
-      id: Date.now().toString(),
-      name: newVacation.name,
-      startDate: newVacation.startDate,
-      endDate: newVacation.endDate,
-      note: newVacation.note,
-      createdBy: user?.id || 'unknown'
-    };
+    if (!user) {
+      alert('Musíte byť prihlásený.');
+      return;
+    }
 
-    setVacations(prev => [...prev, entry]);
-    setNewVacation({ name: '', startDate: '', endDate: '', note: '' });
-  };
+    try {
+      const { data, error } = await supabase
+        .from('dovolenky')
+        .insert({
+          name: newVacation.name,
+          start_date: newVacation.startDate,
+          end_date: newVacation.endDate,
+          note: newVacation.note || null,
+          created_by: user.id
+        })
+        .select()
+        .single();
 
-  const handleDeleteVacation = (id: string) => {
-    if (window.confirm('Naozaj chcete vymazať tento záznam?')) {
-      setVacations(prev => prev.filter(v => v.id !== id));
+      if (error) {
+        console.error('Error adding vacation:', error);
+        alert('Nepodarilo sa pridať dovolenku.');
+        return;
+      }
+
+      if (data) {
+        const newEntry: VacationEntry = {
+          id: data.id,
+          name: data.name,
+          startDate: data.start_date,
+          endDate: data.end_date,
+          note: data.note || undefined,
+          createdBy: data.created_by
+        };
+        setVacations(prev => [newEntry, ...prev]);
+        setNewVacation({ name: '', startDate: '', endDate: '', note: '' });
+      }
+    } catch (error) {
+      console.error('Failed to add vacation:', error);
+      alert('Nepodarilo sa pridať dovolenku.');
     }
   };
+
+  const handleDeleteVacation = async (id: string) => {
+    if (!window.confirm('Naozaj chcete vymazať tento záznam?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('dovolenky')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting vacation:', error);
+        alert('Nepodarilo sa vymazať dovolenku.');
+        return;
+      }
+
+      setVacations(prev => prev.filter(v => v.id !== id));
+    } catch (error) {
+      console.error('Failed to delete vacation:', error);
+      alert('Nepodarilo sa vymazať dovolenku.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
@@ -74,15 +155,15 @@ const Dovolenky: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-            
+
             {/* Add New Vacation Form */}
             <div className={`p-4 rounded-lg shadow-sm ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
                 <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Pridať dovolenku</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Meno</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
                             value={newVacation.name}
                             onChange={(e) => setNewVacation({...newVacation, name: e.target.value})}
@@ -106,7 +187,7 @@ const Dovolenky: React.FC = () => {
                         />
                     </div>
                      <div>
-                        <button 
+                        <button
                             onClick={handleAddVacation}
                             className="w-full px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors font-medium text-sm"
                         >
@@ -116,8 +197,8 @@ const Dovolenky: React.FC = () => {
                 </div>
                  <div className="mt-3">
                     <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Poznámka</label>
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
                         value={newVacation.note}
                         onChange={(e) => setNewVacation({...newVacation, note: e.target.value})}
@@ -153,7 +234,7 @@ const Dovolenky: React.FC = () => {
                                     <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.endDate).toLocaleDateString('sk-SK')}</td>
                                     <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{vac.note || '-'}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <button 
+                                        <button
                                             onClick={() => handleDeleteVacation(vac.id)}
                                             className="text-red-600 hover:text-red-900 font-medium text-xs hover:underline"
                                         >

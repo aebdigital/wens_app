@@ -184,7 +184,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700"
+              className="px-4 py-2 bg-[#e11b28] text-white rounded font-medium hover:bg-[#c71325]"
             >
               Vytvoriť úlohu
             </button>
