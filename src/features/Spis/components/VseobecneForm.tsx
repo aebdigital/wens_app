@@ -307,6 +307,17 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
             </div>
           </div>
 
+          {/* Popis projektu - full width */}
+          <div className="md:col-span-2">
+            <input
+              type="text"
+              placeholder="Popis projektu"
+              value={formData.popisProjektu}
+              onChange={(e) => setFormData(prev => ({...prev, popisProjektu: e.target.value}))}
+              disabled={isLocked}
+              className={getInputClass()}
+            />
+          </div>
 
         </div>
       </div>

@@ -232,4 +232,6 @@ export interface PuzdraData {
   spracoval?: string;
   kontakt?: string;
   emailSpracoval?: string;
+  // Description field
+  popis?: string;
 }

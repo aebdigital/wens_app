@@ -19,8 +19,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
-  const [dueDate, setDueDate] = useState<string>('');
 
   const [users, setUsers] = useState<any[]>([]);
 
@@ -31,8 +29,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       setTitle('');
       setDescription('');
       setAssignedTo('');
-      setPriority('normal');
-      setDueDate('');
     }
   }, [isOpen, getAllUsers]);
 
@@ -44,18 +40,16 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       title,
       description,
       status: 'pending',
-      priority,
+      priority: 'normal',
       assignedTo,
       assignedToName: users.find(u => u.id === assignedTo)?.firstName + ' ' + users.find(u => u.id === assignedTo)?.lastName,
-      dueDate: dueDate || null
+      dueDate: null
     });
 
     // Reset and close
     setTitle('');
     setDescription('');
     setAssignedTo('');
-    setPriority('normal');
-    setDueDate('');
     onClose();
   };
 
@@ -108,31 +102,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Priority */}
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priorita:</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as 'low' | 'normal' | 'high')}
-              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            >
-              <option value="low">Nízka</option>
-              <option value="normal">Normálna</option>
-              <option value="high">Vysoká</option>
-            </select>
-          </div>
-
-          {/* Due Date */}
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Termín (voliteľné):</label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
           </div>
 
           <div className="flex justify-end gap-3 mt-6">

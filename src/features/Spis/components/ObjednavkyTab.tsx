@@ -92,8 +92,19 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                   <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {formatDate(item.datum)}
                   </td>
-                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                    {item.popis || '-'}
+                  <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      value={item.popis || ''}
+                      onChange={(e) => {
+                        const updated = [...items];
+                        updated[index].popis = e.target.value;
+                        onUpdate(updated);
+                      }}
+                      disabled={isLocked}
+                      placeholder="Zadajte popis..."
+                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    />
                   </td>
                   <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.cisloObjednavky || '-'}

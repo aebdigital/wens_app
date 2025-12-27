@@ -12,6 +12,7 @@ interface VacationEntry {
   endDate: string;
   note?: string;
   createdBy: string;
+  createdAt: string;
 }
 
 const Dovolenky: React.FC = () => {
@@ -52,7 +53,8 @@ const Dovolenky: React.FC = () => {
           startDate: d.start_date,
           endDate: d.end_date,
           note: d.note || undefined,
-          createdBy: d.created_by
+          createdBy: d.created_by,
+          createdAt: d.created_at
         })));
       }
     } catch (error) {
@@ -118,6 +120,19 @@ const Dovolenky: React.FC = () => {
     if (!window.confirm('Naozaj chcete vymazať tento záznam?')) return;
 
     try {
+      // First verify the vacation exists and belongs to current user
+      const vacation = vacations.find(v => v.id === id);
+      if (!vacation) {
+        alert('Záznam nebol nájdený.');
+        return;
+      }
+
+      // Check if current user is the creator
+      if (user && vacation.createdBy !== user.id) {
+        alert('Len tvorca záznamu môže vymazať dovolenku.');
+        return;
+      }
+
       const { error } = await supabase
         .from('dovolenky')
         .delete()
@@ -125,7 +140,7 @@ const Dovolenky: React.FC = () => {
 
       if (error) {
         console.error('Error deleting vacation:', error);
-        alert('Nepodarilo sa vymazať dovolenku.');
+        alert('Nepodarilo sa vymazať dovolenku: ' + error.message);
         return;
       }
 
@@ -210,19 +225,20 @@ const Dovolenky: React.FC = () => {
             {/* Vacations Table */}
             <div className={`rounded-lg overflow-hidden shadow-sm ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
                 <table className="w-full text-sm text-left">
-                    <thead className={`text-xs uppercase ${isDark ? 'bg-dark-700 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+                    <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
                         <tr>
-                            <th className="px-6 py-3">Meno</th>
-                            <th className="px-6 py-3">Od</th>
-                            <th className="px-6 py-3">Do</th>
-                            <th className="px-6 py-3">Poznámka</th>
-                            <th className="px-6 py-3 text-right">Akcie</th>
+                            <th className="px-4 py-3 text-left font-semibold text-white">Meno</th>
+                            <th className="px-4 py-3 text-left font-semibold text-white">Od</th>
+                            <th className="px-4 py-3 text-left font-semibold text-white">Do</th>
+                            <th className="px-4 py-3 text-left font-semibold text-white">Poznámka</th>
+                            <th className="px-4 py-3 text-left font-semibold text-white">Dátum pridania</th>
+                            <th className="px-4 py-3 text-right font-semibold text-white">Akcie</th>
                         </tr>
                     </thead>
                     <tbody>
                         {vacations.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                     Žiadne naplánované dovolenky.
                                 </td>
                             </tr>
@@ -233,6 +249,7 @@ const Dovolenky: React.FC = () => {
                                     <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.startDate).toLocaleDateString('sk-SK')}</td>
                                     <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.endDate).toLocaleDateString('sk-SK')}</td>
                                     <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{vac.note || '-'}</td>
+                                    <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.createdAt).toLocaleDateString('sk-SK')}</td>
                                     <td className="px-6 py-4 text-right">
                                         <button
                                             onClick={() => handleDeleteVacation(vac.id)}

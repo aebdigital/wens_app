@@ -92,6 +92,7 @@ export interface DbUser {
   email: string;
   first_name: string;
   last_name: string;
+  last_seen: string | null;
   created_at: string;
   updated_at: string;
 }

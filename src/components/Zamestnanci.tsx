@@ -9,6 +9,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  lastSeen: string | null;
   createdAt: string;
 }
 
@@ -33,6 +34,34 @@ const parsePrice = (priceStr: string | undefined): number => {
   const cleaned = priceStr.replace(/\s/g, '').replace(',', '.');
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
+};
+
+// Check if user is online (seen within last 2 minutes)
+const isUserOnline = (lastSeen: string | null): boolean => {
+  if (!lastSeen) return false;
+  const lastSeenTime = new Date(lastSeen).getTime();
+  const now = Date.now();
+  const twoMinutes = 2 * 60 * 1000;
+  return (now - lastSeenTime) < twoMinutes;
+};
+
+// Format last seen time
+const formatLastSeen = (lastSeen: string | null): string => {
+  if (!lastSeen) return 'Nikdy';
+
+  const lastSeenTime = new Date(lastSeen).getTime();
+  const now = Date.now();
+  const diffMs = now - lastSeenTime;
+
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) return 'Práve teraz';
+  if (minutes < 60) return `pred ${minutes} min`;
+  if (hours < 24) return `pred ${hours} hod`;
+  if (days === 1) return 'Včera';
+  return `pred ${days} dňami`;
 };
 
 const Zamestnanci: React.FC = () => {
@@ -94,6 +123,30 @@ const Zamestnanci: React.FC = () => {
     }
   }, [currentUser]);
 
+  // Update current user's last_seen periodically
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const updateLastSeen = async () => {
+      try {
+        await supabase
+          .from('users')
+          .update({ last_seen: new Date().toISOString() })
+          .eq('id', currentUser.id);
+      } catch (error) {
+        console.error('Failed to update last_seen:', error);
+      }
+    };
+
+    // Update immediately on mount
+    updateLastSeen();
+
+    // Update every minute
+    const interval = setInterval(updateLastSeen, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -112,6 +165,7 @@ const Zamestnanci: React.FC = () => {
           email: u.email,
           firstName: u.first_name,
           lastName: u.last_name,
+          lastSeen: u.last_seen,
           createdAt: u.created_at,
         })));
       }
@@ -251,6 +305,7 @@ const Zamestnanci: React.FC = () => {
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-white">Meno</th>
               <th className="px-4 py-3 text-left font-semibold text-white">Email</th>
+              <th className="px-4 py-3 text-left font-semibold text-white">Online</th>
               <th className="px-4 py-3 text-left font-semibold text-white">Registrovaný</th>
             </tr>
           </thead>
@@ -278,6 +333,18 @@ const Zamestnanci: React.FC = () => {
                   </div>
                 </td>
                 <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{user.email}</td>
+                <td className={`px-4 py-3`}>
+                  {isUserOnline(user.lastSeen) ? (
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      <span className="text-green-500 font-medium">Online</span>
+                    </div>
+                  ) : (
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+                      {formatLastSeen(user.lastSeen)}
+                    </span>
+                  )}
+                </td>
                 <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {new Date(user.createdAt).toLocaleDateString('sk-SK')}
                 </td>

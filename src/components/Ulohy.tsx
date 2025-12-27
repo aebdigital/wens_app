@@ -43,24 +43,6 @@ const Ulohy = () => {
     }
   };
 
-  const getPriorityColor = (priority: Task['priority']) => {
-    switch (priority) {
-      case 'high': return 'text-red-500';
-      case 'normal': return 'text-yellow-500';
-      case 'low': return 'text-green-500';
-      default: return 'text-gray-500';
-    }
-  };
-
-  const getPriorityLabel = (priority: Task['priority']) => {
-    switch (priority) {
-      case 'high': return 'Vysoká';
-      case 'normal': return 'Normálna';
-      case 'low': return 'Nízka';
-      default: return priority;
-    }
-  };
-
   const handleStatusChange = (task: Task, newStatus: Task['status']) => {
     updateTask(task.id, { status: newStatus });
   };
@@ -126,9 +108,6 @@ const Ulohy = () => {
                   <span className={`text-xs px-2 py-0.5 rounded text-white ${getStatusColor(task.status)}`}>
                     {getStatusLabel(task.status)}
                   </span>
-                  <span className={`text-xs ${getPriorityColor(task.priority)}`}>
-                    ● {getPriorityLabel(task.priority)}
-                  </span>
                 </div>
                 <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {new Date(task.createdAt).toLocaleString('sk-SK')}
@@ -146,11 +125,6 @@ const Ulohy = () => {
                   <span>Od: {task.createdByName}</span>
                 ) : (
                   <span>Pre: {task.assignedToName}</span>
-                )}
-                {task.dueDate && (
-                  <span className="ml-4">
-                    📅 Termín: {new Date(task.dueDate).toLocaleDateString('sk-SK')}
-                  </span>
                 )}
               </div>
 

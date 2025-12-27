@@ -707,7 +707,7 @@ export const useSpisEntryLogic = (
         nazov: data.zakazka || `Objednávka ${nextId}`,
         vypracoval: user ? `${user.firstName} ${user.lastName}` : '',
         datum: new Date().toISOString().split('T')[0],
-        popis: `Objednávka: ${data.polozky ? data.polozky.length : 0} položiek`,
+        popis: '', // Empty by default, user fills in the table
         cisloObjednavky: nextId,
         dorucene: '',
         data: data, // Store full data for editing
