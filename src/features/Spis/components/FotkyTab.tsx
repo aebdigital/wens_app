@@ -158,8 +158,6 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
 
   return (
     <div className="p-2 flex flex-col gap-4 h-full">
-      <h3 className="text-base font-semibold text-gray-700 mb-2">Pridané fotografie</h3>
-
       <div className="flex-1 overflow-auto">
         {/* Photos Grid */}
         {uploadedPhotos.length > 0 && (
