@@ -568,7 +568,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
 
               {/* Desktop Action Buttons Sidebar */}
               <div
-                className="hidden lg:flex w-48 bg-gray-50 border border-gray-200 rounded-lg flex-col justify-center gap-3 p-3 flex-shrink-0 h-fit"
+                className={`hidden lg:flex w-48 rounded-lg flex-col justify-center gap-3 p-3 flex-shrink-0 h-fit ${isDark ? 'bg-dark-700 border border-dark-500' : 'bg-gray-50 border border-gray-200'}`}
                 style={{
                   boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
                 }}
@@ -590,7 +590,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                 </button>
                 <button
                   onClick={() => setIsLocked(!isLocked)}
-                  className={`px-3 py-3 text-sm flex items-center justify-center rounded-lg text-center transition-colors font-semibold ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'}`}
+                  className={`px-3 py-3 text-sm flex items-center justify-center rounded-lg text-center transition-colors font-semibold ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300')}`}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {isLocked ? (
@@ -642,7 +642,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
               </button>
               <button
                 onClick={() => setIsLocked(!isLocked)}
-                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'}`}
+                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300')}`}
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {isLocked ? (
