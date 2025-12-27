@@ -10,10 +10,12 @@ export interface ContactChange {
   selected: boolean;
 }
 
+export type ContactAction = 'ignore' | 'create_new' | 'update';
+
 interface ContactChangesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (selectedChanges: ContactChange[]) => void;
+  onApply: (action: ContactAction, selectedChanges: ContactChange[]) => void;
   changes: ContactChange[];
   isDark: boolean;
 }
@@ -34,23 +36,8 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
 
   if (!isOpen) return null;
 
-  const toggleChange = (index: number) => {
-    setChanges(prev => prev.map((change, i) =>
-      i === index ? { ...change, selected: !change.selected } : change
-    ));
-  };
-
-  const selectAll = () => {
-    setChanges(prev => prev.map(change => ({ ...change, selected: true })));
-  };
-
-  const deselectAll = () => {
-    setChanges(prev => prev.map(change => ({ ...change, selected: false })));
-  };
-
-  const handleApply = () => {
-    onApply(changes.filter(c => c.selected));
-    onClose();
+  const handleAction = (action: ContactAction) => {
+    onApply(action, changes);
   };
 
   // Group changes by section
@@ -61,8 +48,6 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
     acc[change.section].items.push({ ...change, index });
     return acc;
   }, {} as Record<string, { label: string; items: (ContactChange & { index: number })[] }>);
-
-  const selectedCount = changes.filter(c => c.selected).length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
@@ -79,22 +64,6 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Select All / Deselect All buttons */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={selectAll}
-              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            >
-              Vybrať všetko
-            </button>
-            <button
-              onClick={deselectAll}
-              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            >
-              Zrušiť výber
-            </button>
-          </div>
-
           {/* Changes grouped by section */}
           {Object.entries(groupedChanges).map(([section, { label, items }]) => (
             <div key={section} className="mb-6">
@@ -103,20 +72,10 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
               </h3>
               <div className="space-y-2">
                 {items.map((change) => (
-                  <label
+                  <div
                     key={change.index}
-                    className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                      change.selected
-                        ? isDark ? 'bg-blue-900/30 border border-blue-500' : 'bg-blue-50 border border-blue-200'
-                        : isDark ? 'bg-dark-700 border border-dark-500' : 'bg-gray-50 border border-gray-200'
-                    }`}
+                    className={`p-3 rounded-lg ${isDark ? 'bg-dark-700 border border-dark-500' : 'bg-gray-50 border border-gray-200'}`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={change.selected}
-                      onChange={() => toggleChange(change.index)}
-                      className="mt-1 cursor-pointer"
-                    />
                     <div className="flex-1 min-w-0">
                       <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {change.fieldLabel}
@@ -136,32 +95,46 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  </label>
+                  </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className={`px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-200'} flex justify-between items-center`}>
-          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            {selectedCount} z {changes.length} zmien vybraných
-          </span>
-          <div className="flex gap-3">
+        {/* Footer with 3 action buttons */}
+        <div className={`px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={onClose}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              onClick={() => handleAction('ignore')}
+              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
                 isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              Zrušiť
+              <div className="flex flex-col items-center">
+                <span>Ignorovať</span>
+                <span className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Ponechať zmeny len v projekte</span>
+              </div>
             </button>
             <button
-              onClick={handleApply}
-              className="px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-medium hover:from-[#c71325] hover:to-[#9e1019] shadow-lg"
+              onClick={() => handleAction('create_new')}
+              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                isDark ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
             >
-              Aplikovať vybraté zmeny
+              <div className="flex flex-col items-center">
+                <span>Vytvoriť nový kontakt</span>
+                <span className={`text-xs mt-1 opacity-80`}>Vytvorí sa nový kontakt s novými údajmi</span>
+              </div>
+            </button>
+            <button
+              onClick={() => handleAction('update')}
+              className="flex-1 px-4 py-3 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-medium hover:from-[#c71325] hover:to-[#9e1019] shadow-lg"
+            >
+              <div className="flex flex-col items-center">
+                <span>Aktualizovať kontakt</span>
+                <span className={`text-xs mt-1 opacity-80`}>Prepíše údaje v uloženom kontakte</span>
+              </div>
             </button>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useContacts, Contact } from '../../../contexts/ContactsContext';
 import { SpisEntry, SpisFormData, CenovaPonukaItem } from '../types';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
-import { ContactChange, detectContactChanges } from '../components/ContactChangesModal';
+import { ContactChange, ContactAction, detectContactChanges } from '../components/ContactChangesModal';
 import { supabase } from '../../../lib/supabase';
 
 // Helper to compare relevant contact fields
@@ -319,7 +319,7 @@ export const useSpisEntryLogic = (
     return allChanges;
   }, [formData, getContactById]);
 
-  const performSaveInternal = useCallback(async () => {
+  const performSaveInternal = useCallback(async (skipContactUpdates: boolean = false, createNewContacts: boolean = false) => {
     try {
       // Map photos to persistent format
       const persistentPhotos = uploadedPhotos.map(p => ({
@@ -359,172 +359,188 @@ export const useSpisEntryLogic = (
       const currentCisloCP = formData.predmet || getNextCP();
 
       // --- Contact Handling Logic (Customer) ---
-      let customerContactIdToSave = formData.zakaznikId;
-      if (formData.priezvisko || formData.meno || formData.email || formData.telefon) {
-        let existingCustomer = customerContactIdToSave ? getContactById(customerContactIdToSave) : undefined;
+      // Skip contact updates if 'ignore' action was selected
+      if (!skipContactUpdates) {
+        let customerContactIdToSave = formData.zakaznikId;
+        if (formData.priezvisko || formData.meno || formData.email || formData.telefon) {
+          let existingCustomer = customerContactIdToSave ? getContactById(customerContactIdToSave) : undefined;
 
-        // If not found by ID, try finding by name (for cases where ID wasn't stored initially)
-        if (!existingCustomer && formData.meno && formData.priezvisko) {
-            existingCustomer = getContactByNameAndType(formData.priezvisko, formData.meno, 'zakaznik');
-            if (existingCustomer) customerContactIdToSave = existingCustomer.id; // Use this ID going forward
-        }
+          // If not found by ID, try finding by name (for cases where ID wasn't stored initially)
+          if (!existingCustomer && formData.meno && formData.priezvisko) {
+              existingCustomer = getContactByNameAndType(formData.priezvisko, formData.meno, 'zakaznik');
+              if (existingCustomer) customerContactIdToSave = existingCustomer.id; // Use this ID going forward
+          }
 
-        const isCustomerDataChanged = initialFormDataRef.current
-          ? hasContactChanged(
-              {...existingCustomer!, id: existingCustomer?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact for helper
-              formData,
-              'zakaznik'
-            ) : false; // If no initial data, it's considered new or fully changed
+          const isCustomerDataChanged = initialFormDataRef.current
+            ? hasContactChanged(
+                {...existingCustomer!, id: existingCustomer?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact for helper
+                formData,
+                'zakaznik'
+              ) : false; // If no initial data, it's considered new or fully changed
 
-        const customerData = {
-          meno: formData.meno || '',
-          priezvisko: formData.priezvisko || '',
-          telefon: formData.telefon || '',
-          email: formData.email || '',
-          ulica: formData.ulica || '',
-          mesto: formData.mesto || '',
-          psc: formData.psc || '',
-          ico: formData.ico || '',
-          icDph: formData.icDph || '',
-          dic: formData.dic || '',
-          typ: 'zakaznik' as const,
-          kontaktnaPriezvisko: formData.kontaktnaPriezvisko || '',
-          kontaktnaMeno: formData.kontaktnaMeno || '',
-          kontaktnaTelefon: formData.kontaktnaTelefon || '',
-          kontaktnaEmail: formData.kontaktnaEmail || '',
-          popis: formData.popisProjektu || '',
-          projectIds: [currentCisloCP]
-        };
+          const customerData = {
+            meno: formData.meno || '',
+            priezvisko: formData.priezvisko || '',
+            telefon: formData.telefon || '',
+            email: formData.email || '',
+            ulica: formData.ulica || '',
+            mesto: formData.mesto || '',
+            psc: formData.psc || '',
+            ico: formData.ico || '',
+            icDph: formData.icDph || '',
+            dic: formData.dic || '',
+            typ: 'zakaznik' as const,
+            kontaktnaPriezvisko: formData.kontaktnaPriezvisko || '',
+            kontaktnaMeno: formData.kontaktnaMeno || '',
+            kontaktnaTelefon: formData.kontaktnaTelefon || '',
+            kontaktnaEmail: formData.kontaktnaEmail || '',
+            popis: formData.popisProjektu || '',
+            projectIds: [currentCisloCP]
+          };
 
-        let customerContact: Contact;
-        if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
-             customerContact = await forkContact(existingCustomer.id, customerData);
+          let customerContact: Contact;
+          if (createNewContacts) {
+              // Force create a new contact (don't update existing)
+              customerContact = await addContact(customerData);
+          } else if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
+               customerContact = await forkContact(existingCustomer.id, customerData);
+          } else {
+               customerContact = await addContact({
+                  ...customerData,
+                  ...(customerContactIdToSave ? { id: customerContactIdToSave } : {})
+               });
+          }
+
+          // Update formData with the ID of the contact that was actually saved/created
+          setFormData(prev => ({ ...prev, zakaznikId: customerContact.id }));
+          if (entryData.fullFormData) {
+            entryData.fullFormData.zakaznikId = customerContact.id;
+          }
         } else {
-             customerContact = await addContact({
-                ...customerData,
-                ...(customerContactIdToSave ? { id: customerContactIdToSave } : {})
-             });
+           // If contact fields are empty, ensure zakaznikId is cleared
+           setFormData(prev => ({ ...prev, zakaznikId: undefined }));
+           if (entryData.fullFormData) {
+             entryData.fullFormData.zakaznikId = undefined;
+           }
         }
-
-        // Update formData with the ID of the contact that was actually saved/created
-        setFormData(prev => ({ ...prev, zakaznikId: customerContact.id }));
-        if (entryData.fullFormData) {
-          entryData.fullFormData.zakaznikId = customerContact.id;
-        }
-      } else {
-         // If contact fields are empty, ensure zakaznikId is cleared
-         setFormData(prev => ({ ...prev, zakaznikId: undefined }));
-         if (entryData.fullFormData) {
-           entryData.fullFormData.zakaznikId = undefined;
-         }
       }
 
       // --- Contact Handling Logic (Architect) ---
-      let architectContactIdToSave = formData.architektId;
-      if (formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyEmail || formData.architektonickyTelefon) {
-        let existingArchitect = architectContactIdToSave ? getContactById(architectContactIdToSave) : undefined;
+      if (!skipContactUpdates) {
+        let architectContactIdToSave = formData.architektId;
+        if (formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyEmail || formData.architektonickyTelefon) {
+          let existingArchitect = architectContactIdToSave ? getContactById(architectContactIdToSave) : undefined;
 
-        // If not found by ID, try finding by name
-        if (!existingArchitect && formData.architektonickeMeno && formData.architektonickyPriezvisko) {
-            existingArchitect = getContactByNameAndType(formData.architektonickyPriezvisko, formData.architektonickeMeno, 'architekt');
-            if (existingArchitect) architectContactIdToSave = existingArchitect.id;
-        }
+          // If not found by ID, try finding by name
+          if (!existingArchitect && formData.architektonickeMeno && formData.architektonickyPriezvisko) {
+              existingArchitect = getContactByNameAndType(formData.architektonickyPriezvisko, formData.architektonickeMeno, 'architekt');
+              if (existingArchitect) architectContactIdToSave = existingArchitect.id;
+          }
 
-        const isArchitectDataChanged = initialFormDataRef.current
-          ? hasContactChanged(
-              {...existingArchitect!, id: existingArchitect?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-              formData,
-              'architekt'
-            ) : false;
+          const isArchitectDataChanged = initialFormDataRef.current
+            ? hasContactChanged(
+                {...existingArchitect!, id: existingArchitect?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
+                formData,
+                'architekt'
+              ) : false;
 
-        const architectData = {
-          meno: formData.architektonickeMeno || '',
-          priezvisko: formData.architektonickyPriezvisko || '',
-          telefon: formData.architektonickyTelefon || '',
-          email: formData.architektonickyEmail || '',
-          ulica: formData.architektonickyUlica || '',
-          mesto: formData.architektonickyMesto || '',
-          psc: formData.architektonickyPsc || '',
-          ico: formData.architektonickyIco || '',
-          icDph: formData.architektonickyIcDph || '',
-          dic: formData.architektonickyDic || '',
-          typ: 'architekt' as const,
-          projectIds: [currentCisloCP]
-        };
+          const architectData = {
+            meno: formData.architektonickeMeno || '',
+            priezvisko: formData.architektonickyPriezvisko || '',
+            telefon: formData.architektonickyTelefon || '',
+            email: formData.architektonickyEmail || '',
+            ulica: formData.architektonickyUlica || '',
+            mesto: formData.architektonickyMesto || '',
+            psc: formData.architektonickyPsc || '',
+            ico: formData.architektonickyIco || '',
+            icDph: formData.architektonickyIcDph || '',
+            dic: formData.architektonickyDic || '',
+            typ: 'architekt' as const,
+            projectIds: [currentCisloCP]
+          };
 
-        let architectContact: Contact;
-        if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
-             architectContact = await forkContact(existingArchitect.id, architectData);
+          let architectContact: Contact;
+          if (createNewContacts) {
+              // Force create a new contact (don't update existing)
+              architectContact = await addContact(architectData);
+          } else if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
+               architectContact = await forkContact(existingArchitect.id, architectData);
+          } else {
+               architectContact = await addContact({
+                  ...architectData,
+                  ...(architectContactIdToSave ? { id: architectContactIdToSave } : {})
+               });
+          }
+
+          setFormData(prev => ({ ...prev, architektId: architectContact.id }));
+          if (entryData.fullFormData) {
+            entryData.fullFormData.architektId = architectContact.id;
+          }
         } else {
-             architectContact = await addContact({
-                ...architectData,
-                ...(architectContactIdToSave ? { id: architectContactIdToSave } : {})
-             });
+           setFormData(prev => ({ ...prev, architektId: undefined }));
+           if (entryData.fullFormData) {
+             entryData.fullFormData.architektId = undefined;
+           }
         }
-
-        setFormData(prev => ({ ...prev, architektId: architectContact.id }));
-        if (entryData.fullFormData) {
-          entryData.fullFormData.architektId = architectContact.id;
-        }
-      } else {
-         setFormData(prev => ({ ...prev, architektId: undefined }));
-         if (entryData.fullFormData) {
-           entryData.fullFormData.architektId = undefined;
-         }
       }
 
       // --- Contact Handling Logic (Realizator) ---
-      let realizatorContactIdToSave = formData.realizatorId;
-      if (formData.realizatorPriezvisko || formData.realizatorMeno || formData.realizatorEmail || formData.realizatorTelefon) {
-        let existingRealizator = realizatorContactIdToSave ? getContactById(realizatorContactIdToSave) : undefined;
+      if (!skipContactUpdates) {
+        let realizatorContactIdToSave = formData.realizatorId;
+        if (formData.realizatorPriezvisko || formData.realizatorMeno || formData.realizatorEmail || formData.realizatorTelefon) {
+          let existingRealizator = realizatorContactIdToSave ? getContactById(realizatorContactIdToSave) : undefined;
 
-        // If not found by ID, try finding by name
-        if (!existingRealizator && formData.realizatorMeno && formData.realizatorPriezvisko) {
-            existingRealizator = getContactByNameAndType(formData.realizatorPriezvisko, formData.realizatorMeno, 'fakturacna_firma');
-            if (existingRealizator) realizatorContactIdToSave = existingRealizator.id;
-        }
+          // If not found by ID, try finding by name
+          if (!existingRealizator && formData.realizatorMeno && formData.realizatorPriezvisko) {
+              existingRealizator = getContactByNameAndType(formData.realizatorPriezvisko, formData.realizatorMeno, 'fakturacna_firma');
+              if (existingRealizator) realizatorContactIdToSave = existingRealizator.id;
+          }
 
-        const isRealizatorDataChanged = initialFormDataRef.current
-          ? hasContactChanged(
-              {...existingRealizator!, id: existingRealizator?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-              formData,
-              'realizator'
-            ) : false;
+          const isRealizatorDataChanged = initialFormDataRef.current
+            ? hasContactChanged(
+                {...existingRealizator!, id: existingRealizator?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
+                formData,
+                'realizator'
+              ) : false;
 
-        const realizatorData = {
-          meno: formData.realizatorMeno || '',
-          priezvisko: formData.realizatorPriezvisko || '',
-          telefon: formData.realizatorTelefon || '',
-          email: formData.realizatorEmail || '',
-          ulica: formData.realizatorUlica || '',
-          mesto: formData.realizatorMesto || '',
-          psc: formData.realizatorPsc || '',
-          ico: formData.realizatorIco || '',
-          icDph: formData.realizatorIcDph || '',
-          dic: formData.realizatorDic || '',
-          typ: 'fakturacna_firma' as const,
-          projectIds: [currentCisloCP]
-        };
+          const realizatorData = {
+            meno: formData.realizatorMeno || '',
+            priezvisko: formData.realizatorPriezvisko || '',
+            telefon: formData.realizatorTelefon || '',
+            email: formData.realizatorEmail || '',
+            ulica: formData.realizatorUlica || '',
+            mesto: formData.realizatorMesto || '',
+            psc: formData.realizatorPsc || '',
+            ico: formData.realizatorIco || '',
+            icDph: formData.realizatorIcDph || '',
+            dic: formData.realizatorDic || '',
+            typ: 'fakturacna_firma' as const,
+            projectIds: [currentCisloCP]
+          };
 
-        let realizatorContact: Contact;
-        if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
-             realizatorContact = await forkContact(existingRealizator.id, realizatorData);
+          let realizatorContact: Contact;
+          if (createNewContacts) {
+              // Force create a new contact (don't update existing)
+              realizatorContact = await addContact(realizatorData);
+          } else if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
+               realizatorContact = await forkContact(existingRealizator.id, realizatorData);
+          } else {
+               realizatorContact = await addContact({
+                  ...realizatorData,
+                  ...(realizatorContactIdToSave ? { id: realizatorContactIdToSave } : {})
+               });
+          }
+
+          setFormData(prev => ({ ...prev, realizatorId: realizatorContact.id }));
+          if (entryData.fullFormData) {
+            entryData.fullFormData.realizatorId = realizatorContact.id;
+          }
         } else {
-             realizatorContact = await addContact({
-                ...realizatorData,
-                ...(realizatorContactIdToSave ? { id: realizatorContactIdToSave } : {})
-             });
+           setFormData(prev => ({ ...prev, realizatorId: undefined }));
+           if (entryData.fullFormData) {
+             entryData.fullFormData.realizatorId = undefined;
+           }
         }
-
-        setFormData(prev => ({ ...prev, realizatorId: realizatorContact.id }));
-        if (entryData.fullFormData) {
-          entryData.fullFormData.realizatorId = realizatorContact.id;
-        }
-      } else {
-         setFormData(prev => ({ ...prev, realizatorId: undefined }));
-         if (entryData.fullFormData) {
-           entryData.fullFormData.realizatorId = undefined;
-         }
       }
 
       // Update firma options (handled by parent via setFirmaOptions callback)
@@ -567,13 +583,20 @@ export const useSpisEntryLogic = (
     }
   }, [detectAllContactChanges, performSaveInternal]);
 
-  // Function called when user applies selected changes from modal
-  const handleApplyContactChanges = useCallback((selectedChanges: ContactChange[]) => {
-    // The selected changes indicate which fields should be updated in the contact
-    // For now, we just proceed with save - the existing save logic will handle updates
-    // In the future, we could selectively revert unselected changes
+  // Function called when user selects an action from contact changes modal
+  const handleApplyContactChanges = useCallback((action: ContactAction, _changes: ContactChange[]) => {
     setShowContactChangesModal(false);
-    performSaveInternal();
+
+    if (action === 'ignore') {
+      // Just save without updating contacts - the form data stays as is but contacts are not modified
+      performSaveInternal(true); // Skip contact updates
+    } else if (action === 'create_new') {
+      // Create new contacts with the new data
+      performSaveInternal(false, true); // Don't skip, but create new contacts
+    } else {
+      // 'update' - Update existing contacts with new data (default behavior)
+      performSaveInternal(false, false);
+    }
   }, [performSaveInternal]);
 
   // Function called when user cancels contact changes modal
