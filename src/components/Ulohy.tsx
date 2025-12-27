@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks, Task } from '../contexts/TasksContext';
@@ -8,6 +9,7 @@ const Ulohy = () => {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const { tasks, updateTask, deleteTask } = useTasks();
+  const navigate = useNavigate();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'assigned' | 'created'>('assigned');
@@ -45,6 +47,10 @@ const Ulohy = () => {
 
   const handleStatusChange = (task: Task, newStatus: Task['status']) => {
     updateTask(task.id, { status: newStatus });
+  };
+
+  const handleNavigateToProject = (spisId: string) => {
+    navigate('/spis', { state: { highlightProjectIds: [spisId] } });
   };
 
   return (
@@ -120,11 +126,22 @@ const Ulohy = () => {
                 </p>
               )}
 
-              <div className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div className={`text-sm mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 {filter === 'assigned' ? (
                   <span>Od: {task.createdByName}</span>
                 ) : (
                   <span>Pre: {task.assignedToName}</span>
+                )}
+                {task.spisId && task.spisCislo && (
+                  <button
+                    onClick={() => handleNavigateToProject(task.spisId!)}
+                    className="flex items-center gap-1 text-[#e11b28] hover:text-[#c71325] hover:underline transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Projekt: {task.spisCislo}
+                  </button>
                 )}
               </div>
 

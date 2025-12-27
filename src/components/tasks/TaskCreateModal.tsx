@@ -6,11 +6,15 @@ import { useTheme } from '../../contexts/ThemeContext';
 interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  spisId?: string | null;
+  spisCislo?: string | null;
 }
 
 export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  spisId,
+  spisCislo
 }) => {
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -43,7 +47,9 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       priority: 'normal',
       assignedTo,
       assignedToName: users.find(u => u.id === assignedTo)?.firstName + ' ' + users.find(u => u.id === assignedTo)?.lastName,
-      dueDate: null
+      dueDate: null,
+      spisId: spisId || null,
+      spisCislo: spisCislo || null
     });
 
     // Reset and close

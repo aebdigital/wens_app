@@ -678,6 +678,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
       <TaskCreateModal
         isOpen={showTaskModal}
         onClose={() => setShowTaskModal(false)}
+        spisId={internalId}
+        spisCislo={formData.cisloZakazky || formData.predmet}
       />
 
       <AddTemplateModal

@@ -130,6 +130,8 @@ export interface DbTask {
   created_by: string;
   assigned_to: string;
   due_date: string | null;
+  spis_id: string | null;
+  spis_cislo: string | null;
   created_at: string;
   updated_at: string;
 }

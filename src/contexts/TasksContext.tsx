@@ -13,6 +13,8 @@ export interface Task {
   assignedTo: string;
   assignedToName?: string;
   dueDate: string | null;
+  spisId: string | null;
+  spisCislo: string | null;
   createdAt: string;
 }
 
@@ -100,6 +102,8 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     assignedTo: db.assigned_to,
     assignedToName: getUserName(db.assigned_to),
     dueDate: db.due_date,
+    spisId: db.spis_id,
+    spisCislo: db.spis_cislo,
     createdAt: db.created_at
   }), [getUserName]);
 
@@ -153,7 +157,9 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
           priority: newTaskData.priority || 'normal',
           created_by: user.id,
           assigned_to: newTaskData.assignedTo,
-          due_date: newTaskData.dueDate || null
+          due_date: newTaskData.dueDate || null,
+          spis_id: newTaskData.spisId || null,
+          spis_cislo: newTaskData.spisCislo || null
         })
         .select()
         .single();
