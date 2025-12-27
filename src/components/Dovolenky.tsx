@@ -105,7 +105,8 @@ const Dovolenky: React.FC = () => {
           startDate: data.start_date,
           endDate: data.end_date,
           note: data.note || undefined,
-          createdBy: data.created_by
+          createdBy: data.created_by,
+          createdAt: data.created_at
         };
         setVacations(prev => [newEntry, ...prev]);
         setNewVacation({ name: '', startDate: '', endDate: '', note: '' });
