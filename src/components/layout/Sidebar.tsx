@@ -37,8 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       {/* Left Sidebar Navigation */}
       <div
         className={`
-            w-64 flex-shrink-0 
-            fixed md:relative z-50 h-screen 
+            w-64 flex-shrink-0
+            fixed md:relative z-50 h-[100dvh]
             flex flex-col bg-gradient-to-br from-[#e11b28] to-[#b8141f]
             transition-transform duration-300 ease-in-out
             ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}

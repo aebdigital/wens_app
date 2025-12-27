@@ -92,10 +92,9 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 md:p-4">
       <div
-        className={`${isDark ? 'bg-dark-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col`}
-        style={{ width: '98vw', height: '95vh', maxWidth: '1800px' }}
+        className={`${isDark ? 'bg-dark-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col w-full h-full md:w-[95vw] md:h-[90vh] md:max-w-[1400px]`}
       >
         {/* Header with WENS DOOR logo */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>

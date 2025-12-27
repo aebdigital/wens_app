@@ -26,7 +26,7 @@ const AuthWrapper: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="h-[100dvh] bg-white flex items-center justify-center">
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e11b28]"></div>
           <span className="ml-3 text-gray-600">Načítava sa...</span>
@@ -36,9 +36,9 @@ const AuthWrapper: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-[100dvh] flex overflow-hidden">
       {/* Left Side - White with Login Form */}
-      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 lg:px-16 xl:px-24">
+      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 lg:px-16 xl:px-24 overflow-y-auto">
         <div className="max-w-md w-full mx-auto">
           {/* Logo */}
           <div className="mb-8">

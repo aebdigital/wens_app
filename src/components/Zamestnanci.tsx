@@ -327,9 +327,6 @@ const Zamestnanci: React.FC = () => {
                       ? `${user.firstName} ${user.lastName}`.trim()
                       : user.email.split('@')[0]
                     }
-                    {user.id === currentUser?.id && (
-                      <span className="px-2 py-0.5 bg-[#e11b28] text-white text-xs rounded-full">Vy</span>
-                    )}
                   </div>
                 </td>
                 <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{user.email}</td>
