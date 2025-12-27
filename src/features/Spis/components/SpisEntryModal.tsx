@@ -389,7 +389,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
                                     disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
@@ -401,7 +401,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
                                     disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
@@ -415,10 +415,12 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
                                     disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 text-center ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
+                                  {/* Only show delete button if current user is the creator of this note */}
+                                  {user && item.pridal === `${user.firstName} ${user.lastName}` && (
                                   <button
                                     onClick={() => {
                                       setNoteToDeleteIndex(index);
@@ -431,6 +433,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                   </button>
+                                  )}
                                 </td>
                               </tr>
                             ))}
