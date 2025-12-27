@@ -155,7 +155,7 @@ const Spis = () => {
         data={[...entries].reverse()}
         onRowClick={handleRowClick}
         highlightedIds={highlightedProjectIds}
-        highlightKey="cisloCP"
+        highlightKey="id"
         rowClassName={(item) => item.cisloZakazky ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
       />
 
