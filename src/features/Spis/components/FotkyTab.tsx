@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileDropZone } from '../../../components/common/FileDropZone';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { compressImage, shouldCompressFile } from '../../../utils/imageCompression';
 
 interface FotkyTabProps {
@@ -13,6 +14,7 @@ interface FotkyTabProps {
 
 export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedPhotos, isLocked = false, spisEntryId }) => {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -267,12 +269,12 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
       {/* Lightbox */}
       {selectedPhotoIndex !== null && (
         <div
-            className="fixed inset-0 z-[60] bg-white/90 backdrop-blur-md flex items-center justify-center transition-all duration-300 animate-in fade-in"
+            className={`fixed inset-0 z-[60] backdrop-blur-md flex items-center justify-center transition-all duration-300 animate-in fade-in ${isDark ? 'bg-dark-900/95' : 'bg-white/90'}`}
             onClick={() => setSelectedPhotoIndex(null)}
         >
           {/* Close button */}
           <button
-            className="absolute top-4 right-4 text-gray-800 hover:text-gray-600 p-2 z-50 bg-white/50 rounded-full hover:bg-white/80 transition-colors shadow-sm"
+            className={`absolute top-4 right-4 p-2 z-50 rounded-full transition-colors shadow-sm ${isDark ? 'text-gray-200 hover:text-white bg-dark-700/50 hover:bg-dark-600/80' : 'text-gray-800 hover:text-gray-600 bg-white/50 hover:bg-white/80'}`}
             onClick={() => setSelectedPhotoIndex(null)}
           >
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -281,7 +283,7 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
           {/* Navigation Buttons */}
           {selectedPhotoIndex > 0 && (
             <button
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-800 hover:text-gray-600 p-3 z-50 bg-white/50 rounded-full hover:bg-white/80 transition-colors shadow-sm"
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 p-3 z-50 rounded-full transition-colors shadow-sm ${isDark ? 'text-gray-200 hover:text-white bg-dark-700/50 hover:bg-dark-600/80' : 'text-gray-800 hover:text-gray-600 bg-white/50 hover:bg-white/80'}`}
                 onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(selectedPhotoIndex - 1); }}
             >
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"></path></svg>
@@ -290,7 +292,7 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
 
           {selectedPhotoIndex < uploadedPhotos.length - 1 && (
             <button
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-800 hover:text-gray-600 p-3 z-50 bg-white/50 rounded-full hover:bg-white/80 transition-colors shadow-sm"
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-3 z-50 rounded-full transition-colors shadow-sm ${isDark ? 'text-gray-200 hover:text-white bg-dark-700/50 hover:bg-dark-600/80' : 'text-gray-800 hover:text-gray-600 bg-white/50 hover:bg-white/80'}`}
                 onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(selectedPhotoIndex + 1); }}
             >
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"></path></svg>
@@ -309,7 +311,7 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
                 className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-300"
             />
             <div className="mt-6 flex gap-4 items-center animate-in slide-in-from-bottom-4 duration-300 delay-100">
-                 <p className="text-gray-800 text-lg font-medium">{uploadedPhotos[selectedPhotoIndex].description || uploadedPhotos[selectedPhotoIndex].file.name}</p>
+                 <p className={`text-lg font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{uploadedPhotos[selectedPhotoIndex].description || uploadedPhotos[selectedPhotoIndex].file.name}</p>
                  <button
                     onClick={(e) => handleDownload(e, uploadedPhotos[selectedPhotoIndex])}
                     className="flex items-center gap-2 px-4 py-2 bg-[#e11b28] text-white rounded hover:bg-[#c71325] transition-colors font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
