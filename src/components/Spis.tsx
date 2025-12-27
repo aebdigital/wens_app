@@ -22,11 +22,30 @@ const Spis = () => {
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
 
-  // Handle highlighting rows when navigating from Kontakty page
+  // Handle highlighting rows when navigating from Kontakty page or Ulohy page
   useEffect(() => {
     if (location.state?.highlightProjectIds) {
       const projectIds = location.state.highlightProjectIds as string[];
-      setHighlightedProjectIds(projectIds);
+
+      // Expand IDs to include both UUIDs and CP numbers for matching
+      // If we get CP numbers, find the corresponding entry IDs
+      // If we get UUIDs, they're already in the right format
+      const expandedIds: string[] = [...projectIds];
+
+      // For each ID, if it's a CP number, add the corresponding entry's UUID
+      projectIds.forEach(pid => {
+        const matchingEntry = entries.find(e => e.cisloCP === pid || e.id === pid);
+        if (matchingEntry) {
+          if (matchingEntry.id && !expandedIds.includes(matchingEntry.id)) {
+            expandedIds.push(matchingEntry.id);
+          }
+          if (matchingEntry.cisloCP && !expandedIds.includes(matchingEntry.cisloCP)) {
+            expandedIds.push(matchingEntry.cisloCP);
+          }
+        }
+      });
+
+      setHighlightedProjectIds(expandedIds);
 
       // Clear highlights after 5 seconds
       const timer = setTimeout(() => {
@@ -34,7 +53,7 @@ const Spis = () => {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [location.state]);
+  }, [location.state, entries]);
 
   // --- Handlers ---
 

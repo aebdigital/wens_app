@@ -65,8 +65,8 @@ const dbToContact = (db: DbContact): Contact => ({
   originalContactId: db.original_contact_id || undefined,
 });
 
-// Helper to convert app format to DB format
-const contactToDb = (contact: Partial<Contact>, userId: string): Partial<DbContact> => ({
+// Helper to convert app format to DB format (for full contact creation)
+const contactToDbFull = (contact: Partial<Contact>, userId: string): Partial<DbContact> => ({
   user_id: userId,
   meno: contact.meno || '',
   priezvisko: contact.priezvisko || '',
@@ -87,6 +87,32 @@ const contactToDb = (contact: Partial<Contact>, userId: string): Partial<DbConta
   project_ids: contact.projectIds || [],
   original_contact_id: contact.originalContactId || null,
 });
+
+// Helper to convert app format to DB format (for partial updates - only includes provided fields)
+const contactToDbPartial = (contact: Partial<Contact>): Partial<DbContact> => {
+  const result: Partial<DbContact> = {};
+
+  if (contact.meno !== undefined) result.meno = contact.meno;
+  if (contact.priezvisko !== undefined) result.priezvisko = contact.priezvisko;
+  if (contact.telefon !== undefined) result.telefon = contact.telefon;
+  if (contact.email !== undefined) result.email = contact.email;
+  if (contact.ulica !== undefined) result.ulica = contact.ulica;
+  if (contact.mesto !== undefined) result.mesto = contact.mesto;
+  if (contact.psc !== undefined) result.psc = contact.psc;
+  if (contact.ico !== undefined) result.ico = contact.ico;
+  if (contact.icDph !== undefined) result.ic_dph = contact.icDph;
+  if (contact.dic !== undefined) result.dic = contact.dic;
+  if (contact.kontaktnaPriezvisko !== undefined) result.kontaktna_priezvisko = contact.kontaktnaPriezvisko;
+  if (contact.kontaktnaMeno !== undefined) result.kontaktna_meno = contact.kontaktnaMeno;
+  if (contact.kontaktnaTelefon !== undefined) result.kontaktna_telefon = contact.kontaktnaTelefon;
+  if (contact.kontaktnaEmail !== undefined) result.kontaktna_email = contact.kontaktnaEmail;
+  if (contact.popis !== undefined) result.popis = contact.popis;
+  if (contact.typ !== undefined) result.typ = contact.typ;
+  if (contact.projectIds !== undefined) result.project_ids = contact.projectIds;
+  if (contact.originalContactId !== undefined) result.original_contact_id = contact.originalContactId;
+
+  return result;
+};
 
 export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -156,7 +182,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         const { data, error } = await supabase
           .from('contacts')
-          .update(contactToDb(updatedData, user.id))
+          .update(contactToDbFull(updatedData, user.id))
           .eq('id', contactData.id)
           .select()
           .single();
@@ -170,7 +196,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     // Create new contact
-    const dbData = contactToDb(contactData, user.id);
+    const dbData = contactToDbFull(contactData, user.id);
     const { data, error } = await supabase
       .from('contacts')
       .insert(dbData)
@@ -207,7 +233,7 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // Create new contact with reference to original
     const dbData = {
-      ...contactToDb({ ...newContactData, originalContactId: originalId }, user.id),
+      ...contactToDbFull({ ...newContactData, originalContactId: originalId }, user.id),
     };
 
     const { data, error } = await supabase
@@ -233,9 +259,8 @@ export const ContactsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const updateContact = useCallback(async (id: string, updates: Partial<Contact>) => {
     if (!user) throw new Error('User not authenticated');
 
-    const dbUpdates = contactToDb(updates, user.id);
-    // Remove user_id from updates as it shouldn't change
-    delete (dbUpdates as any).user_id;
+    // Use partial update helper - only updates fields that are explicitly provided
+    const dbUpdates = contactToDbPartial(updates);
 
     const { error } = await supabase
       .from('contacts')

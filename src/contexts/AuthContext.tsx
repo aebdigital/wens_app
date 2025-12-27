@@ -105,40 +105,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkSession();
 
+    // Helper to fetch and set user profile
+    const fetchAndSetProfile = async (userId: string) => {
+      try {
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (!error && profile) {
+          setUser(dbUserToUser(profile as DbUser));
+          return true;
+        } else {
+          console.error('Failed to fetch profile:', error);
+          return false;
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        return false;
+      }
+    };
+
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log('Auth state change:', event, session?.user?.id);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        // Fetch user profile from users table
-        try {
-          const fetchProfile = async () => {
-            return supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-          };
-
-          const { data: profile, error } = await withTimeout(fetchProfile(), 5000);
-
-          if (!error && profile) {
-            setUser(dbUserToUser(profile as DbUser));
-          } else {
-            console.error('Failed to fetch profile:', error);
-            setUser(null);
-          }
-        } catch (error) {
-          console.error('Failed to fetch profile on sign in:', error);
-          setUser(null);
-        }
+        await fetchAndSetProfile(session.user.id);
         setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsLoading(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Session was refreshed, user is still valid
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Session was refreshed - ensure user state is still valid
         console.log('Token refreshed successfully');
+        // If user was somehow lost, restore it
+        setUser(currentUser => {
+          if (!currentUser && session?.user) {
+            // User state was lost, refetch profile
+            fetchAndSetProfile(session.user.id);
+          }
+          return currentUser;
+        });
       } else if (event === 'INITIAL_SESSION') {
         // Initial session check completed - handled by checkSession above
         // But ensure loading is false if no session
@@ -148,8 +157,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
 
+    // Handle visibility change - refresh session when user returns to tab
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Check if token needs refresh (within 10 minutes of expiry)
+            const expiresAt = session.expires_at;
+            const now = Math.floor(Date.now() / 1000);
+            if (expiresAt && expiresAt - now < 600) {
+              console.log('Token expiring soon, refreshing...');
+              await supabase.auth.refreshSession();
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to check/refresh session on visibility change:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

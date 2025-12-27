@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useContacts, Contact } from '../../../contexts/ContactsContext';
 import { SpisEntry, SpisFormData, CenovaPonukaItem } from '../types';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
-import { ContactChange, ContactAction, detectContactChanges } from '../components/ContactChangesModal';
+import { ContactChange, ContactAction, SectionActions, detectContactChanges } from '../components/ContactChangesModal';
 import { supabase } from '../../../lib/supabase';
 
 // Helper to compare relevant contact fields
@@ -59,7 +59,7 @@ export const useSpisEntryLogic = (
   onSave: (entryData: SpisEntry) => void
 ) => {
   const { user } = useAuth();
-  const { addContact, getContactById, getContactByNameAndType, forkContact } = useContacts();
+  const { addContact, updateContact, getContactById, getContactByNameAndType, forkContact } = useContacts();
   const [activeTab, setActiveTab] = useState('vseobecne');
   const [uploadedPhotos, setUploadedPhotos] = useState<{id: string, file: File, url: string, description: string, storagePath?: string}[]>([]);
   const [userPhone, setUserPhone] = useState('');
@@ -319,7 +319,7 @@ export const useSpisEntryLogic = (
     return allChanges;
   }, [formData, getContactById]);
 
-  const performSaveInternal = useCallback(async (skipContactUpdates: boolean = false, createNewContacts: boolean = false) => {
+  const performSaveInternal = useCallback(async (contactActions?: { zakaznik?: ContactAction, architekt?: ContactAction, realizator?: ContactAction }) => {
     try {
       // Map photos to persistent format
       const persistentPhotos = uploadedPhotos.map(p => ({
@@ -359,8 +359,8 @@ export const useSpisEntryLogic = (
       const currentCisloCP = formData.predmet || getNextCP();
 
       // --- Contact Handling Logic (Customer) ---
-      // Skip contact updates if 'ignore' action was selected
-      if (!skipContactUpdates) {
+      const zakaznikAction = contactActions?.zakaznik || 'update';
+      if (zakaznikAction !== 'ignore') {
         let customerContactIdToSave = formData.zakaznikId;
         if (formData.priezvisko || formData.meno || formData.email || formData.telefon) {
           let existingCustomer = customerContactIdToSave ? getContactById(customerContactIdToSave) : undefined;
@@ -399,9 +399,14 @@ export const useSpisEntryLogic = (
           };
 
           let customerContact: Contact;
-          if (createNewContacts) {
+          if (zakaznikAction === 'create_new') {
               // Force create a new contact (don't update existing)
               customerContact = await addContact(customerData);
+              // Remove this project from the old contact's projectIds
+              if (existingCustomer && existingCustomer.projectIds.includes(currentCisloCP)) {
+                const updatedProjectIds = existingCustomer.projectIds.filter(pid => pid !== currentCisloCP);
+                await updateContact(existingCustomer.id, { projectIds: updatedProjectIds });
+              }
           } else if (existingCustomer && isCustomerDataChanged && existingCustomer.projectIds.length > 1) {
                customerContact = await forkContact(existingCustomer.id, customerData);
           } else {
@@ -426,7 +431,8 @@ export const useSpisEntryLogic = (
       }
 
       // --- Contact Handling Logic (Architect) ---
-      if (!skipContactUpdates) {
+      const architektAction = contactActions?.architekt || 'update';
+      if (architektAction !== 'ignore') {
         let architectContactIdToSave = formData.architektId;
         if (formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyEmail || formData.architektonickyTelefon) {
           let existingArchitect = architectContactIdToSave ? getContactById(architectContactIdToSave) : undefined;
@@ -460,9 +466,14 @@ export const useSpisEntryLogic = (
           };
 
           let architectContact: Contact;
-          if (createNewContacts) {
+          if (architektAction === 'create_new') {
               // Force create a new contact (don't update existing)
               architectContact = await addContact(architectData);
+              // Remove this project from the old contact's projectIds
+              if (existingArchitect && existingArchitect.projectIds.includes(currentCisloCP)) {
+                const updatedProjectIds = existingArchitect.projectIds.filter(pid => pid !== currentCisloCP);
+                await updateContact(existingArchitect.id, { projectIds: updatedProjectIds });
+              }
           } else if (existingArchitect && isArchitectDataChanged && existingArchitect.projectIds.length > 1) {
                architectContact = await forkContact(existingArchitect.id, architectData);
           } else {
@@ -485,7 +496,8 @@ export const useSpisEntryLogic = (
       }
 
       // --- Contact Handling Logic (Realizator) ---
-      if (!skipContactUpdates) {
+      const realizatorAction = contactActions?.realizator || 'update';
+      if (realizatorAction !== 'ignore') {
         let realizatorContactIdToSave = formData.realizatorId;
         if (formData.realizatorPriezvisko || formData.realizatorMeno || formData.realizatorEmail || formData.realizatorTelefon) {
           let existingRealizator = realizatorContactIdToSave ? getContactById(realizatorContactIdToSave) : undefined;
@@ -519,9 +531,14 @@ export const useSpisEntryLogic = (
           };
 
           let realizatorContact: Contact;
-          if (createNewContacts) {
+          if (realizatorAction === 'create_new') {
               // Force create a new contact (don't update existing)
               realizatorContact = await addContact(realizatorData);
+              // Remove this project from the old contact's projectIds
+              if (existingRealizator && existingRealizator.projectIds.includes(currentCisloCP)) {
+                const updatedProjectIds = existingRealizator.projectIds.filter(pid => pid !== currentCisloCP);
+                await updateContact(existingRealizator.id, { projectIds: updatedProjectIds });
+              }
           } else if (existingRealizator && isRealizatorDataChanged && existingRealizator.projectIds.length > 1) {
                realizatorContact = await forkContact(existingRealizator.id, realizatorData);
           } else {
@@ -558,6 +575,7 @@ export const useSpisEntryLogic = (
     formData,
     uploadedPhotos,
     addContact,
+    updateContact,
     firmaOptions,
     getNextCP,
     onSave,
@@ -583,20 +601,10 @@ export const useSpisEntryLogic = (
     }
   }, [detectAllContactChanges, performSaveInternal]);
 
-  // Function called when user selects an action from contact changes modal
-  const handleApplyContactChanges = useCallback((action: ContactAction, _changes: ContactChange[]) => {
+  // Function called when user selects actions from contact changes modal
+  const handleApplyContactChanges = useCallback((sectionActions: SectionActions) => {
     setShowContactChangesModal(false);
-
-    if (action === 'ignore') {
-      // Just save without updating contacts - the form data stays as is but contacts are not modified
-      performSaveInternal(true); // Skip contact updates
-    } else if (action === 'create_new') {
-      // Create new contacts with the new data
-      performSaveInternal(false, true); // Don't skip, but create new contacts
-    } else {
-      // 'update' - Update existing contacts with new data (default behavior)
-      performSaveInternal(false, false);
-    }
+    performSaveInternal(sectionActions);
   }, [performSaveInternal]);
 
   // Function called when user cancels contact changes modal
