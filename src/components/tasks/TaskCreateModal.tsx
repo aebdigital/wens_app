@@ -6,80 +6,56 @@ import { useTheme } from '../../contexts/ThemeContext';
 interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialType?: 'vseobecna' | 'specificka';
-  initialSpisId?: string;
-  initialSpisCislo?: string; // e.g. CP2025/0001
 }
 
 export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   isOpen,
-  onClose,
-  initialType = 'vseobecna',
-  initialSpisId,
-  initialSpisCislo
+  onClose
 }) => {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const { addTask, getAllUsers } = useTasks();
 
-  const [type, setType] = useState<'vseobecna' | 'specificka'>(initialType);
-  const [recipientId, setRecipientId] = useState<string>('');
-  const [text, setText] = useState('');
-  const [selectedSpisId, setSelectedSpisId] = useState<string>(initialSpisId || '');
-  
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [assignedTo, setAssignedTo] = useState<string>('');
+  const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
+  const [dueDate, setDueDate] = useState<string>('');
+
   const [users, setUsers] = useState<any[]>([]);
-  const [spisList, setSpisList] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       setUsers(getAllUsers());
-      // Load spis list for dropdown
-      const storageKey = user ? `spisEntries_${user.id}` : 'spisEntries';
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        setSpisList(JSON.parse(saved));
-      }
-      
-      // Reset form if opening fresh (optional, or rely on props)
-      if (initialSpisId) {
-          setSelectedSpisId(initialSpisId);
-          setType('specificka'); // Force specific if ID provided
-      } else {
-          setType(initialType);
-      }
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setAssignedTo('');
+      setPriority('normal');
+      setDueDate('');
     }
-  }, [isOpen, user, getAllUsers, initialSpisId, initialType]);
+  }, [isOpen, getAllUsers]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipientId || !text) return;
-    if (type === 'specificka' && !selectedSpisId) return;
+    if (!title || !assignedTo) return;
 
-    const recipient = users.find(u => u.id === recipientId);
-    if (!recipient) return;
-    
-    // Find spis cislo for display if specific
-    let spisCislo = '';
-    if (type === 'specificka') {
-        const s = spisList.find(item => item.id === selectedSpisId);
-        if (s) spisCislo = s.cisloCP;
-    }
-
-    addTask({
-      type,
-      to: {
-        id: recipient.id,
-        name: `${recipient.firstName} ${recipient.lastName}`
-      },
-      text,
-      spisId: type === 'specificka' ? selectedSpisId : undefined,
-      spisCislo: type === 'specificka' ? spisCislo : undefined
+    await addTask({
+      title,
+      description,
+      status: 'pending',
+      priority,
+      assignedTo,
+      assignedToName: users.find(u => u.id === assignedTo)?.firstName + ' ' + users.find(u => u.id === assignedTo)?.lastName,
+      dueDate: dueDate || null
     });
-    
+
     // Reset and close
-    setText('');
-    setRecipientId('');
-    setSelectedSpisId('');
+    setTitle('');
+    setDescription('');
+    setAssignedTo('');
+    setPriority('normal');
+    setDueDate('');
     onClose();
   };
 
@@ -89,88 +65,73 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
       <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'} shadow-2xl`}>
         <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Nová úloha</h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Type Toggle */}
-          <div className="flex gap-4 mb-4">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                checked={type === 'vseobecna'}
-                onChange={() => setType('vseobecna')}
-                className="mr-2"
-                disabled={!!initialSpisId} // Lock if opened from Spis
-              />
-              <span className={isDark ? 'text-white' : 'text-gray-700'}>Všeobecná</span>
-            </label>
-            {/* Only show "Špecifická" option if initialSpisId is provided (from Spis) */}
-            {!!initialSpisId && (
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  checked={type === 'specificka'}
-                  onChange={() => setType('specificka')}
-                  className="mr-2"
-                  disabled={!!initialSpisId} // Lock if opened from Spis
-                />
-                <span className={isDark ? 'text-white' : 'text-gray-700'}>Špecifická</span>
-              </label>
-            )}
+          {/* Title */}
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Názov úlohy:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              placeholder="Zadajte názov úlohy"
+              required
+            />
           </div>
 
-          {/* Recipient */}
+          {/* Description */}
           <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Pre koho:</label>
-            <select 
-              value={recipientId} 
-              onChange={(e) => setRecipientId(e.target.value)}
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Popis:</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              rows={3}
+              placeholder="Voliteľný popis úlohy"
+            />
+          </div>
+
+          {/* Assigned To */}
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Prideliť komu:</label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
               className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               required
             >
               <option value="">Vyberte používateľa</option>
               {users.map(u => (
                 <option key={u.id} value={u.id}>
-                  {u.email} {u.id === user?.id ? '(Ja)' : ''}
+                  {u.firstName} {u.lastName} {u.id === user?.id ? '(Ja)' : ''}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Project Selection (if specific) */}
-          {type === 'specificka' && (
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Projekt:</label>
-              {initialSpisId ? (
-                  <div className={`p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-900'}`}>
-                      {initialSpisCislo || 'Vybraný projekt'}
-                  </div>
-              ) : (
-                <select 
-                  value={selectedSpisId} 
-                  onChange={(e) => setSelectedSpisId(e.target.value)}
-                  className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                  required
-                >
-                  <option value="">Vyberte projekt</option>
-                  {[...spisList].reverse().map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.cisloCP} - {s.kontaktnaOsoba}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-
-          {/* Text */}
+          {/* Priority */}
           <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Text úlohy:</label>
-            <textarea 
-              value={text} 
-              onChange={(e) => setText(e.target.value)}
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Priorita:</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as 'low' | 'normal' | 'high')}
               className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-              rows={4}
-              required
+            >
+              <option value="low">Nízka</option>
+              <option value="normal">Normálna</option>
+              <option value="high">Vysoká</option>
+            </select>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Termín (voliteľné):</label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
             />
           </div>
 

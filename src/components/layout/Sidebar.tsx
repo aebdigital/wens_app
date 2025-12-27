@@ -13,7 +13,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const { setTheme, isDark } = useTheme();
-  const { unreadCount } = useTasks();
+  const { getUnreadCount } = useTasks();
+  const unreadCount = getUnreadCount();
   const location = useLocation();
 
   // Close sidebar on route change (mobile)

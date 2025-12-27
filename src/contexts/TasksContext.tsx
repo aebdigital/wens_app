@@ -4,20 +4,16 @@ import { supabase, DbTask } from '../lib/supabase';
 
 export interface Task {
   id: string;
-  from: {
-    id: string;
-    name: string;
-  };
-  to: {
-    id: string;
-    name: string;
-  };
-  type: 'vseobecna' | 'specificka';
-  text: string;
-  spisId?: string;
-  spisCislo?: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'normal' | 'high';
+  createdBy: string;
+  createdByName?: string;
+  assignedTo: string;
+  assignedToName?: string;
+  dueDate: string | null;
   createdAt: string;
-  read: boolean;
 }
 
 export interface UserBasic {
@@ -29,11 +25,11 @@ export interface UserBasic {
 
 interface TasksContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => Promise<void>;
-  markAsRead: (taskId: string) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'createdBy' | 'createdByName'>) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   getAllUsers: () => UserBasic[];
-  unreadCount: number;
+  getUnreadCount: () => number;
   refreshTasks: () => Promise<void>;
 }
 
@@ -51,29 +47,9 @@ interface TasksProviderProps {
   children: React.ReactNode;
 }
 
-// Helper to convert DB task to app task
-const dbToTask = (db: DbTask): Task => ({
-  id: db.id,
-  from: {
-    id: db.from_user_id,
-    name: db.from_user_name
-  },
-  to: {
-    id: db.to_user_id,
-    name: db.to_user_name
-  },
-  type: db.type,
-  text: db.text,
-  spisId: db.spis_id || undefined,
-  spisCislo: db.spis_cislo || undefined,
-  createdAt: db.created_at,
-  read: db.read
-});
-
 export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [allUsers, setAllUsers] = useState<UserBasic[]>([]);
 
   // Fetch all users from Supabase on mount
@@ -106,6 +82,27 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     fetchUsers();
   }, []);
 
+  // Helper to get user name by ID
+  const getUserName = useCallback((userId: string): string => {
+    const foundUser = allUsers.find(u => u.id === userId);
+    return foundUser ? `${foundUser.firstName} ${foundUser.lastName}` : 'Unknown';
+  }, [allUsers]);
+
+  // Helper to convert DB task to app task
+  const dbToTask = useCallback((db: DbTask): Task => ({
+    id: db.id,
+    title: db.title,
+    description: db.description || '',
+    status: db.status,
+    priority: db.priority || 'normal',
+    createdBy: db.created_by,
+    createdByName: getUserName(db.created_by),
+    assignedTo: db.assigned_to,
+    assignedToName: getUserName(db.assigned_to),
+    dueDate: db.due_date,
+    createdAt: db.created_at
+  }), [getUserName]);
+
   // Load tasks from Supabase
   const loadTasks = useCallback(async () => {
     if (!user) {
@@ -114,11 +111,11 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     }
 
     try {
-      // Load tasks where user is sender or recipient
+      // Load tasks where user is creator or assignee
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -134,39 +131,29 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
       console.error('Failed to load tasks:', error);
       setTasks([]);
     }
-  }, [user]);
+  }, [user, dbToTask]);
 
-  // Load tasks when user changes
+  // Load tasks when user changes or allUsers are loaded
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
-
-  // Update unread count for current user
-  useEffect(() => {
-    if (user) {
-      const myUnread = tasks.filter(t => t.to.id === user.id && !t.read).length;
-      setUnreadCount(myUnread);
-    } else {
-      setUnreadCount(0);
+    if (allUsers.length > 0) {
+      loadTasks();
     }
-  }, [tasks, user]);
+  }, [loadTasks, allUsers]);
 
-  const addTask = async (newTaskData: Omit<Task, 'id' | 'createdAt' | 'read' | 'from'>) => {
+  const addTask = async (newTaskData: Omit<Task, 'id' | 'createdAt' | 'createdBy' | 'createdByName'>) => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          from_user_id: user.id,
-          from_user_name: `${user.firstName} ${user.lastName}`,
-          to_user_id: newTaskData.to.id,
-          to_user_name: newTaskData.to.name,
-          type: newTaskData.type,
-          text: newTaskData.text,
-          spis_id: newTaskData.spisId || null,
-          spis_cislo: newTaskData.spisCislo || null,
-          read: false
+          title: newTaskData.title,
+          description: newTaskData.description || '',
+          status: newTaskData.status || 'pending',
+          priority: newTaskData.priority || 'normal',
+          created_by: user.id,
+          assigned_to: newTaskData.assignedTo,
+          due_date: newTaskData.dueDate || null
         })
         .select()
         .single();
@@ -185,21 +172,29 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     }
   };
 
-  const markAsRead = async (taskId: string) => {
+  const updateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
+      const dbUpdates: any = {};
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+      if (updates.assignedTo !== undefined) dbUpdates.assigned_to = updates.assignedTo;
+      if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
+
       const { error } = await supabase
         .from('tasks')
-        .update({ read: true })
+        .update(dbUpdates)
         .eq('id', taskId);
 
       if (error) {
-        console.error('Error marking task as read:', error);
+        console.error('Error updating task:', error);
         return;
       }
 
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, read: true } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
     } catch (error) {
-      console.error('Failed to mark task as read:', error);
+      console.error('Failed to update task:', error);
     }
   };
 
@@ -225,12 +220,18 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     return allUsers;
   }, [allUsers]);
 
+  const getUnreadCount = useCallback((): number => {
+    if (!user) return 0;
+    // Count pending tasks assigned to current user
+    return tasks.filter(t => t.assignedTo === user.id && t.status === 'pending').length;
+  }, [tasks, user]);
+
   const refreshTasks = useCallback(async () => {
     await loadTasks();
   }, [loadTasks]);
 
   return (
-    <TasksContext.Provider value={{ tasks, addTask, markAsRead, deleteTask, getAllUsers, unreadCount, refreshTasks }}>
+    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, getAllUsers, getUnreadCount, refreshTasks }}>
       {children}
     </TasksContext.Provider>
   );

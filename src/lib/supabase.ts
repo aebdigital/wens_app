@@ -122,15 +122,13 @@ export interface DbDovolenka {
 
 export interface DbTask {
   id: string;
-  from_user_id: string;
-  from_user_name: string;
-  to_user_id: string;
-  to_user_name: string;
-  type: 'vseobecna' | 'specificka';
-  text: string;
-  spis_id: string | null;
-  spis_cislo: string | null;
-  read: boolean;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'normal' | 'high';
+  created_by: string;
+  assigned_to: string;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
 }
