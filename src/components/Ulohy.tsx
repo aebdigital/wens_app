@@ -39,7 +39,7 @@ const Ulohy = () => {
   };
 
   return (
-    <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+    <div className={`min-h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
       <div className="mb-6 flex justify-between items-center">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Úlohy</h1>
         <button
@@ -57,13 +57,13 @@ const Ulohy = () => {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setFilter('dorucene')}
-          className={`px-4 py-2 rounded-lg font-medium ${filter === 'dorucene' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100')}`}
+          className={`px-4 py-2 rounded-lg font-medium ${filter === 'dorucene' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
         >
           Doručené
         </button>
         <button
           onClick={() => setFilter('odoslane')}
-          className={`px-4 py-2 rounded-lg font-medium ${filter === 'odoslane' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100')}`}
+          className={`px-4 py-2 rounded-lg font-medium ${filter === 'odoslane' ? 'bg-blue-100 text-blue-800' : (isDark ? 'text-gray-300 hover:bg-dark-800' : 'text-gray-600 hover:bg-gray-100')}`}
         >
           Odoslané
         </button>
@@ -82,8 +82,8 @@ const Ulohy = () => {
                     onClick={() => handleTaskClick(task)}
                     className={`p-4 rounded-lg border cursor-pointer transition-all ${
                         task.read && filter === 'dorucene' // Only dim if read AND in received folder
-                            ? (isDark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-600')
-                            : (isDark ? 'bg-gray-700 border-blue-500 text-white shadow-md' : 'bg-blue-50 border-blue-200 text-gray-900 shadow-sm')
+                            ? (isDark ? 'bg-dark-800 border-dark-500 text-gray-400' : 'bg-white border-gray-200 text-gray-600')
+                            : (isDark ? 'bg-dark-700 border-blue-500 text-white shadow-md' : 'bg-blue-50 border-blue-200 text-gray-900 shadow-sm')
                     } hover:shadow-md`}
                 >
                     <div className="flex justify-between items-start mb-2">

@@ -120,7 +120,7 @@ const Spis = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
@@ -130,7 +130,7 @@ const Spis = () => {
   }
 
   return (
-    <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+    <div className={`min-h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Spis</h1>

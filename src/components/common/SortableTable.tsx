@@ -169,7 +169,7 @@ export const SortableTable = <T extends { [key: string]: any }>({
 
   return (
     <div
-      className={`rounded-lg overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+      className={`rounded-lg overflow-x-auto ${isDark ? 'bg-dark-800' : 'bg-white'}`}
       style={{
         boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
       }}
@@ -312,7 +312,7 @@ export const SortableTable = <T extends { [key: string]: any }>({
                 }}
                 className={`border-b cursor-pointer transition-colors ${
                   isDark
-                    ? 'border-gray-700 hover:bg-gray-700'
+                    ? 'border-dark-500 hover:bg-dark-700'
                     : 'border-gray-200 hover:bg-gray-50'
                 } ${isHighlighted ? 'ring-2 ring-red-500 ring-inset' : ''} ${rowClassName ? rowClassName(item) : ''}`}
                 onClick={() => onRowClick && onRowClick(item, index)}
@@ -322,7 +322,7 @@ export const SortableTable = <T extends { [key: string]: any }>({
                   return (
                     <td
                       key={String(column.key)}
-                      className={`px-2 py-1 text-xs ${isDark ? 'border-r border-gray-700 text-gray-300' : 'border-r border-gray-200'} ${
+                      className={`px-2 py-1 text-xs ${isDark ? 'border-r border-dark-500 text-gray-300' : 'border-r border-gray-200'} ${
                         // Apply specific styling for specific columns if needed, but keep it generic mostly
                         // Or allow column to define className
                         ''

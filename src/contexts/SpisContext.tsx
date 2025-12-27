@@ -94,7 +94,7 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Error loading firma options:', firmaError);
       } else if (firmaData && firmaData.length > 0) {
         // Get unique firma names
-        const uniqueFirmas = Array.from(new Set(firmaData.map(f => f.name)));
+        const uniqueFirmas = Array.from(new Set(firmaData.map((f: { name: string }) => f.name))) as string[];
         setFirmaOptions(uniqueFirmas);
       } else {
         // Insert default options

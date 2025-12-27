@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileDropZone } from '../../../components/common/FileDropZone';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+import { compressImage, shouldCompressFile } from '../../../utils/imageCompression';
 
 interface FotkyTabProps {
   uploadedPhotos: {id: string, file: File, url: string, description: string, storagePath?: string}[];
@@ -68,7 +69,24 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
     setIsUploading(true);
 
     try {
-      const newPhotos = await Promise.all(files.map(async (file) => {
+      const newPhotos = await Promise.all(files.map(async (originalFile) => {
+        // Compress the image if it's a compressible format (JPEG, PNG, WebP, etc.)
+        // Professional formats (CAD, PDF, RAW, etc.) are left untouched
+        let file = originalFile;
+        if (shouldCompressFile(originalFile)) {
+          try {
+            file = await compressImage(originalFile, {
+              maxWidth: 1920,
+              maxHeight: 1920,
+              quality: 0.8,
+              outputFormat: 'image/jpeg'
+            });
+          } catch (compressionError) {
+            console.error('Compression failed, using original:', compressionError);
+            file = originalFile;
+          }
+        }
+
         // First, try to upload to Supabase Storage
         const uploadResult = await uploadToSupabase(file);
 

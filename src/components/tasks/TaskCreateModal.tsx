@@ -87,7 +87,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
-      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-2xl`}>
+      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'} shadow-2xl`}>
         <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Nová úloha</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,7 +124,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             <select 
               value={recipientId} 
               onChange={(e) => setRecipientId(e.target.value)}
-              className={`w-full p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               required
             >
               <option value="">Vyberte používateľa</option>
@@ -141,14 +141,14 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             <div>
               <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Projekt:</label>
               {initialSpisId ? (
-                  <div className={`p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-300 text-gray-900'}`}>
+                  <div className={`p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-900'}`}>
                       {initialSpisCislo || 'Vybraný projekt'}
                   </div>
               ) : (
                 <select 
                   value={selectedSpisId} 
                   onChange={(e) => setSelectedSpisId(e.target.value)}
-                  className={`w-full p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   required
                 >
                   <option value="">Vyberte projekt</option>
@@ -168,7 +168,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             <textarea 
               value={text} 
               onChange={(e) => setText(e.target.value)}
-              className={`w-full p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className={`w-full p-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               rows={4}
               required
             />
@@ -178,7 +178,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-2 rounded font-medium ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              className={`px-4 py-2 rounded font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
             >
               Zrušiť
             </button>

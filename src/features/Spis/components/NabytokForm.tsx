@@ -120,20 +120,20 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         totals={totals}
     >
       {/* Product description */}
-      <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} flex items-center gap-4`}>
+      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} flex items-center gap-4`}>
         <h3 className={`text-sm font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
         <input
           type="text"
           value={data.popisVyrobkov}
           onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
           placeholder="Popis zakázky"
-          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-gray-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
         />
       </div>
 
       {/* Výrobky section */}
-      <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} overflow-hidden`}>
-        <div className={`px-4 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
+      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
+        <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
           <div className="flex gap-4 mt-1 text-xs">
             <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                 type="text"
                 value={data.vyrobkyPopis}
                 onChange={(e) => onChange({...data, vyrobkyPopis: e.target.value})}
-                className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} border`}
+                className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} border`}
               />
             </div>
           </div>
@@ -163,9 +163,9 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
             </thead>
             <tbody>
               {data.vyrobky.map((item, index) => (
-                <tr key={item.id} className={`relative group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
-                  <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>{index + 1}</td>
-                  <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <tr key={item.id} className={`relative group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                  <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>{index + 1}</td>
+                  <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="text"
                       value={item.nazov}
@@ -177,7 +177,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                       className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="text"
                       value={item.rozmer}
@@ -189,7 +189,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                       className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="text"
                       value={item.material}
@@ -201,7 +201,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                       className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="text"
                       value={item.poznamka}
@@ -213,7 +213,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                       className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="number"
                       value={item.ks}
@@ -226,7 +226,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
                       className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="number"
                       value={item.cenaKs}
@@ -261,7 +261,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
               ))}
             </tbody>
             <tfoot>
-              <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+              <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
                 <td colSpan={7} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
                   Spolu bez DPH:
                 </td>
@@ -272,7 +272,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
             </tfoot>
           </table>
         </div>
-        <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+        <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
             onClick={() => {
               const newVyrobok = {
@@ -287,7 +287,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
               };
               onChangeWithPaymentReset({...data, vyrobky: [...data.vyrobky, newVyrobok]});
             }}
-            className={`p-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
+            className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
             title="Pridať riadok"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -309,7 +309,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>
@@ -339,7 +339,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>
@@ -362,7 +362,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>

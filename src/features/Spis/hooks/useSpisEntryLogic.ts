@@ -86,7 +86,16 @@ export const useSpisEntryLogic = (
   }, [user]);
   
   // Internal ID to ensure stable identity across auto-saves
-  const [internalId] = useState<string>(() => initialEntry?.id || Date.now().toString() + Math.random().toString(36).substr(2, 9));
+  // This ID gets updated after first save to match the database-generated UUID
+  const [internalId, setInternalId] = useState<string>(() => initialEntry?.id || Date.now().toString() + Math.random().toString(36).substr(2, 9));
+
+  // Update internalId when initialEntry changes (e.g., after first save when we get the database UUID)
+  useEffect(() => {
+    if (initialEntry?.id && initialEntry.id !== internalId) {
+      setInternalId(initialEntry.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEntry?.id]);
 
   // State for the "Pridať vzor" sub-modal
   const [showVzorModal, setShowVzorModal] = useState(false);

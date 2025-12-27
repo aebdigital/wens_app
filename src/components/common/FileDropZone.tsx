@@ -73,7 +73,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
         flex flex-col items-center justify-center gap-4 min-h-[250px]
         ${isDragActive 
           ? (isDark ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') 
-          : (isDark ? 'border-gray-600 hover:border-gray-500 bg-gray-800' : 'border-gray-300 hover:border-gray-400 bg-gray-50')}
+          : (isDark ? 'border-dark-500 hover:border-gray-500 bg-dark-800' : 'border-gray-300 hover:border-gray-400 bg-gray-50')}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}

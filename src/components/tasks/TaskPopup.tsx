@@ -51,7 +51,7 @@ export const TaskPopup: React.FC = () => {
   if (!activeNotification) return null;
 
   return (
-    <div className={`fixed top-4 right-4 max-w-sm w-full z-[100] p-4 rounded-lg shadow-2xl border-l-4 border-blue-500 animate-slide-in ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+    <div className={`fixed top-4 right-4 max-w-sm w-full z-[100] p-4 rounded-lg shadow-2xl border-l-4 border-blue-500 animate-slide-in ${isDark ? 'bg-dark-800 text-white' : 'bg-white text-gray-900'}`}>
         <div className="flex justify-between items-start mb-2">
             <h3 className="font-bold text-lg">Máš novú úlohu!</h3>
             <button onClick={() => setActiveNotification(null)} className="text-gray-400 hover:text-gray-500">

@@ -46,14 +46,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
         style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
         <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
         <p className={`mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{message}</p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           >
             {cancelText}
           </button>
@@ -89,14 +89,14 @@ const CloseConfirmDialog: React.FC<CloseConfirmDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+      <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
         style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
         <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Neuložené zmeny</h3>
         <p className={`mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Máte neuložené zmeny. Čo chcete urobiť?</p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onContinue}
-            className={`w-full px-4 py-3 rounded-lg font-medium ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`w-full px-4 py-3 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           >
             Pokračovať
           </button>
@@ -286,7 +286,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div
-          className={`rounded-lg w-full max-w-[95vw] h-full overflow-hidden flex flex-col ${isDark ? 'bg-gray-800' : 'bg-white'} relative`}
+          className={`rounded-lg w-full max-w-[95vw] h-full overflow-hidden flex flex-col ${isDark ? 'bg-dark-800' : 'bg-white'} relative`}
           style={{
             boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
           }}
@@ -359,7 +359,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       </div>
 
                       <div
-                        className={`rounded-lg p-4 flex-shrink-0 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'} border`}
+                        className={`rounded-lg p-4 flex-shrink-0 ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-white border-gray-200'} border`}
                         style={{
                           boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
                         }}
@@ -367,7 +367,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         <datalist id="user-names">
                           {user && <option value={`${user.firstName} ${user.lastName}`} />}
                         </datalist>
-                        <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                           <thead>
                             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
                               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Poznámka</th>
@@ -378,8 +378,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           </thead>
                           <tbody>
                             {formData.popisItems.map((item, index) => (
-                              <tr key={index} className={isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'}>
-                                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                              <tr key={index} className={isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'}>
+                                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                                   <input
                                     type="text"
                                     value={item.popis || ''}
@@ -392,7 +392,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
-                                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                                   <CustomDatePicker
                                     value={item.datum || ''}
                                     onChange={(val) => {
@@ -404,7 +404,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
-                                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                                   <input
                                     type="text"
                                     list="user-names"
@@ -418,7 +418,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
-                                <td className={`border px-1 py-1 text-center ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <td className={`border px-1 py-1 text-center ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                                   <button
                                     onClick={() => {
                                       setNoteToDeleteIndex(index);
@@ -621,7 +621,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             </div>
 
             {/* Mobile Fixed Buttons (Outside scroll area) */}
-            <div className={`lg:hidden p-3 border-t flex gap-2 flex-shrink-0 z-20 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`lg:hidden p-3 border-t flex gap-2 flex-shrink-0 z-20 ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-200'}`}>
               <button
                 onClick={handleSaveClick}
                 disabled={isLocked || isSaving}

@@ -30,10 +30,10 @@ export const GenericItemsTable = <T extends { id: string | number }>({
   mergeFirstTwoHeaders = false
 }: GenericItemsTableProps<T>) => {
   return (
-    <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} overflow-hidden`}>
+    <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
       {/* Only show title header if not merging into table header */}
       {!mergeFirstTwoHeaders && (
-        <div className={`px-4 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
+        <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>{title}</h3>
         </div>
       )}
@@ -74,9 +74,9 @@ export const GenericItemsTable = <T extends { id: string | number }>({
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={item.id} className={`relative group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'}`}>
+              <tr key={item.id} className={`relative group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'}`}>
                 {columns.map((col, idx) => (
-                  <td key={String(col.key) + idx} className={`px-2 py-1 ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'} border-r ${isDark ? 'border-gray-600' : 'border-gray-200'} ${idx === 0 ? 'pl-4' : ''}`}>
+                  <td key={String(col.key) + idx} className={`px-2 py-1 ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'} border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} ${idx === 0 ? 'pl-4' : ''}`}>
                     {col.render ? col.render(item, index, (updated) => {
                       const newItems = [...items];
                       newItems[index] = updated;
@@ -122,10 +122,10 @@ export const GenericItemsTable = <T extends { id: string | number }>({
           )}
         </table>
       </div>
-      <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+      <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
         <button
           onClick={onAddItem}
-          className={`p-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
+          className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
           title="Pridať riadok"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

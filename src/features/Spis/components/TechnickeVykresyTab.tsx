@@ -70,7 +70,7 @@ export const TechnickeVykresyTab: React.FC<TechnickeVykresyTabProps> = ({ isDark
         </button>
       </div> */}
       <div className="flex-1 overflow-auto">
-        <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+        <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Dátum</th>
@@ -82,37 +82,37 @@ export const TechnickeVykresyTab: React.FC<TechnickeVykresyTabProps> = ({ isDark
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={`tech-row-${index}`} className={isDark ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
-                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+              <tr key={`tech-row-${index}`} className={isDark ? 'hover:bg-dark-750' : 'hover:bg-gray-50'}>
+                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <CustomDatePicker
                     value={item.datum || ''}
                     onChange={(val) => handleUpdate(index, 'datum', val)}
                     disabled={isLocked}
-                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} truncate max-w-[150px]`} title={item.subor}>
+                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-gray-300' : 'border-gray-300 text-gray-700'} truncate max-w-[150px]`} title={item.subor}>
                   {item.subor || '-'}
                 </td>
-                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <input
                     type="text"
                     value={item.kategoria || ''}
                     onChange={(e) => handleUpdate(index, 'kategoria', e.target.value)}
                     disabled={isLocked}
-                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
                 </td>
-                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <input
                     type="text"
                     value={item.dodavatel || ''}
                     onChange={(e) => handleUpdate(index, 'dodavatel', e.target.value)}
                     disabled={isLocked}
-                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
                 </td>
-                <td className={`border px-1 py-1 text-center ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-1 py-1 text-center ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                    <div className="flex items-center justify-center gap-1">
                     <button
                         onClick={(e) => handleDownload(e, item)}
@@ -138,7 +138,7 @@ export const TechnickeVykresyTab: React.FC<TechnickeVykresyTabProps> = ({ isDark
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className={`border px-3 py-8 text-center ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
+                <td colSpan={6} className={`border px-3 py-8 text-center ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
                   Žiadne technické výkresy. Nahrajte súbory nižšie.
                 </td>
               </tr>

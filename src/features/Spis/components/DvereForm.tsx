@@ -187,19 +187,19 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         totals={totals}
     >
       {/* Product description */}
-      <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} flex items-center gap-4`}>
+      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} flex items-center gap-4`}>
         <h3 className={`text-sm font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
         <input
           type="text"
           value={data.popisVyrobkov}
           onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
           placeholder="Popis zakázky"
-          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-gray-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
         />
       </div>
 
       {/* Specifications Section */}
-      <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} p-4`}>
+      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>
         <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
         <div className="space-y-3">
           {/* Dvere group */}
@@ -218,7 +218,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                         type="text"
                         value={spec.value}
                         onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
                       />
                       <button
                         onClick={() => handleRemoveSpecification(spec.originalIndex)}
@@ -228,7 +228,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
                 </div>
               </div>
             );
@@ -250,7 +250,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                         type="text"
                         value={spec.value}
                         onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
                       />
                       <button
                         onClick={() => handleRemoveSpecification(spec.originalIndex)}
@@ -260,7 +260,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
                 </div>
               </div>
             );
@@ -282,7 +282,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                         type="text"
                         value={spec.value}
                         onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
                       />
                       <button
                         onClick={() => handleRemoveSpecification(spec.originalIndex)}
@@ -292,7 +292,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
                 </div>
               </div>
             );
@@ -301,20 +301,20 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           {/* Add buttons for types that don't have any entries yet */}
           <div className="flex gap-2 ml-[88px]">
             {!(data.specifications || []).some(s => s.type === 'dvere') && (
-              <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
+              <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
             )}
             {!(data.specifications || []).some(s => s.type === 'zarubna') && (
-              <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
+              <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
             )}
             {!(data.specifications || []).some(s => s.type === 'obklad') && (
-              <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
+              <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
             )}
           </div>
         </div>
       </div>
 
       {/* Výrobky Table */}
-      <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} overflow-hidden`}>
+      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
         <div className="overflow-x-visible">
           <table className="w-full text-xs">
             <thead>
@@ -349,8 +349,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                     if (rowIndex === 0) {
                         return (
                             <>
-                                <td rowSpan={rowSpan} className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'} font-medium`}>{index + 1}</td>
-                                <td rowSpan={rowSpan} className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'} align-top`}>
+                                <td rowSpan={rowSpan} className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} font-medium`}>{index + 1}</td>
+                                <td rowSpan={rowSpan} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} align-top`}>
                                 <input
                                     type="text"
                                     value={item.miestnost}
@@ -375,7 +375,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 };
 
                 const deleteButton = (
-                    <td rowSpan={rowSpan} className={`px-1 py-1 text-center align-middle border-l ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <td rowSpan={rowSpan} className={`px-1 py-1 text-center align-middle border-l ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                         <button
                             onClick={() => {
                                 const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
@@ -395,15 +395,15 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 // DVERE ROW
                 if (item.hasDvere) {
                     rows.push(
-                        <tr key={`${item.id}-dvere`} className={`group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
+                        <tr key={`${item.id}-dvere`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
                                 <div className="flex justify-between items-center group/cell">
                                     <span>dvere</span>
                                     <button onClick={() => toggleItemPart(index, 'hasDvere')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Dvere">×</button>
                                 </div>
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.dvereTypRozmer}
@@ -415,7 +415,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <select
                                     value={item.pL}
                                     onChange={(e) => {
@@ -423,7 +423,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].pL = e.target.value;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-dark-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
                                 >
                                     <option value="P dnu">P dnu</option>
                                     <option value="Ľ dnu">Ľ dnu</option>
@@ -431,7 +431,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     <option value="Ľ von">Ľ von</option>
                                 </select>
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <select
                                     value={item.zamok}
                                     onChange={(e) => {
@@ -439,7 +439,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].zamok = e.target.value;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-dark-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
                                 >
                                     <option value="BB">BB</option>
                                     <option value="WC">WC</option>
@@ -447,7 +447,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     <option value="magnet">magnet</option>
                                 </select>
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.sklo}
@@ -459,7 +459,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.povrch}
@@ -471,7 +471,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.poznamkaDvere}
@@ -483,7 +483,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ks}
@@ -495,7 +495,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.cenaDvere}
@@ -520,15 +520,15 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 // ZARUBNA ROW
                 if (item.hasZarubna) {
                     rows.push(
-                        <tr key={`${item.id}-zarubna`} className={`group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
+                        <tr key={`${item.id}-zarubna`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
                                 <div className="flex justify-between items-center group/cell">
                                     <span>zárubňa</span>
                                     <button onClick={() => toggleItemPart(index, 'hasZarubna')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Zárubňu">×</button>
                                 </div>
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.dvereOtvor}
@@ -541,8 +541,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}></td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.povrchZarubna || ''}
@@ -555,7 +555,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.poznamkaZarubna}
@@ -567,7 +567,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ksZarubna}
@@ -579,7 +579,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.cenaZarubna}
@@ -604,15 +604,15 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 // OBKLAD ROW
                 if (item.hasObklad) {
                     rows.push(
-                        <tr key={`${item.id}-obklad`} className={`group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
+                        <tr key={`${item.id}-obklad`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
                                 <div className="flex justify-between items-center group/cell">
                                     <span>obklad</span>
                                     <button onClick={() => toggleItemPart(index, 'hasObklad')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Obklad">×</button>
                                 </div>
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.typObklad || ''}
@@ -625,8 +625,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}></td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.povrchObklad || ''}
@@ -639,7 +639,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.poznamkaObklad || ''}
@@ -651,7 +651,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ksObklad}
@@ -663,7 +663,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.cenaObklad}
@@ -688,9 +688,9 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 // EMPTY ROW (if nothing selected)
                 if (rowSpan === 1 && !item.hasDvere && !item.hasZarubna && !item.hasObklad) {
                      rows.push(
-                        <tr key={`${item.id}-empty`} className={`group ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
+                        <tr key={`${item.id}-empty`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(0)}
-                            <td colSpan={10} className={`px-2 py-1 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td colSpan={10} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.poznamkaDvere || ''} // Reusing poznamkaDvere as generic text container for empty row
@@ -712,24 +712,24 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               })}
             </tbody>
             <tfoot>
-              <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+              <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
                 <td colSpan={11} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
                   Spolu bez DPH:
                 </td>
                 <td className={`px-2 py-2 text-right font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                   {totals.vyrobkyTotal.toFixed(2)} €
                 </td>
-                <td className={isDark ? 'bg-gray-600' : 'bg-gray-100'}></td>
+                <td className={isDark ? 'bg-dark-600' : 'bg-gray-100'}></td>
               </tr>
             </tfoot>
           </table>
         </div>
         
         {/* Add Product Button with Menu */}
-        <div className={`flex justify-center p-2 transition-all relative ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+        <div className={`flex justify-center p-2 transition-all relative ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
             onClick={() => setShowAddMenu(!showAddMenu)}
-            className={`p-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
+            className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
             title="Pridať riadok"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -738,11 +738,11 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </button>
           
           {showAddMenu && (
-             <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 z-10 flex flex-col">
-                <button onClick={() => handleAddProduct('dvere')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm whitespace-nowrap">Dvere</button>
-                <button onClick={() => handleAddProduct('zarubna')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm whitespace-nowrap">Zárubňa</button>
-                <button onClick={() => handleAddProduct('obklad')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm whitespace-nowrap">Obklad</button>
-                <button onClick={() => handleAddProduct('empty')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm whitespace-nowrap border-t">Prázdny riadok</button>
+             <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-dark-800 shadow-xl rounded-lg overflow-hidden border border-gray-200 dark:border-dark-500 z-10 flex flex-col">
+                <button onClick={() => handleAddProduct('dvere')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Dvere</button>
+                <button onClick={() => handleAddProduct('zarubna')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Zárubňa</button>
+                <button onClick={() => handleAddProduct('obklad')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Obklad</button>
+                <button onClick={() => handleAddProduct('empty')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap border-t">Prázdny riadok</button>
              </div>
           )}
         </div>
@@ -760,7 +760,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>
@@ -790,7 +790,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>
@@ -813,7 +813,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
-          <tr className={isDark ? 'bg-gray-600' : 'bg-gray-100'}>
+          <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
             <td colSpan={3} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Spolu bez DPH:
             </td>

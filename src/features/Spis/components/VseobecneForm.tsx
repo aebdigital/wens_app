@@ -19,9 +19,9 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
   const getInputClass = (customWidth = 'w-full') => {
     const base = `${customWidth} text-xs border px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28]`;
     if (isLocked) {
-        return `${base} cursor-not-allowed ${isDark ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+        return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
     }
-    return `${base} ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
+    return `${base} ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
   };
 
   const getHeaderClass = () => `text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`;
@@ -193,11 +193,11 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           className={getInputClass()}
         />
         {activeAutocomplete?.field === field && filteredContacts.length > 0 && !isLocked && (
-          <div className={`absolute z-50 left-0 right-0 mt-1 border rounded shadow-lg max-h-40 overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+          <div className={`absolute z-50 left-0 right-0 mt-1 border rounded shadow-lg max-h-40 overflow-y-auto ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-white border-gray-300'}`}>
             {filteredContacts.map(c => (
               <div
                 key={c.id}
-                className={`px-2 py-1.5 cursor-pointer text-xs ${isDark ? 'text-gray-200 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                className={`px-2 py-1.5 cursor-pointer text-xs ${isDark ? 'text-gray-200 hover:bg-dark-600' : 'text-gray-700 hover:bg-gray-100'}`}
                 onClick={() => handleContactSelect(c, section)}
               >
                 <span className="font-semibold">{c.priezvisko}</span> {c.meno}
@@ -581,7 +581,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                                 formData.fakturaciaSource === 'zakaznik' 
                                     ? 'bg-red-500 text-white border-red-600' 
                                     : isDark 
-                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600' 
                                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                             }`}
                         >
@@ -594,7 +594,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                                 formData.fakturaciaSource === 'architekt' 
                                     ? 'bg-red-500 text-white border-red-600' 
                                     : isDark
-                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600' 
                                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                             }`}
                         >
@@ -607,7 +607,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                                 formData.fakturaciaSource === 'realizator' 
                                     ? 'bg-red-500 text-white border-red-600' 
                                     : isDark
-                                        ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'
+                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600'
                                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                             }`}
                         >

@@ -45,7 +45,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
   return (
     <div className="space-y-4">
       {/* Header with Odberateľ */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
         {/* Left - Odberateľ (WENS) */}
         <div className="text-xs space-y-1">
           <p className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Odberateľ:</p>
@@ -67,7 +67,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 type="text"
                 value={data.dodavatel?.nazov || ''}
                 onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, nazov: e.target.value}})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
              />
           </div>
           <div className="flex gap-2 items-center">
@@ -76,7 +76,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 type="text"
                 value={data.dodavatel?.ulica || ''}
                 onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, ulica: e.target.value}})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
              />
           </div>
           <div className="flex gap-2 items-center">
@@ -85,7 +85,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 type="text"
                 value={data.dodavatel?.mesto || ''}
                 onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, mesto: e.target.value}})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
              />
           </div>
           <div className="flex gap-2 items-center">
@@ -94,7 +94,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 type="text"
                 value={data.dodavatel?.tel || ''}
                 onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, tel: e.target.value}})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
              />
           </div>
           <div className="flex gap-2 items-center">
@@ -103,28 +103,28 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 type="text"
                 value={data.dodavatel?.email || ''}
                 onChange={(e) => onChange({...data, dodavatel: {...data.dodavatel, email: e.target.value}})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
              />
           </div>
         </div>
       </div>
 
       {/* Objednávame u nás */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+      <div className={`p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
         <div className="flex items-center gap-4">
           <span className={`font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-800'}`}>Objednávame u nás:</span>
           <input
             type="text"
             value={data.zakazka}
             onChange={(e) => onChange({...data, zakazka: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
       </div>
 
       {/* Názov tovaru table */}
-      <div className={`rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} overflow-hidden`}>
-        <div className={`px-4 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
+      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
+        <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Názov tovaru:</h3>
         </div>
         <table className="w-full text-xs">
@@ -138,8 +138,8 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
           </thead>
           <tbody>
             {data.polozky.map((item, index) => (
-              <tr key={item.id} className={`${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-gray-700' : 'bg-white') : (isDark ? 'bg-gray-750' : 'bg-gray-50')}`}>
-                <td className={`px-4 py-2 border-r relative ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+              <tr key={item.id} className={`${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                <td className={`px-4 py-2 border-r relative ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                   <textarea
                     value={item.nazov}
                     onChange={(e) => {
@@ -154,14 +154,14 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none resize-none`}
                   />
                   {activeRowIndex === index && item.nazov.length > 0 && availableProducts.length > 0 && (
-                      <div className={`absolute z-50 left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}>
+                      <div className={`absolute z-50 left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
                           {availableProducts
                             .filter(p => p.name.toLowerCase().includes(item.nazov.toLowerCase()))
                             .map((p) => (
                               <div
                                 key={p.id}
                                 onClick={() => handleProductSelect(index, p)}
-                                className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
+                                className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-dark-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
                               >
                                 <div className="flex justify-between">
                                     <span className="font-semibold">{p.name}</span>
@@ -174,7 +174,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                       </div>
                   )}
                 </td>
-                <td className={`px-2 py-2 border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <td className={`px-2 py-2 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                   <input
                     type="text"
                     value={item.kod || ''}
@@ -187,7 +187,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                     placeholder="Kód"
                   />
                 </td>
-                <td className={`px-2 py-2 text-center border-r ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <td className={`px-2 py-2 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                   <input
                     type="number"
                     value={item.mnozstvo}
@@ -199,7 +199,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                     className={`w-16 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                   />
                 </td>
-                <td className={`px-2 py-2 text-center ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <td className={`px-2 py-2 text-center ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                   <button
                     onClick={() => {
                       const newPolozky = data.polozky.filter((_, i) => i !== index);
@@ -217,7 +217,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
             ))}
           </tbody>
         </table>
-        <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+        <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
             onClick={() => {
               onChange({
@@ -225,7 +225,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                 polozky: [...data.polozky, { id: data.polozky.length + 1, nazov: '', kod: '', mnozstvo: 1 }]
               });
             }}
-            className={`p-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
+            className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
             title="Pridať riadok"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -236,7 +236,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
       </div>
 
       {/* Footer info */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
         {/* Left - date/contact info */}
         <div className="space-y-2 text-xs">
           <div className="flex gap-2 items-center">
@@ -245,7 +245,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
               type="text"
               value={data.datum || new Date().toLocaleDateString('sk-SK')}
               onChange={(e) => onChange({...data, datum: e.target.value})}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
           </div>
           <div className="flex gap-2 items-center">
@@ -254,7 +254,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
               type="text"
               value={data.spracoval !== undefined ? data.spracoval : headerInfo.vypracoval}
               onChange={(e) => onChange({...data, spracoval: e.target.value})}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
           </div>
           <div className="flex gap-2 items-center">
@@ -263,7 +263,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
               type="text"
               value={data.kontakt !== undefined ? data.kontakt : headerInfo.telefon}
               onChange={(e) => onChange({...data, kontakt: e.target.value})}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
           </div>
           <div className="flex gap-2 items-center">
@@ -272,7 +272,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
               type="text"
               value={data.emailSpracoval !== undefined ? data.emailSpracoval : headerInfo.email}
               onChange={(e) => onChange({...data, emailSpracoval: e.target.value})}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
           </div>
         </div>
@@ -283,19 +283,19 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
             type="text"
             value={data.tovarDorucitNaAdresu.firma}
             onChange={(e) => onChange({...data, tovarDorucitNaAdresu: {...data.tovarDorucitNaAdresu, firma: e.target.value}})}
-            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
           <input
             type="text"
             value={data.tovarDorucitNaAdresu.ulica}
             onChange={(e) => onChange({...data, tovarDorucitNaAdresu: {...data.tovarDorucitNaAdresu, ulica: e.target.value}})}
-            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
           <input
             type="text"
             value={data.tovarDorucitNaAdresu.mesto}
             onChange={(e) => onChange({...data, tovarDorucitNaAdresu: {...data.tovarDorucitNaAdresu, mesto: e.target.value}})}
-            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
       </div>

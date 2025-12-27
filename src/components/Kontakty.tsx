@@ -295,7 +295,7 @@ const Kontakty = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+      <div className={`min-h-full p-4 flex items-center justify-center ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
@@ -305,7 +305,7 @@ const Kontakty = () => {
   }
 
   return (
-    <div className={`min-h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+    <div className={`min-h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Kontakty</h1>
@@ -324,13 +324,13 @@ const Kontakty = () => {
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div
-            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transition-all duration-500 ease-in-out ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transition-all duration-500 ease-in-out ${isDark ? 'bg-dark-800' : 'bg-white'}`}
             style={{
               boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
             }}
           >
             {/* Popup Header */}
-            <div className={`flex justify-between items-center p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`flex justify-between items-center p-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
               <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {editingContactId ? 'Upraviť kontakt' : 'Pridať nový kontakt'}
               </h2>
@@ -370,7 +370,7 @@ const Kontakty = () => {
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'zakaznik'
                           ? 'bg-blue-600 text-white'
-                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
                       }`}
                     >
                       Zákazník
@@ -381,7 +381,7 @@ const Kontakty = () => {
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'architekt'
                           ? 'bg-purple-600 text-white'
-                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
                       }`}
                     >
                       Architekt
@@ -392,7 +392,7 @@ const Kontakty = () => {
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'fakturacna_firma'
                           ? 'bg-green-600 text-white'
-                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
                       }`}
                     >
                       Fakturačná firma
@@ -412,7 +412,7 @@ const Kontakty = () => {
                         name="priezvisko"
                         value={formData.priezvisko}
                         onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                         required
                       />
                       {formErrors.priezvisko && (
@@ -427,7 +427,7 @@ const Kontakty = () => {
                         name="meno"
                         value={formData.meno}
                         onChange={handleInputChange}
-                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                        className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                       />
                     </div>
                   </>
@@ -439,7 +439,7 @@ const Kontakty = () => {
                       name="priezvisko"
                       value={formData.priezvisko}
                       onChange={handleInputChange}
-                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.priezvisko ? 'border-red-500' : ''} ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                       required
                     />
                     {formErrors.priezvisko && (
@@ -455,7 +455,7 @@ const Kontakty = () => {
                     name="telefon"
                     value={formData.telefon}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.telefon ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.telefon ? 'border-red-500' : ''} ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                   {formErrors.telefon && (
                     <span className="text-xs text-red-500">{formErrors.telefon}</span>
@@ -469,7 +469,7 @@ const Kontakty = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.email ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.email ? 'border-red-500' : ''} ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                   {formErrors.email && (
                     <span className="text-xs text-red-500">{formErrors.email}</span>
@@ -483,7 +483,7 @@ const Kontakty = () => {
                     name="ulica"
                     value={formData.ulica}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
@@ -494,7 +494,7 @@ const Kontakty = () => {
                     name="mesto"
                     value={formData.mesto}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
@@ -505,7 +505,7 @@ const Kontakty = () => {
                     name="psc"
                     value={formData.psc}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
@@ -516,7 +516,7 @@ const Kontakty = () => {
                     name="ico"
                     value={formData.ico}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.ico ? 'border-red-500' : ''} ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${formErrors.ico ? 'border-red-500' : ''} ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                   {formErrors.ico && (
                     <span className="text-xs text-red-500">{formErrors.ico}</span>
@@ -530,7 +530,7 @@ const Kontakty = () => {
                     name="icDph"
                     value={formData.icDph}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
@@ -541,7 +541,7 @@ const Kontakty = () => {
                     name="dic"
                     value={formData.dic}
                     onChange={handleInputChange}
-                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
               </div>
@@ -557,21 +557,21 @@ const Kontakty = () => {
                     value={formData.popis}
                     onChange={handleInputChange}
                     rows={4}
-                    className={`w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className={`w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
                     placeholder="Pridajte ďalšie informácie o kontakte..."
                   />
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className={`flex justify-end space-x-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`flex justify-end space-x-3 pt-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                 <button
                   type="button"
                   onClick={() => {
                     setIsPopupOpen(false);
                     resetForm();
                   }}
-                  className={`px-4 py-2 rounded ${isDark ? 'bg-gray-600 text-gray-200 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  className={`px-4 py-2 rounded ${isDark ? 'bg-dark-600 text-gray-200 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                 >
                   Zrušiť
                 </button>

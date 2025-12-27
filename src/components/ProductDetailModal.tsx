@@ -41,9 +41,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
-       <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl w-full max-w-lg overflow-hidden`}>
+       <div className={`${isDark ? 'bg-dark-800' : 'bg-white'} rounded-lg shadow-xl w-full max-w-lg overflow-hidden`}>
            {/* Header */}
-            <div className={`flex justify-between items-center px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`flex justify-between items-center px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                 <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Detail produktu</h2>
                 <button onClick={onClose} className={`p-2 rounded hover:bg-opacity-10 hover:bg-gray-500 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             value={formData.name}
                             onChange={(e) => setFormData({...formData, name: e.target.value})}
                             disabled={!isEditing}
-                            className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                            className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                         />
                     </div>
                     <div>
@@ -72,12 +72,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             value={formData.kod || ''}
                             onChange={(e) => setFormData({...formData, kod: e.target.value})}
                             disabled={!isEditing}
-                            className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                            className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                         />
                     </div>
                 </div>
 
-                <div className={`p-4 rounded border ${isDark ? 'border-gray-700 bg-gray-750' : 'border-gray-100 bg-gray-50'}`}>
+                <div className={`p-4 rounded border ${isDark ? 'border-dark-500 bg-dark-750' : 'border-gray-100 bg-gray-50'}`}>
                      <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`}>Dodávateľ</h3>
                      <div className="space-y-3">
                          <div>
@@ -87,7 +87,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 value={formData.supplier}
                                 onChange={(e) => setFormData({...formData, supplier: e.target.value})}
                                 disabled={!isEditing}
-                                className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                                className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -101,7 +101,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                         supplierDetails: {...(formData.supplierDetails || {}), ulica: e.target.value}
                                     })}
                                     disabled={!isEditing}
-                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                                 />
                             </div>
                             <div>
@@ -114,7 +114,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                         supplierDetails: {...(formData.supplierDetails || {}), mesto: e.target.value}
                                     })}
                                     disabled={!isEditing}
-                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                                 />
                             </div>
                         </div>
@@ -129,7 +129,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                         supplierDetails: {...(formData.supplierDetails || {}), tel: e.target.value}
                                     })}
                                     disabled={!isEditing}
-                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                                 />
                             </div>
                             <div>
@@ -142,7 +142,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                         supplierDetails: {...(formData.supplierDetails || {}), email: e.target.value}
                                     })}
                                     disabled={!isEditing}
-                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
+                                    className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300'} disabled:opacity-60`}
                                 />
                             </div>
                         </div>
@@ -151,7 +151,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Footer */}
-            <div className={`px-6 py-4 border-t flex justify-between ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`px-6 py-4 border-t flex justify-between ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                 {isEditing ? (
                      <button 
                         onClick={handleDelete}
@@ -171,7 +171,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                     setFormData(product);
                                     setIsEditing(false);
                                 }}
-                                className={`px-4 py-2 rounded text-sm font-medium ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+                                className={`px-4 py-2 rounded text-sm font-medium ${isDark ? 'bg-dark-700 text-white hover:bg-dark-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
                              >
                                 Zrušiť
                              </button>
@@ -185,7 +185,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     ) : (
                         <button 
                             onClick={() => setIsEditing(true)}
-                            className={`px-4 py-2 rounded text-sm font-medium ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+                            className={`px-4 py-2 rounded text-sm font-medium ${isDark ? 'bg-dark-700 text-white hover:bg-dark-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
                         >
                             Upraviť
                         </button>

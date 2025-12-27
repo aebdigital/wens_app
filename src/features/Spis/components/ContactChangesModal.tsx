@@ -66,9 +66,9 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
-      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col`}>
+      <div className={`${isDark ? 'bg-dark-800' : 'bg-white'} rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col`}>
         {/* Header */}
-        <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className={`px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
           <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             Boli zistené zmeny v rámci kontaktov
           </h2>
@@ -83,13 +83,13 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
           <div className="flex gap-2 mb-4">
             <button
               onClick={selectAll}
-              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               Vybrať všetko
             </button>
             <button
               onClick={deselectAll}
-              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               Zrušiť výber
             </button>
@@ -108,7 +108,7 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
                     className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                       change.selected
                         ? isDark ? 'bg-blue-900/30 border border-blue-500' : 'bg-blue-50 border border-blue-200'
-                        : isDark ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
+                        : isDark ? 'bg-dark-700 border border-dark-500' : 'bg-gray-50 border border-gray-200'
                     }`}
                   >
                     <input
@@ -144,7 +144,7 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+        <div className={`px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-200'} flex justify-between items-center`}>
           <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {selectedCount} z {changes.length} zmien vybraných
           </span>
@@ -152,7 +152,7 @@ export const ContactChangesModal: React.FC<ContactChangesModalProps> = ({
             <button
               onClick={onClose}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               Zrušiť

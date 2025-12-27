@@ -37,7 +37,7 @@ export const EmailyTab: React.FC<EmailyTabProps> = ({ isDark, items, onUpdate })
 
       {/* Centered popup */}
       <div
-        className={`text-center z-10 px-8 py-6 rounded-xl ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border`}
+        className={`text-center z-10 px-8 py-6 rounded-xl ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-200'} border`}
         style={{
           boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
         }}

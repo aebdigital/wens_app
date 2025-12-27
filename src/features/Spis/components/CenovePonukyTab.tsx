@@ -27,7 +27,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   return (
     <div className="p-2 h-full flex flex-col">
       <div className="flex-1 overflow-auto">
-        <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+        <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
@@ -46,13 +46,13 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             {items.map((item, index) => (
               <tr
                 key={item.id}
-                className={`${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50'} cursor-pointer`}
+                className={`${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} cursor-pointer`}
                 onClick={() => onEdit(item)}
               >
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cisloCP}
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     item.typ === 'dvere'
                       ? 'bg-blue-100 text-blue-800'
@@ -65,22 +65,22 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
                   </span>
                 </td>
-                <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.verzia}
                 </td>
-                <td className={`border px-3 py-2 text-right ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 text-right ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cenaBezDPH > 0 ? `${item.cenaBezDPH.toFixed(2)} €` : '-'}
                 </td>
-                <td className={`border px-3 py-2 text-right font-semibold ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 text-right font-semibold ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cenaSDPH > 0 ? `${item.cenaSDPH.toFixed(2)} €` : '-'}
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.odoslane || '-'}
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.vytvoril}
                 </td>
-                <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <input
                     type="text"
                     value={item.popis}
@@ -94,7 +94,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     className={`w-full text-xs border-0 bg-transparent px-2 py-1 focus:ring-0 ${isDark ? 'text-gray-300' : 'text-gray-600'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
                 </td>
-                <td className={`border px-2 py-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                <td className={`border px-2 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={(e) => {
@@ -124,7 +124,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                   </div>
                 </td>
                 <td
-                  className={`border px-3 py-2 text-center cursor-pointer ${isDark ? 'border-gray-600' : 'border-gray-300'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                  className={`border px-3 py-2 text-center cursor-pointer ${isDark ? 'border-dark-500' : 'border-gray-300'} ${isLocked ? 'cursor-not-allowed' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!isLocked) onToggleSelect(item);
@@ -142,7 +142,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={10} className={`border px-3 py-8 text-center ${isDark ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
+                <td colSpan={10} className={`border px-3 py-8 text-center ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
                   Žiadne cenové ponuky. Kliknite na "Pridať cenovú ponuku" pre vytvorenie novej cenovej ponuky.
                 </td>
               </tr>

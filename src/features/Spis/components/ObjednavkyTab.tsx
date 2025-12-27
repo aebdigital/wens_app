@@ -53,7 +53,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
   return (
     <div className="p-2 h-full flex flex-col">
       <div className="flex-1 overflow-auto">
-        <table className={`w-full text-xs border ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+        <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Názov</th>
@@ -80,25 +80,25 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
               return (
                 <tr
                   key={item.id || `objednavka-${index}`}
-                  className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
+                  className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
                   onClick={() => onEdit && onEdit(item)}
                 >
-                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.nazov || '-'}
                   </td>
-                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.vypracoval || '-'}
                   </td>
-                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {formatDate(item.datum)}
                   </td>
-                  <td className={`border px-3 py-2 ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.popis || '-'}
                   </td>
-                  <td className={`border px-3 py-2 text-center ${isDark ? 'border-gray-600 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.cisloObjednavky || '-'}
                   </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
+                  <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
                     <CustomDatePicker
                       value={item.dorucene || ''}
                       onChange={(val) => {
@@ -107,10 +107,10 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                         onUpdate(updated);
                       }}
                       disabled={isLocked}
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-gray-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
                     />
                   </td>
-                  <td className={`border px-2 py-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                  <td className={`border px-2 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={(e) => {

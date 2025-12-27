@@ -138,7 +138,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
   };
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} p-4`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>
       {/* Left side - delivery info */}
       <div className="space-y-2 text-xs">
         <div className="flex gap-2">
@@ -147,7 +147,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.platnostPonuky}
             onChange={(e) => onChange({...data, platnostPonuky: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -157,7 +157,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                 type="text"
                 value={data.miestoDodavky}
                 onChange={(e) => onChange({...data, miestoDodavky: e.target.value})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
             </div>
             {data.miestoDodavky && (
@@ -178,7 +178,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.zameranie}
             onChange={(e) => onChange({...data, zameranie: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2">
@@ -187,7 +187,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.terminDodania}
             onChange={(e) => onChange({...data, terminDodania: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2 mt-4">
@@ -196,7 +196,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.vypracoval !== undefined ? data.vypracoval : headerInfo.vypracoval}
             onChange={(e) => onChange({...data, vypracoval: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2">
@@ -205,7 +205,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.kontakt !== undefined ? data.kontakt : headerInfo.telefon}
             onChange={(e) => onChange({...data, kontakt: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2">
@@ -214,7 +214,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.emailVypracoval !== undefined ? data.emailVypracoval : headerInfo.email}
             onChange={(e) => onChange({...data, emailVypracoval: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2">
@@ -223,7 +223,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="text"
             value={data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK')}
             onChange={(e) => onChange({...data, datum: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
       </div>
@@ -237,7 +237,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>DPH 23%:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.dph.toFixed(2)} €</span>
         </div>
-        <div className={`flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
+        <div className={`flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'}`}>
           <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Cena s DPH:</span>
           <div className="flex items-center gap-1">
             <input
@@ -259,7 +259,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                     type="number"
                     value={data.platba1Percent.toFixed(0)}
                     onChange={(e) => handlePercentageChange(1, parseFloat(e.target.value) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
             </div>
@@ -277,7 +277,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                       handleAmountChange(1, parseFloat(localAmount1) || 0);
                       setEditingAmount(null);
                     }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
             </div>
@@ -290,7 +290,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                     type="number"
                     value={data.platba2Percent.toFixed(0)}
                     onChange={(e) => handlePercentageChange(2, parseFloat(e.target.value) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
             </div>
@@ -308,7 +308,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                       handleAmountChange(2, parseFloat(localAmount2) || 0);
                       setEditingAmount(null);
                     }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
             </div>
@@ -321,7 +321,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                     type="number"
                     value={data.platba3Percent.toFixed(0)}
                     onChange={(e) => handlePercentageChange(3, parseFloat(e.target.value) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>%</span>
             </div>
@@ -339,7 +339,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                       handleAmountChange(3, parseFloat(localAmount3) || 0);
                       setEditingAmount(null);
                     }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
             </div>

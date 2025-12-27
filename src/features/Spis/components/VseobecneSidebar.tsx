@@ -23,16 +23,16 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
   const getInputClass = (widthClass = 'flex-1') => {
     const base = `text-xs border px-1 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28] ${widthClass}`;
     if (isLocked) {
-        return `${base} cursor-not-allowed ${isDark ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+        return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
     }
-    return `${base} ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
+    return `${base} ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
   };
 
   const labelClass = `text-xs w-24 flex-shrink-0 ${isDark ? 'text-white' : 'text-gray-600'}`;
 
   return (
     <div
-      className={`w-full h-full border rounded-lg overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
+      className={`w-full h-full border rounded-lg overflow-y-auto ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-gray-50 border-gray-200'}`}
       style={{
         boxShadow: isDark 
           ? 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3)' 
@@ -137,7 +137,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   />
                   {showFirmaDropdown && filteredFirmaOptions.length > 0 && !isLocked && (
                     <div
-                      className={`absolute top-full left-0 right-0 border rounded z-50 max-h-32 overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                      className={`absolute top-full left-0 right-0 border rounded z-50 max-h-32 overflow-y-auto ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-white border-gray-300'}`}
                       style={{
                         boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
                       }}
@@ -149,7 +149,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                             setFormData(prev => ({...prev, firma: option}));
                             setShowFirmaDropdown(false);
                           }}
-                          className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-200 hover:bg-gray-600' : 'text-gray-800 hover:bg-gray-100'}`}
+                          className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-200 hover:bg-dark-600' : 'text-gray-800 hover:bg-gray-100'}`}
                         >
                           {option}
                         </div>
@@ -231,7 +231,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
 
         {/* Financie section */}
         <div className="mb-2">
-          <div className={`space-y-1 text-xs rounded p-2 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-gray-200 border-gray-300'}`}>
+          <div className={`space-y-1 text-xs rounded p-2 border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-gray-200 border-gray-300'}`}>
             <h3 className={`text-xs font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Financie</h3>
             <div className="px-1 py-1">
               <div className="flex items-center gap-2">

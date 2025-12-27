@@ -270,11 +270,11 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
       <div
-        className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col`}
+        className={`${isDark ? 'bg-dark-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col`}
         style={{ width: '98vw', height: '95vh', maxWidth: '1800px' }}
       >
         {/* Header with WENS DOOR logo and tabs */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <div className="flex items-center gap-8">
             <div className="bg-white rounded-lg p-2 inline-block shadow-sm">
               <img
@@ -295,7 +295,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                     activeTab === tab
                       ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow-lg'
                       : isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-dark-700 text-gray-300 hover:bg-dark-600'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
@@ -310,7 +310,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             </span>
             <button
               onClick={onClose}
-              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -405,10 +405,10 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         </div>
 
         {/* Footer buttons */}
-        <div className={`flex justify-end gap-3 px-6 py-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+        <div className={`flex justify-end gap-3 px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <button
             onClick={onClose}
-            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           >
             Zrušiť
           </button>

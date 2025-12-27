@@ -121,7 +121,7 @@ const Nastavenia = () => {
 
   if (isLoading) {
     return (
-      <div className={`h-full p-4 flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+      <div className={`h-full p-4 flex items-center justify-center ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam...</p>
@@ -131,14 +131,14 @@ const Nastavenia = () => {
   }
 
   return (
-    <div className={`h-full p-4 ${isDark ? 'bg-gray-900' : 'bg-[#f8faff]'}`}>
+    <div className={`h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
       {/* Page Title */}
       <div className="mb-6">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Nastavenia</h1>
       </div>
 
       <div
-        className={`rounded-lg overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        className={`rounded-lg overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}
         style={{
           boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
         }}
@@ -170,7 +170,7 @@ const Nastavenia = () => {
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                   />
                 </div>
@@ -181,7 +181,7 @@ const Nastavenia = () => {
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                   />
                 </div>
@@ -192,7 +192,7 @@ const Nastavenia = () => {
                     value={formData.email}
                     disabled
                     className={`w-full px-3 py-2 border rounded-md ${
-                      isDark ? 'bg-gray-600 border-gray-600 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
+                      isDark ? 'bg-dark-600 border-dark-500 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
                     } cursor-not-allowed`}
                   />
                   <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Email nie je možné zmeniť</p>
@@ -204,7 +204,7 @@ const Nastavenia = () => {
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                   />
                 </div>
@@ -214,11 +214,11 @@ const Nastavenia = () => {
         </div>
 
         {/* Footer */}
-        <div className={`flex justify-end gap-3 p-6 border-t ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+        <div className={`flex justify-end gap-3 p-6 border-t ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-gray-50 border-gray-200'}`}>
           <button
             type="button"
             className={`px-4 py-2 border rounded-md transition-colors ${
-              isDark ? 'text-gray-300 bg-gray-600 border-gray-500 hover:bg-gray-500' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'
+              isDark ? 'text-gray-300 bg-dark-600 border-gray-500 hover:bg-gray-500' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'
             }`}
           >
             Zrušiť

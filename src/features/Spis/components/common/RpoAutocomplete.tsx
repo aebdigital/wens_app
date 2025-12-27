@@ -76,10 +76,10 @@ export const RpoAutocomplete: React.FC<RpoAutocompleteProps> = ({
   const inputClass = `w-full text-xs border px-2 py-1 rounded focus:outline-none ${
     isLocked
       ? isDark
-        ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+        ? 'bg-dark-800 border-dark-500 text-gray-500 cursor-not-allowed'
         : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
       : isDark
-      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+      ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400 focus:border-blue-500'
       : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
   }`;
 
@@ -107,13 +107,13 @@ export const RpoAutocomplete: React.FC<RpoAutocompleteProps> = ({
       )}
 
       {showSuggestions && suggestions.length > 0 && !isLocked && (
-        <ul className={`absolute z-50 left-0 right-0 mt-1 border rounded shadow-lg max-h-60 overflow-y-auto ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+        <ul className={`absolute z-50 left-0 right-0 mt-1 border rounded shadow-lg max-h-60 overflow-y-auto ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-white border-gray-300'}`}>
           {suggestions.map((entity) => (
             <li
               key={entity.id}
               className={`px-2 py-1.5 cursor-pointer text-xs border-b last:border-0 ${
                 isDark 
-                  ? 'text-gray-200 hover:bg-gray-600 border-gray-600' 
+                  ? 'text-gray-200 hover:bg-dark-600 border-dark-500' 
                   : 'text-gray-700 hover:bg-gray-100 border-gray-100'
               }`}
               onClick={() => handleSelect(entity)}

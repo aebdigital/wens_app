@@ -55,7 +55,7 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   const customerEmail = headerInfo.customer ? headerInfo.customer.email : headerInfo.email;
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
       <div className="text-xs space-y-1">
         <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>WENS door, s.r.o., Vápenická 12, 971 01 Prievidza</p>
         <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>zap.v OR SR Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428</p>
@@ -103,7 +103,7 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
 
         {/* Architect Column */}
         {headerInfo.architect && (
-            <div className="flex-1 space-y-2 border-l pl-4 border-gray-200 dark:border-gray-600">
+            <div className="flex-1 space-y-2 border-l pl-4 border-gray-200 dark:border-dark-500">
                 <div className="flex items-center gap-2 mb-1">
                     <input 
                         type="checkbox" 

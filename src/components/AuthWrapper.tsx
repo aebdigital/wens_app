@@ -26,87 +26,73 @@ const AuthWrapper: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-400 via-red-500 to-red-600 flex items-center justify-center">
-        <div className="bg-white rounded-3xl p-8 shadow-2xl">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-            <span className="ml-3 text-gray-600">Načítava sa...</span>
-          </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e11b28]"></div>
+          <span className="ml-3 text-gray-600">Načítava sa...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-400 via-red-500 to-red-600 flex items-center justify-center p-4 overflow-hidden">
-      {/* Main Container */}
-      <div className="w-full max-w-md overflow-hidden relative rounded-3xl shadow-2xl bg-white">
-        {/* Login Panel */}
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-48 h-16 bg-white rounded-lg mb-4 shadow-sm" style={{padding: '5px'}}>
-              <img
-                src="/logo.png"
-                alt="WENS door"
-                className="h-full w-auto object-contain"
-              />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Vitajte späť</h2>
-            <p className="text-gray-600 text-sm mt-2">Prihláste sa do admin účtu</p>
+    <div className="min-h-screen flex">
+      {/* Left Side - White with Login Form */}
+      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 lg:px-16 xl:px-24">
+        <div className="max-w-md w-full mx-auto">
+          {/* Logo */}
+          <div className="mb-8">
+            <img
+              src="/logo.png"
+              alt="WENS door"
+              className="h-12 w-auto object-contain"
+            />
           </div>
+
+          {/* Heading */}
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Vitajte späť</h1>
+          <p className="text-gray-500 mb-8">Prihláste sa do svojho účtu</p>
 
           <form onSubmit={handleLoginSubmit} className="space-y-6">
             {loginError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-600 text-sm">{loginError}</p>
+              <div className="bg-red-50 border-l-4 border-[#e11b28] p-4">
+                <p className="text-[#e11b28] text-sm">{loginError}</p>
               </div>
             )}
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                E-mail *
+                E-mail
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-500 transition-colors bg-white text-gray-900"
-                  placeholder="Zadajte váš e-mail"
-                />
-              </div>
+              <input
+                id="email"
+                type="email"
+                required
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="block w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
+                placeholder="vas@email.sk"
+              />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Heslo *
+                Heslo
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
                 <input
                   id="password"
                   type={loginShowPassword ? "text" : "password"}
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="block w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-500 transition-colors bg-white text-gray-900"
-                  placeholder="Zadajte heslo"
+                  className="block w-full px-4 py-3 pr-12 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setLoginShowPassword(!loginShowPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
                 >
                   {loginShowPassword ? (
                     <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,13 +111,51 @@ const AuthWrapper: React.FC = () => {
             <button
               type="submit"
               disabled={isLoginLoading}
-              className="w-full bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className="w-full bg-[#e11b28] text-white py-3 px-4 font-semibold hover:bg-[#c71325] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoginLoading ? 'Prihlasuje sa...' : 'Prihlásiť sa'}
             </button>
           </form>
+
+          <p className="mt-8 text-center text-sm text-gray-400">
+            WENS Door CRM System
+          </p>
         </div>
       </div>
+
+      {/* Right Side - Animated Red Gradient */}
+      <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(-45deg, #e11b28, #b8141f, #ff3d47, #8b0f18, #e11b28)',
+            backgroundSize: '400% 400%',
+            animation: 'gradientShift 15s ease infinite',
+          }}
+        />
+        {/* Subtle pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+      </div>
+
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes gradientShift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+      `}</style>
     </div>
   );
 };
