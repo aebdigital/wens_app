@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContactsProvider } from './contexts/ContactsContext';
 import { SpisProvider } from './contexts/SpisContext';
@@ -33,6 +33,7 @@ const AuthenticatedApp: React.FC = () => {
               <TaskListener />
               <Routes>
                 <Route path="/" element={<Navigate to="/spis" replace />} />
+                <Route path="/login" element={<Navigate to="/spis" replace />} />
                 <Route path="/spis" element={<Spis />} />
                 <Route path="/objednavky" element={<Objednavky />} />
                 <Route path="/kontakty" element={<Kontakty />} />
@@ -51,6 +52,7 @@ const AuthenticatedApp: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   // Show loading spinner while checking auth session
   if (isLoading) {
@@ -65,6 +67,10 @@ const AppContent: React.FC = () => {
 
   // Show login page if not authenticated
   if (!user) {
+    // Redirect to /login if not already there
+    if (location.pathname !== '/login') {
+      return <Navigate to="/login" replace />;
+    }
     return <AuthWrapper />;
   }
 

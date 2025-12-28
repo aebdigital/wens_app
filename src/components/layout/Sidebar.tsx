@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTasks } from '../../contexts/TasksContext';
@@ -16,6 +16,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { getUnreadCount } = useTasks();
   const unreadCount = getUnreadCount();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -170,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
               </p>
             </div>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="p-1 transition-colors text-white/70 hover:text-white"
               title="Odhlásiť sa"
             >
