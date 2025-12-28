@@ -3,7 +3,8 @@ export const calculateDvereTotals = (data: any) => {
     const dverePrice = (item.ks || 0) * (item.cenaDvere || 0);
     const zarubnaPrice = (item.ksZarubna || 0) * (item.cenaZarubna || 0);
     const obkladPrice = (item.ksObklad || 0) * (item.cenaObklad || 0);
-    return sum + dverePrice + zarubnaPrice + obkladPrice;
+    const prazdnePrice = (item.ksPrazdne || 0) * (item.cenaPrazdne || 0);
+    return sum + dverePrice + zarubnaPrice + obkladPrice + prazdnePrice;
   }, 0);
   const priplatkyTotal = data.priplatky.reduce((sum: number, item: any) => sum + item.cenaCelkom, 0);
   const subtotal = vyrobkyTotal + priplatkyTotal;

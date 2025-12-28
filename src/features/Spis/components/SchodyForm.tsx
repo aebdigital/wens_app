@@ -43,8 +43,8 @@ interface SchodyFormProps {
 
 // Default payment percentages
 const DEFAULT_PLATBA1 = 60;
-const DEFAULT_PLATBA2 = 22;
-const DEFAULT_PLATBA3 = 18;
+const DEFAULT_PLATBA2 = 30;
+const DEFAULT_PLATBA3 = 10;
 
 export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, headerInfo }) => {
   const totals = calculateSchodyTotals(data);
@@ -56,7 +56,10 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
       manualCenaSDPH: undefined,
       platba1Percent: DEFAULT_PLATBA1,
       platba2Percent: DEFAULT_PLATBA2,
-      platba3Percent: DEFAULT_PLATBA3
+      platba3Percent: DEFAULT_PLATBA3,
+      platba1Amount: null,
+      platba2Amount: null,
+      platba3Amount: null
     });
   };
 
@@ -96,7 +99,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
               }}
               className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
             />
-            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+            <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
          </div>
       )
     },
@@ -135,17 +138,6 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
       <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
         <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
-          <div className="flex gap-4 mt-1 text-xs">
-            <div className="flex items-center gap-2">
-              <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>{data.vyrobkyTyp}:</span>
-              <input
-                type="text"
-                value={data.vyrobkyPopis}
-                onChange={(e) => onChange({...data, vyrobkyPopis: e.target.value})}
-                className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-700 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} border`}
-              />
-            </div>
-          </div>
         </div>
         <div className="overflow-x-visible mr-8">
           <table className="w-full text-xs">
@@ -238,7 +230,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                       }}
                       className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
-                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
                   </td>
                   <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                     {item.cenaCelkom.toFixed(2)} €

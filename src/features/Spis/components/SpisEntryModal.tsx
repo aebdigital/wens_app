@@ -238,7 +238,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   };
 
   const handleGeneratePDF = (item: CenovaPonukaItem) => {
-    generatePDF(item, formData);
+    generatePDF(item, formData, {
+      vypracoval: formData.vypracoval,
+      telefon: userPhone,
+      email: user?.email || ''
+    });
   };
 
   const handleToggleSelect = (selectedItem: CenovaPonukaItem) => {

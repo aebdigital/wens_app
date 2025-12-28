@@ -96,7 +96,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         pL: 'P dnu',
         zamok: 'BB',
         sklo: 'matné',
-        povrch: 'dub bielený/bezfalcové',
+        povrch: '9003',
         poznamkaDvere: '',
         poznamkaZarubna: 'dub bielený/T',
         poznamkaObklad: '',
@@ -304,7 +304,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>
               Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
             </span>
             <button

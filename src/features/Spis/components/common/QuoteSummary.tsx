@@ -30,7 +30,7 @@ export const QuoteSummary: React.FC<QuoteSummaryProps> = ({
             <td className={`px-4 py-2 text-right ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
               Cena za výrobky a príplatky spolu:
             </td>
-            <td className={`px-4 py-2 text-right w-24 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>spolu bez DPH</td>
+            <td className={`px-4 py-2 text-right w-24 text-xs ${isDark ? 'text-gray-200' : 'text-gray-500'}`}>spolu bez DPH</td>
             <td className={`px-4 py-2 text-right font-semibold w-28 ${isDark ? 'text-white' : 'text-gray-800'}`}>
               {totals.subtotal.toFixed(2)} €
             </td>
@@ -58,7 +58,7 @@ export const QuoteSummary: React.FC<QuoteSummaryProps> = ({
             <td className={`px-4 py-2 text-right font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
               Cena výrobkov a príplatkov po odpočítaní zľavy spolu:
             </td>
-            <td className={`px-4 py-2 text-right w-24 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>spolu bez DPH</td>
+            <td className={`px-4 py-2 text-right w-24 text-xs ${isDark ? 'text-gray-200' : 'text-gray-500'}`}>spolu bez DPH</td>
             <td className={`px-4 py-2 text-right font-bold w-28 ${isDark ? 'text-white' : 'text-gray-800'}`}>
               {totals.afterZlava.toFixed(2)} €
             </td>

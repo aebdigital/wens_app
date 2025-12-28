@@ -144,6 +144,9 @@ export interface DvereData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
+  platba1Amount?: number | null; // Manual override for payment 1 amount
+  platba2Amount?: number | null; // Manual override for payment 2 amount
+  platba3Amount?: number | null; // Manual override for payment 3 amount
   manualCenaSDPH?: number | null; // Override for total price
   // Editable footer fields
   vypracoval?: string;
@@ -170,6 +173,9 @@ export interface NabytokData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
+  platba1Amount?: number | null; // Manual override for payment 1 amount
+  platba2Amount?: number | null; // Manual override for payment 2 amount
+  platba3Amount?: number | null; // Manual override for payment 3 amount
   manualCenaSDPH?: number | null; // Override for total price
   // Editable footer fields
   vypracoval?: string;
@@ -196,6 +202,9 @@ export interface SchodyData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
+  platba1Amount?: number | null; // Manual override for payment 1 amount
+  platba2Amount?: number | null; // Manual override for payment 2 amount
+  platba3Amount?: number | null; // Manual override for payment 3 amount
   manualCenaSDPH?: number | null; // Override for total price
   // Editable footer fields
   vypracoval?: string;

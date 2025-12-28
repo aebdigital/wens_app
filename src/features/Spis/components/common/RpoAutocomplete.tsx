@@ -96,7 +96,8 @@ export const RpoAutocomplete: React.FC<RpoAutocompleteProps> = ({
         disabled={isLocked}
         className={inputClass}
         onFocus={() => {
-            if (suggestions.length > 0) setShowSuggestions(true);
+            // Only show suggestions on focus if user is actively typing (not when just opening the form)
+            // Don't auto-show cached suggestions when field already has a complete value
         }}
       />
       

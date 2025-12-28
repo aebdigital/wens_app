@@ -2,7 +2,13 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { CenovaPonukaItem, SpisFormData, PuzdraData } from '../types';
 
-export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData) => {
+interface UserInfo {
+  vypracoval: string;
+  telefon: string;
+  email: string;
+}
+
+export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo) => {
   const doc = new jsPDF({ orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.width;
   
@@ -166,7 +172,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         font: fontName,
         fontStyle: 'normal' as 'normal',
         lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1
+        lineWidth: 0.1,
+        textColor: [0, 0, 0] as [number, number, number]
     };
     const headStyles = {
         fillColor: [225, 27, 40] as [number, number, number],
@@ -174,7 +181,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         halign: 'center' as 'center',
         font: fontName,
         lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1
+        lineWidth: 0.1,
+        textColor: [255, 255, 255] as [number, number, number]
     };
 
     // Popis zakázky - as a table
@@ -200,7 +208,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         dvereSpecs.forEach((spec: any, idx: number) => {
             specRows.push([
                 { content: idx === 0 ? 'Dvere:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 9, styles: { halign: 'left' } }
+                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
             ]);
             specRowCount++;
         });
@@ -208,7 +216,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         zarubnaSpecs.forEach((spec: any, idx: number) => {
             specRows.push([
                 { content: idx === 0 ? 'Zárubňa:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 9, styles: { halign: 'left' } }
+                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
             ]);
             specRowCount++;
         });
@@ -216,7 +224,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         obkladSpecs.forEach((spec: any, idx: number) => {
             specRows.push([
                 { content: idx === 0 ? 'Obklad:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 9, styles: { halign: 'left' } }
+                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
             ]);
             specRowCount++;
         });
@@ -231,17 +239,25 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // 1. Výrobky table with integrated header
+    // Build rows with separate lines for each part (Dvere, Zárubňa, Obklad, Prázdne)
+    // First row of each miestnosť gets rowSpan for # and Miestnosť columns
 
-    const vyrobkyRows = data.vyrobky
-      .filter((v: any) => (v.ks || 0) > 0 || (v.ksZarubna || 0) > 0 || (v.ksObklad || 0) > 0)
-      .map((v: any, i: number) => {
-        const parts: { typ: string; pl: string; zamok: string; sklo: string; povrch: string; poznamka: string; ks: number; cena: number; total: number }[] = [];
+    const vyrobkyRows: any[][] = [];
+    let itemNumber = 0;
+
+    data.vyrobky
+      .filter((v: any) => (v.ks || 0) > 0 || (v.ksZarubna || 0) > 0 || (v.ksObklad || 0) > 0 || (v.ksPrazdne || 0) > 0)
+      .forEach((v: any) => {
+        itemNumber++;
+        const parts: { polozka: string; typ: string; pl: string; zamok: string; sklo: string; povrch: string; poznamka: string; ks: number; cena: number; total: number }[] = [];
+
         // Dvere part
         if ((v.ks || 0) > 0) {
             parts.push({
+                polozka: v.polozkaDvere || 'Dvere',
                 typ: v.dvereTypRozmer || '',
-                pl: v.pL || '',
-                zamok: v.zamok || '',
+                pl: v.pL || v.pLDvere || '',
+                zamok: v.zamok || v.zamokDvere || '',
                 sklo: v.sklo || '',
                 povrch: v.povrch || '',
                 poznamka: v.poznamkaDvere || '',
@@ -253,10 +269,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         // Zarubna part
         if ((v.ksZarubna || 0) > 0) {
             parts.push({
-                typ: v.dvereOtvor || '', // Using dvereOtvor as Typ/Rozmer for Zarubna
-                pl: '',
-                zamok: '',
-                sklo: '',
+                polozka: v.polozkaZarubna || 'Zárubňa',
+                typ: v.dvereOtvor || '',
+                pl: v.pLZarubna || '',
+                zamok: v.zamokZarubna || '',
+                sklo: v.skloZarubna || '',
                 povrch: v.povrchZarubna || '',
                 poznamka: v.poznamkaZarubna || '',
                 ks: v.ksZarubna,
@@ -267,10 +284,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         // Obklad part
         if ((v.ksObklad || 0) > 0) {
             parts.push({
+                polozka: v.polozkaObklad || 'Obklad',
                 typ: v.typObklad || '',
-                pl: '',
-                zamok: '',
-                sklo: '',
+                pl: v.pLObklad || '',
+                zamok: v.zamokObklad || '',
+                sklo: v.skloObklad || '',
                 povrch: v.povrchObklad || '',
                 poznamka: v.poznamkaObklad || '',
                 ks: v.ksObklad,
@@ -278,23 +296,56 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
                 total: (v.ksObklad || 0) * (v.cenaObklad || 0)
             });
         }
+        // Prazdne part
+        if ((v.ksPrazdne || 0) > 0) {
+            parts.push({
+                polozka: v.polozkaPrazdne || 'Prázdne',
+                typ: v.typPrazdne || '',
+                pl: v.pLPrazdne || '',
+                zamok: v.zamokPrazdne || '',
+                sklo: v.skloPrazdne || '',
+                povrch: v.povrchPrazdne || '',
+                poznamka: v.poznamkaPrazdne || '',
+                ks: v.ksPrazdne,
+                cena: v.cenaPrazdne,
+                total: (v.ksPrazdne || 0) * (v.cenaPrazdne || 0)
+            });
+        }
 
-        // Helper to join parts with newline
-        const join = (key: keyof typeof parts[0], suffix = '') => parts.map(p => (p[key] !== undefined ? p[key] + suffix : '')).join('\n');
-        
-        return [
-            i + 1,
-            v.miestnost,
-            join('typ'),
-            join('pl'),
-            join('zamok'),
-            join('sklo'),
-            join('povrch'),
-            join('poznamka'),
-            join('ks'),
-            parts.map(p => `${(p.cena || 0).toFixed(2)} €`).join('\n'),
-            parts.map(p => `${(p.total || 0).toFixed(2)} €`).join('\n')
-        ];
+        // Create separate row for each part
+        parts.forEach((part, partIndex) => {
+            if (partIndex === 0) {
+                // First row gets rowSpan for # and Miestnosť
+                vyrobkyRows.push([
+                    { content: itemNumber, rowSpan: parts.length, styles: { valign: 'middle' } },
+                    { content: v.miestnost, rowSpan: parts.length, styles: { valign: 'middle' } },
+                    part.polozka,
+                    part.typ,
+                    part.pl,
+                    part.zamok,
+                    part.sklo,
+                    part.povrch,
+                    part.poznamka,
+                    part.ks,
+                    `${(part.cena || 0).toFixed(2)} €`,
+                    `${(part.total || 0).toFixed(2)} €`
+                ]);
+            } else {
+                // Subsequent rows skip # and Miestnosť columns (handled by rowSpan)
+                vyrobkyRows.push([
+                    part.polozka,
+                    part.typ,
+                    part.pl,
+                    part.zamok,
+                    part.sklo,
+                    part.povrch,
+                    part.poznamka,
+                    part.ks,
+                    `${(part.cena || 0).toFixed(2)} €`,
+                    `${(part.total || 0).toFixed(2)} €`
+                ]);
+            }
+        });
     });
 
     // Calculate vyrobky total for summary row
@@ -302,7 +353,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       const dvere = (v.ks || 0) * (v.cenaDvere || 0);
       const zarubna = (v.ksZarubna || 0) * (v.cenaZarubna || 0);
       const obklad = (v.ksObklad || 0) * (v.cenaObklad || 0);
-      return sum + dvere + zarubna + obklad;
+      const prazdne = (v.ksPrazdne || 0) * (v.cenaPrazdne || 0);
+      return sum + dvere + zarubna + obklad + prazdne;
     }, 0);
 
     // First table: Výrobky header info with "Výrobky" spanning left column
@@ -313,8 +365,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
             styles: { ...tableStyles, fontSize: 7 }, // Match header font size
             columnStyles: {
                 0: { cellWidth: 20, halign: 'left' }, // # + Miestnosť width for "Výrobky"
-                1: { cellWidth: 35, halign: 'left' }, // Typ/Rozmer width for labels (Popis, Dvere, etc.)
-                2: { halign: 'left' } // Rest for value
+                1: { cellWidth: 14, halign: 'left' }, // Same width as Položka column for labels (Dvere, Zárubňa, etc.)
+                2: { halign: 'left' } // Rest for value (spans remaining columns)
             },
             theme: 'grid'
         });
@@ -322,27 +374,42 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Second part: Column headers and data rows
+    const headerRow = [
+      { content: '#', styles: { halign: 'center' as const } },
+      { content: 'Miestnosť', styles: { halign: 'left' as const } },
+      { content: 'Položka', styles: { halign: 'left' as const } },
+      { content: 'Typ / Rozmer', styles: { halign: 'left' as const } },
+      { content: 'P/Ľ', styles: { halign: 'left' as const } },
+      { content: 'Zámok', styles: { halign: 'left' as const } },
+      { content: 'Sklo', styles: { halign: 'left' as const } },
+      { content: 'Povrch', styles: { halign: 'left' as const } },
+      { content: 'Poznámka', styles: { halign: 'left' as const } },
+      { content: 'Ks', styles: { halign: 'right' as const } },
+      { content: 'Cena/ks', styles: { halign: 'right' as const } },
+      { content: 'Cena celkom', styles: { halign: 'right' as const } }
+    ];
     autoTable(doc, {
       startY: yPos,
-      head: specRows.length > 0 ? [['#', 'Miestnosť', 'Typ / Rozmer', 'P/Ľ', 'Zámok', 'Sklo', 'Povrch', 'Poznámka', 'Ks', 'Cena/ks', 'Cena celkom']] : [
-        [{ content: 'Výrobky', colSpan: 11, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
-        ['#', 'Miestnosť', 'Typ / Rozmer', 'P/Ľ', 'Zámok', 'Sklo', 'Povrch', 'Poznámka', 'Ks', 'Cena/ks', 'Cena celkom']
+      head: specRows.length > 0 ? [headerRow] : [
+        [{ content: 'Výrobky', colSpan: 12, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
+        headerRow
       ],
       body: vyrobkyRows,
       styles: { ...tableStyles, fontSize: 7 },
       headStyles: { ...headStyles, fontSize: 7 },
       columnStyles: {
-          0: { cellWidth: 6, halign: 'center' },
-          1: { cellWidth: 14, halign: 'left' }, // Miestnosť
-          2: { cellWidth: 20, halign: 'left' }, // Typ
-          3: { cellWidth: 8, halign: 'center' }, // P/Ľ
-          4: { cellWidth: 14, halign: 'center' }, // Zámok
-          5: { cellWidth: 16, halign: 'left' }, // Sklo
-          6: { cellWidth: 16, halign: 'left' }, // Povrch
-          7: { halign: 'left' }, // Poznámka (auto)
-          8: { cellWidth: 10, halign: 'center' }, // Ks
-          9: { cellWidth: 18, halign: 'right' },  // Cena/ks
-          10: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
+          0: { cellWidth: 6, halign: 'center' },  // #
+          1: { cellWidth: 14, halign: 'left' },   // Miestnosť
+          2: { cellWidth: 14, halign: 'left' },   // Položka
+          3: { cellWidth: 18, halign: 'left' },   // Typ / Rozmer
+          4: { cellWidth: 8, halign: 'left' },    // P/Ľ
+          5: { cellWidth: 14, halign: 'left' },   // Zámok
+          6: { cellWidth: 14, halign: 'left' },   // Sklo
+          7: { cellWidth: 14, halign: 'left' },   // Povrch
+          8: { halign: 'left' },                  // Poznámka (auto)
+          9: { cellWidth: 10, halign: 'right' },  // Ks
+          10: { cellWidth: 18, halign: 'right' }, // Cena/ks
+          11: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
       }
     });
     yPos = (doc as any).lastAutoTable.finalY;
@@ -380,7 +447,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: priplatkyRows,
           styles: { ...tableStyles, fontSize: 7 },
@@ -388,7 +457,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
           }
@@ -417,6 +486,19 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const zlavaAmount = subtotal * zlavaPercent / 100;
     const afterZlava = subtotal - zlavaAmount;
 
+    // Summary table row 1 - Cena za výrobky a príplatky spolu
+    autoTable(doc, {
+      startY: yPos,
+      body: [['Cena za výrobky a príplatky spolu:', 'spolu bez DPH', `${subtotal.toFixed(2)} €`]],
+      styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+      columnStyles: {
+        0: { halign: 'right' },
+        1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
+        2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
+      }
+    });
+    yPos = (doc as any).lastAutoTable.finalY;
+
     // Summary table row 2 - Zľava - larger (fontSize 11)
     autoTable(doc, {
       startY: yPos,
@@ -424,21 +506,21 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
-        1: { cellWidth: 28, halign: 'right' }, // Aligned with Ks and Cena/ks
-        2: { cellWidth: 28, halign: 'right' }
+        1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
+        2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
       }
     });
     yPos = (doc as any).lastAutoTable.finalY;
 
-    // Summary table row 3 - normal size
+    // Summary table row 3 - after discount
     autoTable(doc, {
       startY: yPos,
       body: [['Cena výrobkov a príplatkov po odpočítaní zľavy spolu:', 'spolu bez DPH', `${afterZlava.toFixed(2)} €`]],
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
-        1: { cellWidth: 22, halign: 'right' },
-        2: { cellWidth: 28, halign: 'right' }
+        1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
+        2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
       }
     });
     yPos = (doc as any).lastAutoTable.finalY + 5;
@@ -462,7 +544,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: kovanieRows,
           styles: { ...tableStyles, fontSize: 7 },
@@ -470,7 +554,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
           }
@@ -511,7 +595,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: montazRows,
           styles: { ...tableStyles, fontSize: 7 },
@@ -519,7 +605,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
           }
@@ -631,9 +717,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
     printLabelValue('Termín dodania:', data.terminDodania || '-');
-    printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : formData.vypracoval);
-    printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (formData.telefon || '-'));
-    printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (formData.email || '-'));
+    printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : (userInfo?.vypracoval || formData.vypracoval));
+    printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (userInfo?.telefon || '-'));
+    printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (userInfo?.email || '-'));
     printLabelValue('Dátum:', data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK'));
 
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
@@ -650,7 +736,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         font: fontName,
         fontStyle: 'normal' as 'normal',
         lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1
+        lineWidth: 0.1,
+        textColor: [0, 0, 0] as [number, number, number]
     };
     const headStyles = {
         fillColor: [225, 27, 40] as [number, number, number],
@@ -658,7 +745,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         halign: 'center' as 'center',
         font: fontName,
         lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1
+        lineWidth: 0.1,
+        textColor: [255, 255, 255] as [number, number, number]
     };
 
     // Popis zakázky - as a table
@@ -740,7 +828,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: priplatkyRows,
           styles: tableStyles,
@@ -748,7 +838,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }
           }
@@ -834,7 +924,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: kovanieRows,
           styles: tableStyles,
@@ -842,7 +934,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }
           }
@@ -881,7 +973,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           startY: yPos,
           head: [[
             { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
-            'Ks', 'Cena/ks', 'Cena celkom'
+            { content: 'Ks', styles: { halign: 'right' } },
+            { content: 'Cena/ks', styles: { halign: 'right' } },
+            { content: 'Cena celkom', styles: { halign: 'right' } }
           ]],
           body: montazRows,
           styles: tableStyles,
@@ -889,7 +983,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           columnStyles: {
               0: { cellWidth: 6, halign: 'center' },
               1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'center' },
+              2: { cellWidth: 10, halign: 'right' },
               3: { cellWidth: 18, halign: 'right' },
               4: { cellWidth: 28, halign: 'right' }
           }
@@ -1002,9 +1096,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
     printLabelValue('Termín dodania:', data.terminDodania || '-');
-    printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : formData.vypracoval);
-    printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (formData.telefon || '-'));
-    printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (formData.email || '-'));
+    printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : (userInfo?.vypracoval || formData.vypracoval));
+    printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (userInfo?.telefon || '-'));
+    printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (userInfo?.email || '-'));
     printLabelValue('Dátum:', data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK'));
 
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
@@ -1018,7 +1112,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
-      doc.setTextColor(150);
+      doc.setTextColor(0);
       centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
@@ -1158,7 +1252,8 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     font: fontName,
     fontStyle: 'normal' as 'normal',
     lineColor: [0, 0, 0] as [number, number, number],
-    lineWidth: 0.1
+    lineWidth: 0.1,
+    textColor: [0, 0, 0] as [number, number, number]
   };
   const headStyles = {
     fillColor: [225, 27, 40] as [number, number, number],
@@ -1166,7 +1261,8 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     halign: 'center' as 'center',
     font: fontName,
     lineColor: [0, 0, 0] as [number, number, number],
-    lineWidth: 0.1
+    lineWidth: 0.1,
+    textColor: [255, 255, 255] as [number, number, number]
   };
 
   // Zakazka Table (Objednávame u nás)
@@ -1250,7 +1346,7 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(150);
+    doc.setTextColor(0);
     centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 

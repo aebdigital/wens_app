@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DvereData } from '../types';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
@@ -43,12 +43,11 @@ interface DvereFormProps {
 
 // Default payment percentages
 const DEFAULT_PLATBA1 = 60;
-const DEFAULT_PLATBA2 = 22;
-const DEFAULT_PLATBA3 = 18;
+const DEFAULT_PLATBA2 = 30;
+const DEFAULT_PLATBA3 = 10;
 
 export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo }) => {
   const totals = calculateDvereTotals(data);
-  const [showAddMenu, setShowAddMenu] = useState(false);
 
   // Helper to reset payment overrides when items change
   const onChangeWithPaymentReset = (newData: DvereData) => {
@@ -57,7 +56,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       manualCenaSDPH: undefined,
       platba1Percent: DEFAULT_PLATBA1,
       platba2Percent: DEFAULT_PLATBA2,
-      platba3Percent: DEFAULT_PLATBA3
+      platba3Percent: DEFAULT_PLATBA3,
+      platba1Amount: null,
+      platba2Amount: null,
+      platba3Amount: null
     });
   };
 
@@ -97,7 +99,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               }}
               className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
             />
-            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+            <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
          </div>
       )
     },
@@ -135,7 +137,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     onChange({ ...data, specifications: specs });
   };
 
-  const handleAddProduct = (type: 'dvere' | 'zarubna' | 'obklad' | 'empty') => {
+  // Add a new room with all parts (Dvere, Zárubňa, Obklad, Prázdne) enabled by default
+  const handleAddRoom = () => {
     const newVyrobok = {
       id: Date.now(),
       miestnost: 'Miestnosť',
@@ -150,29 +153,32 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       poznamkaDvere: '',
       poznamkaZarubna: '',
       poznamkaObklad: '',
+      poznamkaPrazdne: '',
       typObklad: '',
-      ks: 0,
-      ksZarubna: 0,
-      ksObklad: 0,
+      typPrazdne: '',
+      polozkaPrazdne: '',
+      pLPrazdne: '',
+      zamokPrazdne: '',
+      skloPrazdne: '',
+      povrchPrazdne: '',
+      ks: 1,
+      ksZarubna: 1,
+      ksObklad: 1,
+      ksPrazdne: 1,
       cenaDvere: 0,
       cenaZarubna: 0,
       cenaObklad: 0,
-      hasDvere: type === 'dvere',
-      hasZarubna: type === 'zarubna',
-      hasObklad: type === 'obklad',
-      // If empty, allow generic usage, but specific flags false initially
+      cenaPrazdne: 0,
+      hasDvere: true,
+      hasZarubna: true,
+      hasObklad: true,
+      hasPrazdne: true,
     };
-    if (type === 'empty') {
-        newVyrobok.hasDvere = false;
-        newVyrobok.hasZarubna = false;
-        newVyrobok.hasObklad = false;
-    }
     onChangeWithPaymentReset({...data, vyrobky: [...data.vyrobky, newVyrobok]});
-    setShowAddMenu(false);
   };
 
   // Toggle parts of an existing item
-  const toggleItemPart = (index: number, part: 'hasDvere' | 'hasZarubna' | 'hasObklad') => {
+  const toggleItemPart = (index: number, part: 'hasDvere' | 'hasZarubna' | 'hasObklad' | 'hasPrazdne') => {
     const newVyrobky = [...data.vyrobky];
     newVyrobky[index][part] = !newVyrobky[index][part];
     onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
@@ -210,7 +216,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             if (dvereSpecs.length === 0) return null;
             return (
               <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dvere:</span>
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Dvere:</span>
                 <div className="flex-1 space-y-1">
                   {dvereSpecs.map((spec) => (
                     <div key={spec.id} className="flex items-center gap-2">
@@ -242,7 +248,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             if (zarubnaSpecs.length === 0) return null;
             return (
               <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Zárubňa:</span>
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zárubňa:</span>
                 <div className="flex-1 space-y-1">
                   {zarubnaSpecs.map((spec) => (
                     <div key={spec.id} className="flex items-center gap-2">
@@ -274,7 +280,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             if (obkladSpecs.length === 0) return null;
             return (
               <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Obklad:</span>
+                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Obklad:</span>
                 <div className="flex-1 space-y-1">
                   {obkladSpecs.map((spec) => (
                     <div key={spec.id} className="flex items-center gap-2">
@@ -323,12 +329,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 <th className="px-2 py-2 text-left border-r border-white/20">miestnosť</th>
                 <th className="px-2 py-2 text-left border-r border-white/20">položka</th>
                 <th className="px-2 py-2 text-left border-r border-white/20">typ / rozmer</th>
-                <th className="px-2 py-2 text-center border-r border-white/20">P / Ľ</th>
-                <th className="px-2 py-2 text-center border-r border-white/20">zámok</th>
-                <th className="px-2 py-2 text-center border-r border-white/20">sklo</th>
+                <th className="px-2 py-2 text-left border-r border-white/20">P / Ľ</th>
+                <th className="px-2 py-2 text-left border-r border-white/20">zámok</th>
+                <th className="px-2 py-2 text-left border-r border-white/20">sklo</th>
                 <th className="px-2 py-2 text-left border-r border-white/20">povrch</th>
                 <th className="px-2 py-2 text-left border-r border-white/20">poznámka</th>
-                <th className="px-2 py-2 text-center border-r border-white/20">ks</th>
+                <th className="px-2 py-2 text-right border-r border-white/20">ks</th>
                 <th className="px-2 py-2 text-right border-r border-white/20">cena / ks</th>
                 <th className="px-2 py-2 text-right border-r border-white/20">cena celkom</th>
                 <th className="px-2 py-2 text-center w-8"></th>
@@ -342,6 +348,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 if (item.hasDvere) rowSpan++;
                 if (item.hasZarubna) rowSpan++;
                 if (item.hasObklad) rowSpan++;
+                if (item.hasPrazdne) rowSpan++;
                 if (rowSpan === 0) rowSpan = 1; // Empty row
 
                 // Helper to render shared cells (Miestnost)
@@ -362,10 +369,11 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none focus:bg-gray-100`}
                                 />
                                 {/* Add controls to add sub-items to this room */}
-                                <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity justify-center">
-                                    {!item.hasDvere && <button onClick={() => toggleItemPart(index, 'hasDvere')} title="Pridať Dvere" className="text-[10px] bg-blue-100 text-blue-700 px-1 rounded hover:bg-blue-200">+D</button>}
-                                    {!item.hasZarubna && <button onClick={() => toggleItemPart(index, 'hasZarubna')} title="Pridať Zárubňu" className="text-[10px] bg-green-100 text-green-700 px-1 rounded hover:bg-green-200">+Z</button>}
-                                    {!item.hasObklad && <button onClick={() => toggleItemPart(index, 'hasObklad')} title="Pridať Obklad" className="text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded hover:bg-yellow-200">+O</button>}
+                                <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity justify-center flex-wrap">
+                                    {!item.hasDvere && <button onClick={() => toggleItemPart(index, 'hasDvere')} title="Pridať Dvere" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Dvere</button>}
+                                    {!item.hasZarubna && <button onClick={() => toggleItemPart(index, 'hasZarubna')} title="Pridať Zárubňu" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Zárubňa</button>}
+                                    {!item.hasObklad && <button onClick={() => toggleItemPart(index, 'hasObklad')} title="Pridať Obklad" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Obklad</button>}
+                                    {!item.hasPrazdne && <button onClick={() => toggleItemPart(index, 'hasPrazdne')} title="Pridať Prázdne" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Prázdne</button>}
                                 </div>
                                 </td>
                             </>
@@ -397,9 +405,18 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                     rows.push(
                         <tr key={`${item.id}-dvere`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
                                 <div className="flex justify-between items-center group/cell">
-                                    <span>dvere</span>
+                                    <input
+                                        type="text"
+                                        value={item.polozkaDvere ?? 'Dvere'}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].polozkaDvere = e.target.value;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
                                     <button onClick={() => toggleItemPart(index, 'hasDvere')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Dvere">×</button>
                                 </div>
                             </td>
@@ -415,39 +432,31 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <select
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
                                     value={item.pL}
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].pL = e.target.value;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-dark-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
-                                >
-                                    <option value="P dnu">P dnu</option>
-                                    <option value="Ľ dnu">Ľ dnu</option>
-                                    <option value="P von">P von</option>
-                                    <option value="Ľ von">Ľ von</option>
-                                </select>
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <select
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
                                     value={item.zamok}
                                     onChange={(e) => {
                                         const newVyrobky = [...data.vyrobky];
                                         newVyrobky[index].zamok = e.target.value;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-dark-700 text-white' : 'bg-white text-gray-800'} border-none focus:outline-none`}
-                                >
-                                    <option value="BB">BB</option>
-                                    <option value="WC">WC</option>
-                                    <option value="PZ">PZ</option>
-                                    <option value="magnet">magnet</option>
-                                </select>
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="text"
                                     value={item.sklo}
@@ -456,7 +465,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].sklo = e.target.value;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-full px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
                             <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -483,7 +492,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ks}
@@ -492,21 +501,23 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].ks = parseInt(e.target.value) || 0;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
                             <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.cenaDvere}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].cenaDvere = parseFloat(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+                                <div className="flex items-center justify-end">
+                                    <input
+                                        type="number"
+                                        value={item.cenaDvere}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].cenaDvere = parseFloat(e.target.value) || 0;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
+                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                                </div>
                             </td>
                             <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {((item.ks || 0) * (item.cenaDvere || 0)).toFixed(2)} €
@@ -522,9 +533,18 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                     rows.push(
                         <tr key={`${item.id}-zarubna`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
                                 <div className="flex justify-between items-center group/cell">
-                                    <span>zárubňa</span>
+                                    <input
+                                        type="text"
+                                        value={item.polozkaZarubna ?? 'Zárubňa'}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].polozkaZarubna = e.target.value;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
                                     <button onClick={() => toggleItemPart(index, 'hasZarubna')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Zárubňu">×</button>
                                 </div>
                             </td>
@@ -567,7 +587,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ksZarubna}
@@ -576,21 +596,23 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].ksZarubna = parseInt(e.target.value) || 0;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
                             <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.cenaZarubna}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].cenaZarubna = parseFloat(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+                                <div className="flex items-center justify-end">
+                                    <input
+                                        type="number"
+                                        value={item.cenaZarubna}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].cenaZarubna = parseFloat(e.target.value) || 0;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
+                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                                </div>
                             </td>
                             <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {((item.ksZarubna || 0) * (item.cenaZarubna || 0)).toFixed(2)} €
@@ -606,9 +628,18 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                     rows.push(
                         <tr key={`${item.id}-obklad`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
                                 <div className="flex justify-between items-center group/cell">
-                                    <span>obklad</span>
+                                    <input
+                                        type="text"
+                                        value={item.polozkaObklad ?? 'Obklad'}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].polozkaObklad = e.target.value;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
                                     <button onClick={() => toggleItemPart(index, 'hasObklad')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Obklad">×</button>
                                 </div>
                             </td>
@@ -651,7 +682,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                     className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
-                            <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                                 <input
                                     type="number"
                                     value={item.ksObklad}
@@ -660,21 +691,23 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                                         newVyrobky[index].ksObklad = parseInt(e.target.value) || 0;
                                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                                     }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                                 />
                             </td>
                             <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.cenaObklad}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].cenaObklad = parseFloat(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> €</span>
+                                <div className="flex items-center justify-end">
+                                    <input
+                                        type="number"
+                                        value={item.cenaObklad}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].cenaObklad = parseFloat(e.target.value) || 0;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
+                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                                </div>
                             </td>
                             <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {((item.ksObklad || 0) * (item.cenaObklad || 0)).toFixed(2)} €
@@ -685,8 +718,138 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                     currentRow++;
                 }
 
+                // PRÁZDNE ROW
+                if (item.hasPrazdne) {
+                    rows.push(
+                        <tr key={`${item.id}-prazdne`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                            {renderMiestnostCell(currentRow)}
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
+                                <div className="flex justify-between items-center group/cell">
+                                    <input
+                                        type="text"
+                                        value={item.polozkaPrazdne ?? 'Prázdne'}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].polozkaPrazdne = e.target.value;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
+                                    <button onClick={() => toggleItemPart(index, 'hasPrazdne')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Prázdne">×</button>
+                                </div>
+                            </td>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.typPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].typPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    placeholder="typ/rozmer"
+                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.pLPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].pLPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.zamokPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].zamokPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.skloPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].skloPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.povrchPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].povrchPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    placeholder="povrch"
+                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="text"
+                                    value={item.poznamkaPrazdne || ''}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].poznamkaPrazdne = e.target.value;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <input
+                                    type="number"
+                                    value={item.ksPrazdne || 0}
+                                    onChange={(e) => {
+                                        const newVyrobky = [...data.vyrobky];
+                                        newVyrobky[index].ksPrazdne = parseInt(e.target.value) || 0;
+                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                    }}
+                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                />
+                            </td>
+                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                                <div className="flex items-center justify-end">
+                                    <input
+                                        type="number"
+                                        value={item.cenaPrazdne || 0}
+                                        onChange={(e) => {
+                                            const newVyrobky = [...data.vyrobky];
+                                            newVyrobky[index].cenaPrazdne = parseFloat(e.target.value) || 0;
+                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                                        }}
+                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                                    />
+                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                                </div>
+                            </td>
+                            <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                {((item.ksPrazdne || 0) * (item.cenaPrazdne || 0)).toFixed(2)} €
+                            </td>
+                            {currentRow === 0 && deleteButton}
+                        </tr>
+                    );
+                    currentRow++;
+                }
+
                 // EMPTY ROW (if nothing selected)
-                if (rowSpan === 1 && !item.hasDvere && !item.hasZarubna && !item.hasObklad) {
+                if (rowSpan === 1 && !item.hasDvere && !item.hasZarubna && !item.hasObklad && !item.hasPrazdne) {
                      rows.push(
                         <tr key={`${item.id}-empty`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
                             {renderMiestnostCell(0)}
@@ -725,26 +888,17 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </table>
         </div>
         
-        {/* Add Product Button with Menu */}
-        <div className={`flex justify-center p-2 transition-all relative ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
+        {/* Add Room Button */}
+        <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
-            onClick={() => setShowAddMenu(!showAddMenu)}
+            onClick={handleAddRoom}
             className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
-            title="Pridať riadok"
+            title="Pridať miestnosť"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
           </button>
-          
-          {showAddMenu && (
-             <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-dark-800 shadow-xl rounded-lg overflow-hidden border border-gray-200 dark:border-dark-500 z-10 flex flex-col">
-                <button onClick={() => handleAddProduct('dvere')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Dvere</button>
-                <button onClick={() => handleAddProduct('zarubna')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Zárubňa</button>
-                <button onClick={() => handleAddProduct('obklad')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap">Obklad</button>
-                <button onClick={() => handleAddProduct('empty')} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-700 text-left text-sm whitespace-nowrap border-t">Prázdny riadok</button>
-             </div>
-          )}
         </div>
       </div>
 
