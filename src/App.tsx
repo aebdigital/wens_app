@@ -22,28 +22,54 @@ const TaskListener: React.FC = () => {
     return <TaskPopup />;
 };
 
-const AppContent: React.FC = () => {
-  const { user } = useAuth();
+// Authenticated app with data providers - only mounted after successful login
+const AuthenticatedApp: React.FC = () => {
+  return (
+    <ContactsProvider>
+      <SpisProvider>
+        <TasksProvider>
+          <ProductsProvider>
+            <Layout>
+              <TaskListener />
+              <Routes>
+                <Route path="/" element={<Navigate to="/spis" replace />} />
+                <Route path="/spis" element={<Spis />} />
+                <Route path="/objednavky" element={<Objednavky />} />
+                <Route path="/kontakty" element={<Kontakty />} />
+                <Route path="/zamestnanci" element={<Zamestnanci />} />
+                <Route path="/dovolenky" element={<Dovolenky />} />
+                <Route path="/nastavenia" element={<Nastavenia />} />
+                <Route path="/ulohy" element={<Ulohy />} />
+              </Routes>
+            </Layout>
+          </ProductsProvider>
+        </TasksProvider>
+      </SpisProvider>
+    </ContactsProvider>
+  );
+};
 
+const AppContent: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  // Show loading spinner while checking auth session
+  if (isLoading) {
+    return (
+      <div className="h-[100dvh] bg-white flex items-center justify-center">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e11b28]"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
   if (!user) {
     return <AuthWrapper />;
   }
 
-  return (
-    <Layout>
-      <TaskListener />
-      <Routes>
-        <Route path="/" element={<Navigate to="/spis" replace />} />
-        <Route path="/spis" element={<Spis />} />
-        <Route path="/objednavky" element={<Objednavky />} />
-        <Route path="/kontakty" element={<Kontakty />} />
-        <Route path="/zamestnanci" element={<Zamestnanci />} />
-        <Route path="/dovolenky" element={<Dovolenky />} />
-        <Route path="/nastavenia" element={<Nastavenia />} />
-        <Route path="/ulohy" element={<Ulohy />} />
-      </Routes>
-    </Layout>
-  );
+  // Show authenticated app with data providers
+  return <AuthenticatedApp />;
 };
 
 function App() {
@@ -51,15 +77,7 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <ContactsProvider>
-            <SpisProvider>
-              <TasksProvider>
-                <ProductsProvider>
-                  <AppContent />
-                </ProductsProvider>
-              </TasksProvider>
-            </SpisProvider>
-          </ContactsProvider>
+          <AppContent />
         </AuthProvider>
       </ThemeProvider>
     </Router>

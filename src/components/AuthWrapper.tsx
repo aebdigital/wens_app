@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const AuthWrapper: React.FC = () => {
-  const { isLoading, login } = useAuth();
+  const { login } = useAuth();
 
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
@@ -23,17 +23,6 @@ const AuthWrapper: React.FC = () => {
     }
     setIsLoginLoading(false);
   };
-
-  if (isLoading) {
-    return (
-      <div className="h-[100dvh] bg-white flex items-center justify-center">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e11b28]"></div>
-          <span className="ml-3 text-gray-600">Načítava sa...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-[100dvh] flex overflow-hidden">
