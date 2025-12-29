@@ -1,25 +1,32 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 // Force update for deployment
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useDocumentLock } from '../../../contexts/DocumentLockContext';
 import { SpisEntry, CenovaPonukaItem } from '../types';
 import { VseobecneSidebar } from './VseobecneSidebar';
 import { VseobecneForm } from './VseobecneForm';
-import { CenovePonukyTab } from './CenovePonukyTab';
-import { ObjednavkyTab } from './ObjednavkyTab';
-// EmailyTab temporarily disabled
-// import { EmailyTab } from './EmailyTab';
-import { MeranieTab } from './MeranieTab';
-import { FotkyTab } from './FotkyTab';
-import { VyrobneVykresyTab } from './VyrobneVykresyTab';
-import { TechnickeVykresyTab } from './TechnickeVykresyTab';
-import { AddTemplateModal } from './AddTemplateModal';
-import { AddOrderModal } from './AddOrderModal';
-import { ContactChangesModal } from './ContactChangesModal';
 import { generatePDF } from '../utils/pdfGenerator';
 import { useSpisEntryLogic } from '../hooks/useSpisEntryLogic';
-import { TaskCreateModal } from '../../../components/tasks/TaskCreateModal';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
+
+// Lazy load heavy tab components for better performance
+const CenovePonukyTab = lazy(() => import('./CenovePonukyTab').then(m => ({ default: m.CenovePonukyTab })));
+const ObjednavkyTab = lazy(() => import('./ObjednavkyTab').then(m => ({ default: m.ObjednavkyTab })));
+const MeranieTab = lazy(() => import('./MeranieTab').then(m => ({ default: m.MeranieTab })));
+const FotkyTab = lazy(() => import('./FotkyTab').then(m => ({ default: m.FotkyTab })));
+const VyrobneVykresyTab = lazy(() => import('./VyrobneVykresyTab').then(m => ({ default: m.VyrobneVykresyTab })));
+const TechnickeVykresyTab = lazy(() => import('./TechnickeVykresyTab').then(m => ({ default: m.TechnickeVykresyTab })));
+const AddTemplateModal = lazy(() => import('./AddTemplateModal').then(m => ({ default: m.AddTemplateModal })));
+const AddOrderModal = lazy(() => import('./AddOrderModal').then(m => ({ default: m.AddOrderModal })));
+const ContactChangesModal = lazy(() => import('./ContactChangesModal').then(m => ({ default: m.ContactChangesModal })));
+const TaskCreateModal = lazy(() => import('../../../components/tasks/TaskCreateModal').then(m => ({ default: m.TaskCreateModal })));
+
+// Loading spinner component for lazy loaded tabs
+const TabLoadingSpinner: React.FC<{ isDark: boolean }> = ({ isDark }) => (
+  <div className="flex items-center justify-center h-48">
+    <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${isDark ? 'border-white' : 'border-gray-900'}`}></div>
+  </div>
+);
 
 // Custom confirmation dialog component
 interface ConfirmDialogProps {
@@ -601,98 +608,110 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   )}
 
                   {activeTab === 'cenove-ponuky' && (
-                    <CenovePonukyTab
-                      items={formData.cenovePonukyItems}
-                      onDelete={(index) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          cenovePonukyItems: prev.cenovePonukyItems.filter((_, i) => i !== index)
-                        }));
-                      }}
-                      onUpdate={(items) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          cenovePonukyItems: items
-                        }));
-                      }}
-                      onEdit={handleEditOffer}
-                      onGeneratePDF={handleGeneratePDF}
-                      isDark={isDark}
-                      isLocked={isEffectivelyLocked}
-                      onAddVzor={() => {
-                        setVzorModalTabs(['dvere', 'nabytok', 'schody']);
-                        setEditingOfferId(null);
-                        // Pre-fill with data from last quote if one exists
-                        if (formData.cenovePonukyItems.length > 0) {
-                          const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
-                          setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
-                        } else {
-                          setEditingOfferData(undefined);
-                        }
-                        setShowVzorModal(true);
-                      }}
-                      onToggleSelect={handleToggleSelect}
-                      onSave={performSave}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <CenovePonukyTab
+                        items={formData.cenovePonukyItems}
+                        onDelete={(index) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            cenovePonukyItems: prev.cenovePonukyItems.filter((_, i) => i !== index)
+                          }));
+                        }}
+                        onUpdate={(items) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            cenovePonukyItems: items
+                          }));
+                        }}
+                        onEdit={handleEditOffer}
+                        onGeneratePDF={handleGeneratePDF}
+                        isDark={isDark}
+                        isLocked={isEffectivelyLocked}
+                        onAddVzor={() => {
+                          setVzorModalTabs(['dvere', 'nabytok', 'schody']);
+                          setEditingOfferId(null);
+                          // Pre-fill with data from last quote if one exists
+                          if (formData.cenovePonukyItems.length > 0) {
+                            const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
+                            setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
+                          } else {
+                            setEditingOfferData(undefined);
+                          }
+                          setShowVzorModal(true);
+                        }}
+                        onToggleSelect={handleToggleSelect}
+                        onSave={performSave}
+                      />
+                    </Suspense>
                   )}
 
                   {activeTab === 'objednavky' && (
-                    <ObjednavkyTab
-                      items={formData.objednavkyItems}
-                      onUpdate={(items) => setFormData(prev => ({...prev, objednavkyItems: items}))}
-                      isDark={isDark}
-                      user={user}
-                      entries={entries}
-                      selectedOrderIndex={selectedOrderIndex}
-                      isLocked={isEffectivelyLocked}
-                      onAddVzor={() => {
-                        setShowOrderModal(true);
-                      }}
-                      onEdit={handleEditOrderAction}
-                      headerInfo={{
-                        vypracoval: formData.vypracoval,
-                        telefon: userPhone,
-                        email: user?.email || ''
-                      }}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <ObjednavkyTab
+                        items={formData.objednavkyItems}
+                        onUpdate={(items) => setFormData(prev => ({...prev, objednavkyItems: items}))}
+                        isDark={isDark}
+                        user={user}
+                        entries={entries}
+                        selectedOrderIndex={selectedOrderIndex}
+                        isLocked={isEffectivelyLocked}
+                        onAddVzor={() => {
+                          setShowOrderModal(true);
+                        }}
+                        onEdit={handleEditOrderAction}
+                        headerInfo={{
+                          vypracoval: formData.vypracoval,
+                          telefon: userPhone,
+                          email: user?.email || ''
+                        }}
+                      />
+                    </Suspense>
                   )}
 
                   {activeTab === 'meranie-dokumenty' && (
-                    <MeranieTab
-                      isDark={isDark}
-                      items={formData.meranieItems}
-                      onUpdate={(items: any) => setFormData(prev => ({...prev, meranieItems: items}))}
-                      isLocked={isEffectivelyLocked}
-                      user={user}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <MeranieTab
+                        isDark={isDark}
+                        items={formData.meranieItems}
+                        onUpdate={(items: any) => setFormData(prev => ({...prev, meranieItems: items}))}
+                        isLocked={isEffectivelyLocked}
+                        user={user}
+                      />
+                    </Suspense>
                   )}
 
                   {activeTab === 'fotky' && (
-                    <FotkyTab
-                      uploadedPhotos={uploadedPhotos}
-                      setUploadedPhotos={setUploadedPhotos}
-                      isLocked={isEffectivelyLocked}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <FotkyTab
+                        uploadedPhotos={uploadedPhotos}
+                        setUploadedPhotos={setUploadedPhotos}
+                        isLocked={isEffectivelyLocked}
+                      />
+                    </Suspense>
                   )}
 
                   {activeTab === 'vyrobne-vykresy' && (
-                    <VyrobneVykresyTab
-                      isDark={isDark}
-                      items={formData.vyrobneVykresy}
-                      onUpdate={(items: any) => setFormData(prev => ({...prev, vyrobneVykresy: items}))}
-                      isLocked={isEffectivelyLocked}
-                      user={user}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <VyrobneVykresyTab
+                        isDark={isDark}
+                        items={formData.vyrobneVykresy}
+                        onUpdate={(items: any) => setFormData(prev => ({...prev, vyrobneVykresy: items}))}
+                        isLocked={isEffectivelyLocked}
+                        user={user}
+                      />
+                    </Suspense>
                   )}
 
                   {activeTab === 'technicke-vykresy' && (
-                    <TechnickeVykresyTab
-                      isDark={isDark}
-                      items={formData.technickeItems}
-                      onUpdate={(items: any) => setFormData(prev => ({...prev, technickeItems: items}))}
-                      isLocked={isEffectivelyLocked}
-                      user={user}
-                    />
+                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                      <TechnickeVykresyTab
+                        isDark={isDark}
+                        items={formData.technickeItems}
+                        onUpdate={(items: any) => setFormData(prev => ({...prev, technickeItems: items}))}
+                        isLocked={isEffectivelyLocked}
+                        user={user}
+                      />
+                    </Suspense>
                   )}
                 </div>
 
@@ -846,56 +865,68 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         </div>
       </div>
 
-      <TaskCreateModal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        spisId={internalId}
-        spisCislo={formData.cisloZakazky || formData.predmet}
-      />
+      {showTaskModal && (
+        <Suspense fallback={null}>
+          <TaskCreateModal
+            isOpen={showTaskModal}
+            onClose={() => setShowTaskModal(false)}
+            spisId={internalId}
+            spisCislo={formData.cisloZakazky || formData.predmet}
+          />
+        </Suspense>
+      )}
 
-      <AddTemplateModal
-        isOpen={showVzorModal}
-        onClose={() => setShowVzorModal(false)}
-        onSave={handleAddTemplateSave}
-        firma={formData.firma}
-        priezvisko={formData.priezvisko}
-        meno={formData.meno}
-        ulica={formData.ulica}
-        mesto={formData.mesto}
-        psc={formData.psc}
-        telefon={formData.telefon}
-        email={formData.email}
-        vypracoval={formData.vypracoval}
-        predmet={formData.predmet}
-        fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
-        creatorPhone={userPhone}
-        creatorEmail={user?.email}
-        architectInfo={{
-          priezvisko: formData.architektonickyPriezvisko,
-          meno: formData.architektonickeMeno,
-          firma: "", // Assuming no specific company field for architect in the form data provided
-          ulica: formData.architektonickyUlica,
-          mesto: formData.architektonickyMesto,
-          psc: formData.architektonickyPsc,
-          telefon: formData.architektonickyTelefon,
-          email: formData.architektonickyEmail
-        }}
-        editingData={editingOfferData}
-        visibleTabs={vzorModalTabs}
-        isLocked={isEffectivelyLocked}
-      />
+      {showVzorModal && (
+        <Suspense fallback={null}>
+          <AddTemplateModal
+            isOpen={showVzorModal}
+            onClose={() => setShowVzorModal(false)}
+            onSave={handleAddTemplateSave}
+            firma={formData.firma}
+            priezvisko={formData.priezvisko}
+            meno={formData.meno}
+            ulica={formData.ulica}
+            mesto={formData.mesto}
+            psc={formData.psc}
+            telefon={formData.telefon}
+            email={formData.email}
+            vypracoval={formData.vypracoval}
+            predmet={formData.predmet}
+            fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
+            creatorPhone={userPhone}
+            creatorEmail={user?.email}
+            architectInfo={{
+              priezvisko: formData.architektonickyPriezvisko,
+              meno: formData.architektonickeMeno,
+              firma: "", // Assuming no specific company field for architect in the form data provided
+              ulica: formData.architektonickyUlica,
+              mesto: formData.architektonickyMesto,
+              psc: formData.architektonickyPsc,
+              telefon: formData.architektonickyTelefon,
+              email: formData.architektonickyEmail
+            }}
+            editingData={editingOfferData}
+            visibleTabs={vzorModalTabs}
+            isLocked={isEffectivelyLocked}
+          />
+        </Suspense>
+      )}
 
-      <AddOrderModal
-        isOpen={showOrderModal}
-        onClose={() => setShowOrderModal(false)}
-        onSave={handleAddOrderSave}
-        vypracoval={formData.vypracoval}
-        telefon={userPhone} // Use user settings phone
-        email={user?.email || ''} // Use user email
-        editingData={editingOrderData}
-        isLocked={isEffectivelyLocked}
-        orderNumber={editingOrderNumber || nextOrderNumber}
-      />
+      {showOrderModal && (
+        <Suspense fallback={null}>
+          <AddOrderModal
+            isOpen={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            onSave={handleAddOrderSave}
+            vypracoval={formData.vypracoval}
+            telefon={userPhone} // Use user settings phone
+            email={user?.email || ''} // Use user email
+            editingData={editingOrderData}
+            isLocked={isEffectivelyLocked}
+            orderNumber={editingOrderNumber || nextOrderNumber}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation Dialog for Notes */}
       <ConfirmDialog
@@ -941,13 +972,17 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
       />
 
       {/* Contact Changes Modal */}
-      <ContactChangesModal
-        isOpen={showContactChangesModal}
-        onClose={handleCancelContactChanges}
-        onApply={handleApplyContactChanges}
-        changes={pendingContactChanges}
-        isDark={isDark}
-      />
+      {showContactChangesModal && (
+        <Suspense fallback={null}>
+          <ContactChangesModal
+            isOpen={showContactChangesModal}
+            onClose={handleCancelContactChanges}
+            onApply={handleApplyContactChanges}
+            changes={pendingContactChanges}
+            isDark={isDark}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

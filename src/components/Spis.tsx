@@ -10,7 +10,7 @@ import { SpisEntry } from '../features/Spis/types';
 
 const Spis = () => {
   const { addContact } = useContacts();
-  const { entries, isLoading, firmaOptions, addEntry, deleteEntry, addFirmaOption } = useSpis();
+  const { entries, isLoading, isLoadingMore, hasMore, totalCount, firmaOptions, addEntry, deleteEntry, addFirmaOption, loadMoreEntries } = useSpis();
   const location = useLocation();
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -176,6 +176,10 @@ const Spis = () => {
         highlightedIds={highlightedProjectIds}
         highlightKey="id"
         rowClassName={(item) => item.cisloZakazky ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMoreEntries}
+        totalCount={totalCount}
       />
 
       {/* Modal */}

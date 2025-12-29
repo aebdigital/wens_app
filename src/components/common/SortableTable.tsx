@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { CustomDatePicker } from './CustomDatePicker';
 
@@ -21,6 +21,11 @@ interface SortableTableProps<T> {
   highlightedIds?: string[];
   highlightKey?: keyof T; // key to match against highlightedIds
   rowClassName?: (item: T) => string;
+  // Pagination props
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  totalCount?: number;
 }
 
 // Helper to parse Slovak date format (d.m.yyyy or dd.mm.yyyy) to Date object
@@ -48,7 +53,11 @@ export const SortableTable = <T extends { [key: string]: any }>({
   onRowClick,
   highlightedIds = [],
   highlightKey,
-  rowClassName
+  rowClassName,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+  totalCount
 }: SortableTableProps<T>) => {
   const { isDark } = useTheme();
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
@@ -56,6 +65,30 @@ export const SortableTable = <T extends { [key: string]: any }>({
   const [dateRangeFilters, setDateRangeFilters] = useState<{[key: string]: DateRangeFilter}>({});
   const [activeSearchColumn, setActiveSearchColumn] = useState<string | null>(null);
   const highlightedRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
+
+  // Infinite scroll - load more when scrolling near bottom
+  const handleScroll = useCallback(() => {
+    if (!tableContainerRef.current || !onLoadMore || !hasMore || isLoadingMore) return;
+
+    const container = tableContainerRef.current;
+    const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    // Load more when within 200px of the bottom
+    if (scrollBottom < 200) {
+      onLoadMore();
+    }
+  }, [onLoadMore, hasMore, isLoadingMore]);
+
+  // Set up scroll listener for infinite scroll
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container || !onLoadMore) return;
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [handleScroll, onLoadMore]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -170,13 +203,21 @@ export const SortableTable = <T extends { [key: string]: any }>({
 
   return (
     <div
-      className={`rounded-lg overflow-x-auto ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+      ref={tableContainerRef}
+      className={`rounded-lg overflow-x-auto max-h-[calc(100vh-200px)] ${isDark ? 'bg-dark-800' : 'bg-white'}`}
       style={{
         boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
       }}
     >
+      {/* Entry count indicator */}
+      {totalCount !== undefined && (
+        <div className={`sticky top-0 z-10 px-3 py-1.5 text-xs border-b ${isDark ? 'bg-dark-700 border-dark-600 text-gray-400' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
+          Zobrazených {sortedData.length} z {totalCount} záznamov
+          {hasMore && <span className="ml-2">(posúvajte pre viac)</span>}
+        </div>
+      )}
       <table className="w-full text-xs">
-        <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+        <thead className={`sticky ${totalCount !== undefined ? 'top-[29px]' : 'top-0'} bg-gradient-to-br from-[#e11b28] to-[#b8141f] z-10`}>
           <tr>
             {columns.map((column, index) => {
               const colKey = String(column.key);
@@ -334,6 +375,29 @@ export const SortableTable = <T extends { [key: string]: any }>({
           })}
         </tbody>
       </table>
+
+      {/* Load more indicator */}
+      {onLoadMore && (
+        <div ref={loadMoreTriggerRef} className="py-3 text-center">
+          {isLoadingMore ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className={`animate-spin rounded-full h-5 w-5 border-b-2 ${isDark ? 'border-white' : 'border-[#e11b28]'}`}></div>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Načítavam...</span>
+            </div>
+          ) : hasMore ? (
+            <button
+              onClick={onLoadMore}
+              className={`text-xs px-4 py-2 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:bg-dark-700' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+              Načítať viac záznamov
+            </button>
+          ) : sortedData.length > 0 ? (
+            <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              Všetky záznamy načítané
+            </span>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 };

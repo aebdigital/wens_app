@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FileDropZone } from '../../../components/common/FileDropZone';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { compressImage, shouldCompressFile } from '../../../utils/imageCompression';
+import { uploadToSupabaseStorage, formatBytes } from '../../../utils/photoMigration';
 
 interface FotkyTabProps {
   uploadedPhotos: {id: string, file: File, url: string, description: string, storagePath?: string}[];
@@ -17,6 +18,79 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
   const { isDark } = useTheme();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState({ current: 0, total: 0 });
+
+  // Check for photos that need migration (have base64 URL but no storagePath)
+  const photosNeedingMigration = useMemo(() => {
+    return uploadedPhotos.filter(p => p.url.startsWith('data:') && !p.storagePath);
+  }, [uploadedPhotos]);
+
+  // Estimate size of photos needing migration
+  const estimatedMigrationSize = useMemo(() => {
+    return photosNeedingMigration.reduce((total, p) => {
+      const base64Size = p.url.length;
+      const estimatedBinarySize = Math.floor(base64Size * 0.75);
+      return total + estimatedBinarySize;
+    }, 0);
+  }, [photosNeedingMigration]);
+
+  // Migrate base64 photos to Supabase Storage
+  const handleMigratePhotos = useCallback(async () => {
+    if (!user || !spisEntryId || photosNeedingMigration.length === 0 || isLocked) return;
+
+    setIsMigrating(true);
+    setMigrationProgress({ current: 0, total: photosNeedingMigration.length });
+
+    try {
+      let migratedCount = 0;
+
+      // Process photos sequentially to avoid overwhelming the server
+      for (let i = 0; i < uploadedPhotos.length; i++) {
+        const photo = uploadedPhotos[i];
+
+        // Skip photos that are already in cloud storage
+        if (photo.storagePath || !photo.url.startsWith('data:')) {
+          continue;
+        }
+
+        // Convert base64 to File
+        const base64Data = photo.url.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let j = 0; j < byteCharacters.length; j++) {
+          byteNumbers[j] = byteCharacters.charCodeAt(j);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: photo.file.type });
+        const file = new File([blob], photo.file.name, { type: photo.file.type });
+
+        // Upload to Supabase
+        const result = await uploadToSupabaseStorage(file, user.id, spisEntryId);
+
+        if (result) {
+          // Update the photo with cloud storage info
+          setUploadedPhotos(prev =>
+            prev.map(p =>
+              p.id === photo.id
+                ? { ...p, url: result.url, storagePath: result.storagePath }
+                : p
+            )
+          );
+          migratedCount++;
+        }
+
+        setMigrationProgress({ current: migratedCount, total: photosNeedingMigration.length });
+      }
+
+      console.log(`Migration complete: ${migratedCount} photos migrated`);
+    } catch (error) {
+      console.error('Migration failed:', error);
+    } finally {
+      setIsMigrating(false);
+      setMigrationProgress({ current: 0, total: 0 });
+    }
+  }, [user, spisEntryId, uploadedPhotos, photosNeedingMigration.length, isLocked, setUploadedPhotos]);
 
   const handleDownload = (e: React.MouseEvent, photo: {url: string, file: File}) => {
     e.stopPropagation();

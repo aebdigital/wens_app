@@ -1,11 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase, DbSpisEntry } from '../lib/supabase';
 import { SpisEntry } from '../features/Spis/types';
 
+// Pagination configuration
+const PAGE_SIZE = 50;
+
 interface SpisContextType {
   entries: SpisEntry[];
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  totalCount: number;
   firmaOptions: string[];
   addEntry: (entry: SpisEntry) => Promise<SpisEntry>;
   updateEntry: (entry: SpisEntry) => Promise<void>;
@@ -13,6 +19,7 @@ interface SpisContextType {
   getEntryById: (id: string) => SpisEntry | undefined;
   addFirmaOption: (option: string) => Promise<void>;
   refreshEntries: () => Promise<void>;
+  loadMoreEntries: () => Promise<void>;
 }
 
 const SpisContext = createContext<SpisContextType | undefined>(undefined);
@@ -60,8 +67,12 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [entries, setEntries] = useState<SpisEntry[]>([]);
   const [firmaOptions, setFirmaOptions] = useState<string[]>(['R1 Bratislava', 'WENS DOOR Prievidza']);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const currentPage = useRef(0);
 
-  // Load entries from Supabase
+  // Load initial entries from Supabase with pagination
   const loadEntries = useCallback(async () => {
     if (!user) {
       setEntries([]);
@@ -71,18 +82,35 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       setIsLoading(true);
+      currentPage.current = 0;
 
-      // Load spis entries (all entries visible to all authenticated users)
+      // Get total count first
+      const { count, error: countError } = await supabase
+        .from('spis_entries')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting count:', countError);
+      } else {
+        setTotalCount(count || 0);
+      }
+
+      // Load first page of spis entries (most recent first for display, but we reverse in UI)
       const { data: entriesData, error: entriesError } = await supabase
         .from('spis_entries')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .range(0, PAGE_SIZE - 1);
 
       if (entriesError) {
         console.error('Error loading entries:', entriesError);
         setEntries([]);
+        setHasMore(false);
       } else {
-        setEntries((entriesData || []).map(dbToSpisEntry));
+        const loadedEntries = (entriesData || []).map(dbToSpisEntry);
+        setEntries(loadedEntries);
+        setHasMore(loadedEntries.length === PAGE_SIZE && loadedEntries.length < (count || 0));
+        currentPage.current = 1;
       }
 
       // Load firma options (all options visible to all authenticated users)
@@ -111,6 +139,40 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
   }, [user]);
+
+  // Load more entries (pagination)
+  const loadMoreEntries = useCallback(async () => {
+    if (!user || isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const offset = currentPage.current * PAGE_SIZE;
+
+      const { data: entriesData, error: entriesError } = await supabase
+        .from('spis_entries')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (entriesError) {
+        console.error('Error loading more entries:', entriesError);
+      } else {
+        const newEntries = (entriesData || []).map(dbToSpisEntry);
+
+        // Filter out any duplicates (in case of concurrent updates)
+        const existingIds = new Set(entries.map(e => e.id));
+        const uniqueNewEntries = newEntries.filter(e => !existingIds.has(e.id));
+
+        setEntries(prev => [...prev, ...uniqueNewEntries]);
+        setHasMore(newEntries.length === PAGE_SIZE);
+        currentPage.current += 1;
+      }
+    } catch (error) {
+      console.error('Failed to load more entries:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [user, isLoadingMore, hasMore, entries]);
 
   // Reload entries when user changes
   useEffect(() => {
@@ -215,13 +277,17 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         entries,
         isLoading,
+        isLoadingMore,
+        hasMore,
+        totalCount,
         firmaOptions,
         addEntry,
         updateEntry,
         deleteEntry,
         getEntryById,
         addFirmaOption,
-        refreshEntries
+        refreshEntries,
+        loadMoreEntries
       }}
     >
       {children}
