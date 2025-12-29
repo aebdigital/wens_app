@@ -125,7 +125,7 @@ const Nastavenia = () => {
     };
 
     loadUsersWithPermissions();
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, user?.id]);
 
   const toggleZamestnanciPermission = async (userId: string, currentValue: boolean) => {
     setIsSavingPermissions(userId);

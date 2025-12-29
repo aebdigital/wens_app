@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -32,7 +32,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
   const isSuperAdmin = user?.email === SUPERADMIN_EMAIL;
 
-  const refreshPermissions = async () => {
+  const refreshPermissions = useCallback(async () => {
     if (!user) {
       setCanViewZamestnanci(false);
       setIsLoading(false);
@@ -64,13 +64,12 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, isSuperAdmin]);
 
   useEffect(() => {
     setIsLoading(true);
     refreshPermissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [refreshPermissions]);
 
   const value = {
     canViewZamestnanci,
