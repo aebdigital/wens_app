@@ -253,13 +253,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
 
-      if (error || !data.user) {
-        console.error('Login error:', error);
+      // Clear any potentially corrupted localStorage before login attempt
+      clearSupabaseStorage();
+
+      // Add timeout to login to prevent hanging
+      let loginResult;
+      try {
+        loginResult = await withTimeout(
+          supabase.auth.signInWithPassword({
+            email,
+            password,
+          }),
+          10000 // 10 second timeout for login
+        );
+      } catch (timeoutError) {
+        console.error('Login timed out');
+        setIsLoading(false);
+        return false;
+      }
+
+      if (loginResult.error || !loginResult.data.user) {
+        console.error('Login error:', loginResult.error);
         setIsLoading(false);
         return false;
       }
@@ -267,19 +282,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user profile directly instead of relying on onAuthStateChange
       // This ensures we always get the profile after successful login
       try {
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
+        const { data: profile, error: profileError } = await withTimeout(
+          supabase
+            .from('users')
+            .select('*')
+            .eq('id', loginResult.data.user.id)
+            .single(),
+          5000 // 5 second timeout for profile fetch
+        );
 
         if (!profileError && profile) {
           setUser(dbUserToUser(profile as DbUser));
         } else {
           console.error('Failed to fetch profile after login:', profileError);
+          // Even if profile fetch fails, the auth succeeded
+          // The user will be set when onAuthStateChange fires
         }
       } catch (profileFetchError) {
-        console.error('Profile fetch error:', profileFetchError);
+        console.error('Profile fetch error (timeout?):', profileFetchError);
+        // Don't fail the login if just the profile fetch timed out
       }
 
       setIsLoading(false);
@@ -287,6 +308,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
+      // If login failed unexpectedly, clear any partial state
+      clearSupabaseStorage();
       return false;
     }
   };
