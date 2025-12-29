@@ -67,11 +67,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Helper to fetch and set user profile
   const fetchAndSetProfile = async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Create a timeout promise that rejects after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timed out')), 5000);
+      });
+
+      // Race the database query against the timeout
+      const { data: profile, error } = await Promise.race([
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        timeoutPromise.then(() => { throw new Error('Profile fetch timed out'); })
+      ]) as any;
 
       if (!error && profile) {
         setUser(dbUserToUser(profile as DbUser));
