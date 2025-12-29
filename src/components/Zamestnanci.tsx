@@ -67,7 +67,7 @@ const formatLastSeen = (lastSeen: string | null): string => {
 const Zamestnanci: React.FC = () => {
   const { isDark } = useTheme();
   const { user: currentUser } = useAuth();
-  const { entries: spisEntries } = useSpis();
+  const { entries: spisEntries, isLoading: spisLoading } = useSpis();
   const [users, setUsers] = useState<User[]>([]);
   const [dovolenky, setDovolenky] = useState<Dovolenka[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -210,7 +210,7 @@ const Zamestnanci: React.FC = () => {
     return 'Neznámy';
   };
 
-  if (isLoading) {
+  if (isLoading || spisLoading) {
     return (
       <div className={`h-full p-4 flex items-center justify-center ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
         <div className="flex flex-col items-center gap-4">
