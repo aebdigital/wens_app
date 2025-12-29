@@ -57,12 +57,14 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         pdfDocRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, pdfUrl]);
 
   useEffect(() => {
     if (pdfDocRef.current && currentPage > 0) {
       renderPage(pdfDocRef.current, currentPage);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, scale]);
 
   const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {

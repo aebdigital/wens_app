@@ -69,6 +69,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
   useEffect(() => {
     setIsLoading(true);
     refreshPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const value = {
