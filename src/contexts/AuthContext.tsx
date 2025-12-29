@@ -63,7 +63,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isInitialized = useRef(false);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to fetch and set user profile
+  const fetchAndSetProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!error && profile) {
+        setUser(dbUserToUser(profile as DbUser));
+        return true;
+      } else {
+        console.error('Failed to fetch profile:', error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      return false;
+    }
+  };
 
   // Safety function to clear session and localStorage
   const clearSession = () => {
@@ -78,16 +99,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Prevent double initialization
     if (isInitialized.current) return;
     isInitialized.current = true;
-
-    // Safety timeout - if loading takes more than 8 seconds, force show login
-    // This catches any edge case where the flow gets stuck
-    loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('Auth loading timeout - forcing login screen');
-      setUser(null);
-      setIsLoading(false);
-      // Clear potentially corrupted localStorage
-      clearSupabaseStorage();
-    }, 8000);
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
