@@ -1,7 +1,24 @@
+/**
+ * Authentication Context
+ *
+ * Manages user authentication state using Supabase Auth.
+ * Handles login, logout, session persistence, and automatic token refresh.
+ *
+ * Features:
+ * - Email/password authentication via Supabase
+ * - Automatic session restoration on page load
+ * - Token refresh before expiration
+ * - Safety timeout (10s) for auth initialization
+ * - Tab visibility detection for token refresh
+ *
+ * @module AuthContext
+ */
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase, DbUser } from '../lib/supabase';
 
+/** User data exposed to the application */
 interface User {
   id: string;
   email: string;
@@ -10,6 +27,16 @@ interface User {
   createdAt: string;
 }
 
+/**
+ * Authentication context type definition.
+ *
+ * @property user - Current authenticated user or null
+ * @property login - Authenticate with email/password
+ * @property logout - Sign out and clear session
+ * @property changePassword - Update user's password
+ * @property clearSession - Force clear local session data
+ * @property isLoading - True during initial auth check
+ */
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
@@ -21,6 +48,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Hook to access authentication context.
+ * Must be used within an AuthProvider.
+ *
+ * @returns AuthContextType with user state and auth methods
+ * @throws Error if used outside AuthProvider
+ *
+ * @example
+ * const { user, login, logout } = useAuth();
+ * if (user) {
+ *   console.log(`Logged in as ${user.email}`);
+ * }
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -33,7 +73,10 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-// Helper to convert DB user to app user format
+/**
+ * Converts database user format to application user format.
+ * Maps snake_case DB columns to camelCase properties.
+ */
 const dbUserToUser = (dbUser: DbUser): User => ({
   id: dbUser.id,
   email: dbUser.email,
@@ -42,12 +85,16 @@ const dbUserToUser = (dbUser: DbUser): User => ({
   createdAt: dbUser.created_at,
 });
 
-// Clear all Supabase-related localStorage keys
+/**
+ * Clears all Supabase-related localStorage keys.
+ * Called during logout to ensure complete session cleanup.
+ * Removes both the configured storage key and any legacy sb-* keys.
+ */
 const clearSupabaseStorage = () => {
   try {
     // Explicitly clear the configured storage key
     localStorage.removeItem('wens-auth-token');
-    
+
     // Clear any generic Supabase keys (legacy or default)
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('sb-')) {

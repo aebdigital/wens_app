@@ -4,305 +4,407 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WENS Door is a React-based CRM application for managing door and window projects. The application provides interfaces for project management (Spis), orders (Objednavky), contacts (Kontakty), employees (Zamestnanci), and settings (Nastavenia). All data is stored locally in browser localStorage - there is no backend server.
+**WENS DOOR** is a React-based Customer Relationship Management (CRM) application for managing door and window projects. Built with TypeScript, Tailwind CSS, and Supabase for the backend.
+
+### Key Features
+- **Project Management (Spis)** - 8-tab modal for complete project tracking
+- **Quote Generation** - PDF quotes for doors, furniture, stairs, frames
+- **Contact Management** - Customers, architects, billing entities with forking
+- **Order Tracking** - Order status and delivery monitoring
+- **Task Management** - Team task assignment and tracking
+- **Vacation Scheduling** - Employee vacation management
+- **Document Locking** - Prevents concurrent editing conflicts
+- **Dark Mode** - Full dark/light/auto theme support
+
+### Tech Stack
+- **Frontend:** React 18, TypeScript 5, Tailwind CSS 3
+- **Backend:** Supabase (PostgreSQL, Auth, Storage, Realtime)
+- **Routing:** React Router v6
+- **PDF Generation:** jsPDF with autoTable
+- **Deployment:** Netlify
+- **External APIs:** Slovak RPO API for company lookups
 
 ## Development Commands
 
 ```bash
-# Start development server on localhost:3000
-npm start
-
-# Build for production (used by Netlify)
-npm run build
-
-# Run tests
-npm test
+npm start       # Development server on localhost:3000
+npm run build   # Production build (used by Netlify)
+npm test        # Run test suite
 ```
 
 ## Project Structure
 
 ```
 src/
-├── App.tsx                     # Main routing and provider setup
-├── index.tsx                   # React DOM entry point
-├── index.css                   # Global styles with custom animations
-├── components/                 # Main page components
-│   ├── AuthWrapper.tsx         # Login/Register UI with sliding animation
-│   ├── Spis.tsx                # Project file management (main page)
-│   ├── Objednavky.tsx          # Orders table view
-│   ├── Kontakty.tsx            # Contacts management
-│   ├── Nastavenia.tsx          # Settings/preferences page
-│   ├── Zamestnanci.tsx         # Employees (dummy data)
-│   ├── Login.tsx               # Login form component
-│   ├── Register.tsx            # Registration form component
+├── App.tsx                              # Root routing and context provider hierarchy
+├── index.tsx                            # React DOM entry point
+├── index.css                            # Global styles and animations
+│
+├── components/                          # Page components and UI
+│   ├── AuthWrapper.tsx                  # Login/Register page UI
+│   ├── Spis.tsx                         # Project file management (main feature)
+│   ├── Objednavky.tsx                   # Orders and Products view with tabs
+│   ├── Kontakty.tsx                     # Contact management CRUD
+│   ├── Nastavenia.tsx                   # User settings/preferences
+│   ├── Zamestnanci.tsx                  # Employee list (restricted access)
+│   ├── Dovolenky.tsx                    # Vacation management
+│   ├── Ulohy.tsx                        # Task management
+│   ├── ProductDetailModal.tsx           # Product detail modal
+│   │
 │   ├── common/
-│   │   └── SortableTable.tsx   # Reusable table with sort/filter/search
-│   └── layout/
-│       ├── Layout.tsx          # Main layout wrapper
-│       ├── Sidebar.tsx         # Navigation sidebar (red gradient)
-│       ├── Header.tsx          # Mobile header with menu toggle
-│       └── StyledNavLink.tsx   # Styled navigation links
-├── contexts/                   # React Context providers
-│   ├── AuthContext.tsx         # User authentication
-│   ├── ContactsContext.tsx     # Contact management (user-scoped)
-│   └── ThemeContext.tsx        # Dark mode theme management
-└── features/
-    └── Spis/                   # Complex Spis feature module
-        ├── components/
-        │   ├── SpisEntryModal.tsx      # Main modal for project entries
-        │   ├── VseobecneForm.tsx       # General form with auto-complete
-        │   ├── VseobecneSidebar.tsx    # Sidebar for general info
-        │   ├── CenovePonukyTab.tsx     # Price quotes tab
-        │   ├── ObjednavkyTab.tsx       # Orders tab
-        │   ├── EmailyTab.tsx           # Emails tab
-        │   ├── MeranieTab.tsx          # Measurement tab
-        │   ├── FotkyTab.tsx            # Photos tab
-        │   ├── VyrobneVykresyTab.tsx   # Production drawings tab
-        │   ├── TechnickeVykresyTab.tsx # Technical drawings tab
-        │   ├── DvereForm.tsx           # Doors quote form
-        │   ├── NabytokForm.tsx         # Furniture quote form
-        │   ├── PuzdraForm.tsx          # Frames quote form
-        │   ├── AddTemplateModal.tsx    # Modal for adding templates
-        │   └── common/
-        │       ├── QuoteLayout.tsx     # Layout wrapper for quotes
-        │       ├── QuoteHeader.tsx     # Quote header info
-        │       ├── QuoteFooter.tsx     # Quote footer with totals
-        │       ├── QuoteSummary.tsx    # Summary section
-        │       └── GenericItemsTable.tsx # Reusable table for items
-        ├── hooks/
-        │   └── useSpisEntryLogic.ts    # Complex form state management
-        ├── types/
-        │   └── index.ts                # TypeScript interfaces
-        └── utils/
-            ├── priceCalculations.ts    # Price calculation logic
-            └── pdfGenerator.ts         # PDF generation using jsPDF
+│   │   ├── SortableTable.tsx            # Reusable table with sort/filter/search/pagination
+│   │   ├── CustomDatePicker.tsx         # Date picker wrapper
+│   │   ├── FileDropZone.tsx             # File upload component
+│   │   └── PDFPreviewModal.tsx          # PDF preview modal
+│   │
+│   ├── layout/
+│   │   ├── Layout.tsx                   # Main layout wrapper
+│   │   ├── Sidebar.tsx                  # Navigation sidebar (red gradient)
+│   │   ├── Header.tsx                   # Mobile header with menu toggle
+│   │   └── StyledNavLink.tsx            # Styled navigation links
+│   │
+│   └── tasks/
+│       ├── TaskCreateModal.tsx          # Task creation modal
+│       └── TaskPopup.tsx                # Task notification popup
+│
+├── contexts/                            # React Context providers (8 total)
+│   ├── AuthContext.tsx                  # Authentication & session management
+│   ├── ThemeContext.tsx                 # Dark mode theme management
+│   ├── ContactsContext.tsx              # Contact data management
+│   ├── SpisContext.tsx                  # Spis entries with pagination
+│   ├── TasksContext.tsx                 # Task management
+│   ├── ProductsContext.tsx              # Product catalog management
+│   ├── PermissionsContext.tsx           # User permission/role management
+│   └── DocumentLockContext.tsx          # Document locking for concurrent editing
+│
+├── features/
+│   └── Spis/                            # Complex Spis feature module
+│       ├── components/
+│       │   ├── SpisEntryModal.tsx       # Main 8-tab modal (lazy loaded tabs)
+│       │   ├── VseobecneForm.tsx        # General info form with RPO autocomplete
+│       │   ├── VseobecneSidebar.tsx     # Sidebar for general info quick view
+│       │   ├── CenovePonukyTab.tsx      # Price quotes management
+│       │   ├── ObjednavkyTab.tsx        # Orders management
+│       │   ├── EmailyTab.tsx            # Email tracking
+│       │   ├── MeranieTab.tsx           # Measurement tracking
+│       │   ├── FotkyTab.tsx             # Photo management (Supabase Storage)
+│       │   ├── VyrobneVykresyTab.tsx    # Production drawings
+│       │   ├── TechnickeVykresyTab.tsx  # Technical drawings
+│       │   ├── DvereForm.tsx            # Doors quote form
+│       │   ├── NabytokForm.tsx          # Furniture quote form
+│       │   ├── SchodyForm.tsx           # Stairs quote form
+│       │   ├── PuzdraForm.tsx           # Frames quote form
+│       │   ├── AddTemplateModal.tsx     # Modal to add quote templates
+│       │   ├── AddOrderModal.tsx        # Modal to add orders
+│       │   ├── ContactChangesModal.tsx  # Modal to handle contact changes
+│       │   │
+│       │   └── common/
+│       │       ├── QuoteLayout.tsx      # Layout wrapper for quotes
+│       │       ├── QuoteHeader.tsx      # Quote header with company/customer info
+│       │       ├── QuoteFooter.tsx      # Quote footer with totals
+│       │       ├── QuoteSummary.tsx     # Quote summary section
+│       │       ├── GenericItemsTable.tsx# Reusable table for quote items
+│       │       └── RpoAutocomplete.tsx  # Autocomplete for company lookup
+│       │
+│       ├── hooks/
+│       │   └── useSpisEntryLogic.ts     # Complex form state management (well documented)
+│       │
+│       ├── types/
+│       │   └── index.ts                 # TypeScript interfaces for Spis feature
+│       │
+│       └── utils/
+│           ├── priceCalculations.ts     # Price/DPH calculation with memoization cache
+│           ├── pdfGenerator.ts          # PDF generation using jsPDF
+│           └── rpoApi.ts                # Slovak RPO API integration
+│
+├── lib/
+│   └── supabase.ts                      # Supabase client setup and DB type definitions
+│
+└── utils/
+    ├── imageCompression.ts              # Image compression utilities
+    └── photoMigration.ts                # Photo storage migration helpers
 ```
 
 ## Architecture
 
-### Context-Based State Management
-
-The application uses React Context for global state management with three main contexts:
-
-1. **AuthContext** (`src/contexts/AuthContext.tsx`)
-   - Manages user authentication using localStorage
-   - User data stored in `users` (all users) and `currentUser` (logged-in user)
-   - Provides: `user`, `login()`, `register()`, `logout()`, `changePassword()`, `isLoading`
-   - Password requirements: 12+ chars, uppercase, number, special character
-   - No real backend - passwords stored in plain text (demo/local use only)
-
-2. **ThemeContext** (`src/contexts/ThemeContext.tsx`)
-   - Manages dark mode with three options: 'light', 'dark', 'auto'
-   - Auto mode detects system preference via `window.matchMedia`
-   - Provides: `theme`, `setTheme()`, `isDark` (boolean)
-   - Applies 'dark' class to `document.documentElement`
-
-3. **ContactsContext** (`src/contexts/ContactsContext.tsx`)
-   - Manages contact data with project associations
-   - User-scoped storage: `contacts_${userId}`
-   - Contact types: 'zakaznik' (customer), 'architekt' (architect)
-   - Contact forking: Creates copy when modifying shared contacts
-   - Provides: `contacts`, `addContact()`, `updateContact()`, `deleteContact()`, `getContactById()`, `getContactsByProject()`, `getContactByNameAndType()`
-
-### Component Provider Hierarchy
+### Provider Hierarchy
 
 ```typescript
 <ThemeProvider>
   <AuthProvider>
-    <ContactsProvider>
-      <AppContent />  // Router
-    </ContactsProvider>
+    <PermissionsProvider>
+      <DocumentLockProvider>
+        <ContactsProvider>
+          <SpisProvider>
+            <TasksProvider>
+              <ProductsProvider>
+                <Layout>
+                  <Routes />
+                </Layout>
+              </ProductsProvider>
+            </TasksProvider>
+          </SpisProvider>
+        </ContactsProvider>
+      </DocumentLockProvider>
+    </PermissionsProvider>
   </AuthProvider>
 </ThemeProvider>
 ```
 
+### Context Providers
+
+1. **AuthContext** - Supabase Auth with email/password, session persistence, auto token refresh
+2. **ThemeContext** - Dark/light/auto mode with system preference detection
+3. **ContactsContext** - Contact CRUD with project associations and forking
+4. **SpisContext** - Project entries with pagination (50 per page), infinite scroll
+5. **TasksContext** - Task management with user assignment
+6. **ProductsContext** - User-scoped product catalog
+7. **PermissionsContext** - Role-based permissions (super admin: richter@wens.sk)
+8. **DocumentLockContext** - Concurrent editing prevention with 30s heartbeat
+
 ### Routing Structure
 
 ```
-/ → redirects to /spis
-├── /spis         # Project management (default)
-├── /objednavky   # Orders list
-├── /kontakty     # Contacts CRUD
-├── /zamestnanci  # Employees (dummy)
-└── /nastavenia   # Settings
+/ → /spis (redirect)
+├── /spis              # Project files table
+├── /objednavky        # Orders & Products (tabbed)
+├── /kontakty          # Contact management
+├── /zamestnanci       # Employee list (restricted)
+├── /dovolenky         # Vacation management
+├── /ulohy             # Task management
+└── /nastavenia        # Settings
 ```
 
-### Main Components
+## Database Schema (Supabase)
 
-- **Spis** (`src/components/Spis.tsx`) - Project file management with SpisEntryModal. Supports row highlighting when navigating from Objednavky.
+### Core Tables
 
-- **SpisEntryModal** (`src/features/Spis/components/SpisEntryModal.tsx`) - 8-tab modal for project entries:
-  - Všeobecné (General) - Customer/architect/executor info with auto-complete
-  - Cenové Ponuky (Price Quotes) - List of quotes with edit/delete/PDF
-  - Objednávky (Orders) - Order items with dates
-  - Emaily (Emails) - Email tracking
-  - Meranie (Measurement) - Measurement logs
-  - Fotky (Photos) - Image upload with base64 storage
-  - Výrobné Výkresy (Production Drawings)
-  - Technické Výkresy (Technical Drawings)
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `users` | User profiles (extends auth.users) | id, email, first_name, last_name, last_seen |
+| `contacts` | Customers, architects, billing | meno, priezvisko, typ, project_ids, ico, ic_dph |
+| `spis_entries` | Project files with full data | stav, cislo_cp, full_form_data (JSONB) |
+| `tasks` | Task assignments | title, status, priority, assigned_to, due_date |
+| `products` | Product catalog | name, kod, supplier, price |
+| `dovolenky` | Vacation records | name, start_date, end_date |
+| `document_locks` | Concurrent editing locks | document_id, locked_by, last_heartbeat |
+| `user_preferences` | User settings | theme, phone, settings (JSONB) |
+| `firma_options` | Company dropdown options | name |
+| `employee_permissions` | Access control | can_view_zamestnanci |
 
-- **Objednavky** (`src/components/Objednavky.tsx`) - Orders derived from all Spis entries. Click navigates to parent Spis entry.
+### Row Level Security
+- All tables have RLS policies
+- Users can view shared data (contacts, projects, tasks)
+- Users can only modify their own data where applicable
+- Super admin has elevated permissions
 
-- **Kontakty** (`src/components/Kontakty.tsx`) - Contact management with form validation (email, phone, IČO format).
+## Key Features Explained
 
-- **Nastavenia** (`src/components/Nastavenia.tsx`) - User profile, theme selector, password change.
+### Project Files (Spis) - 8 Tabs
 
-- **Zamestnanci** (`src/components/Zamestnanci.tsx`) - Static employee data (no persistence).
+1. **Všeobecné** - Customer, architect, executor info with RPO API autocomplete
+2. **Cenové Ponuky** - Price quotes with PDF generation (4 types)
+3. **Objednávky** - Order tracking with delivery status
+4. **Emaily** - Email log
+5. **Meranie** - Measurement records
+6. **Fotky** - Photo uploads to Supabase Storage (with compression)
+7. **Výrobné Výkresy** - Production drawings
+8. **Technické Výkresy** - Technical drawings
 
-### Quote System
+### Quote Types
 
-Three quote types with different forms:
-- **Dvere (Doors)** - Products, discounts, hardware, assembly with ks × price calculations
-- **Nabytok (Furniture)** - Similar structure to doors
-- **Puzdra (Frames)** - Supplier info, order items, delivery address
+| Type | Form Component | Description |
+|------|---------------|-------------|
+| Dvere | DvereForm.tsx | Doors with hardware, assembly, discounts |
+| Nábytok | NabytokForm.tsx | Custom furniture |
+| Schody | SchodyForm.tsx | Staircases |
+| Puzdra | PuzdraForm.tsx | Frame supplier orders |
 
-Each quote type has:
-- Dedicated form component (DvereForm, NabytokForm, PuzdraForm)
-- Price calculation function in `priceCalculations.ts`
-- PDF generation via `pdfGenerator.ts`
+### Price Calculation Formula
 
-### Data Persistence
+```
+vyrobkyTotal = sum of all products
+priplatkyTotal = sum of all supplements
+subtotal = vyrobkyTotal + priplatkyTotal
+zlava = subtotal × zlavaPercent / 100
+afterZlava = subtotal - zlava
+cenaBezDPH = afterZlava + kovanieTotal + montazTotal
+dph = cenaBezDPH × 0.23 (23% VAT)
+cenaSDPH = cenaBezDPH + dph
+```
 
-**User-Scoped Keys** (multi-user support):
-- `contacts_${userId}` - User contacts
-- `spisEntries_${userId}` - Project entries
-- `firmaOptions_${userId}` - Company dropdown options
-- `preferences_${userId}` - User preferences
+**Note:** Results are cached for 5 seconds via memoization.
 
-**Global Keys**:
-- `users` - All user accounts
-- `currentUser` - Logged-in user
-- `theme` - Theme setting
-- `selectedOrder` - Temporary order selection for navigation
+### Document Locking
 
-### Key Patterns
+- Lock acquired when opening Spis entry for editing
+- 30-second heartbeat refresh interval
+- 2-minute expiry without heartbeat
+- Queue system shows waiting users
+- Lock released on modal close
 
-#### Contact Forking (Copy-on-Write)
-When modifying a contact used in multiple projects, a new contact is created to prevent unintended updates. Original tracked via `originalContactId`.
+### Contact Forking
 
-#### Auto-Complete with Contact Lookup
-VseobecneForm provides auto-complete for customer/architect fields by searching contacts by name and type.
+When modifying a contact used in multiple projects:
+1. System detects changes vs. original contact
+2. ContactChangesModal offers options:
+   - Update original contact
+   - Create fork (copy) for this project only
+   - Cancel changes
+3. Fork tracked via `original_contact_id`
 
-#### Form Change Detection
-`useSpisEntryLogic` compares `lastSavedJson` to detect unsaved changes and only saves when data differs.
+## Performance Optimizations
 
-#### CP Number Auto-Generation
-Quote numbers generated as `CP2025/####` format with sequential numbering.
+1. **Lazy Loading** - Tab components loaded with React.lazy() and Suspense
+2. **Pagination** - 50 entries per page with infinite scroll
+3. **Memoization** - 5-second TTL cache for price calculations
+4. **Image Compression** - Photos compressed before upload
+5. **Code Splitting** - Heavy modals loaded on demand
 
 ## Styling & Design System
 
-- **UI Framework**: Tailwind CSS
-- **Primary Brand Color**: `#e11b28` (red)
-- **Hover Color**: `#c71325` (darker red)
-- **Sidebar Gradient**: `from-[#e11b28] to-[#b8141f]`
-- **Font**: Inter (Google Fonts)
-- **Viewport Height**: `100dvh` (accounts for mobile address bar)
+- **Framework:** Tailwind CSS 3
+- **Primary Color:** `#e11b28` (red)
+- **Hover Color:** `#c71325` (darker red)
+- **Sidebar Gradient:** `from-[#e11b28] to-[#b8141f]`
+- **Font:** Inter (Google Fonts)
+- **Dark Mode:** CSS class-based with `isDark` conditional
 
-Dark mode pattern:
+### Dark Mode Colors
+
+```javascript
+dark: {
+  950: '#0a0a0a', // Darkest - main background
+  900: '#0f0f0f', // Page background
+  800: '#1a1a1a', // Modal/card background
+  700: '#262626', // Form container
+  600: '#333333', // Input background
+  500: '#404040', // Borders
+}
+```
+
+### Dark Mode Pattern
+
 ```typescript
 className={`base-classes ${isDark ? 'dark-classes' : 'light-classes'}`}
 ```
-
-Custom animations in `index.css`: `slideIn`, `expandWidth`, `fadeIn`, `slideOut`
 
 ## Common Patterns
 
 ### Adding New Form Fields
 
-1. Add field to component state or TypeScript interface
-2. Add to localStorage save/load logic (respect user-scoped keys)
-3. Add form input with dark mode styling
-4. Update validation if needed
-5. If related to contacts, update ContactsContext interface
+1. Add field to TypeScript interface in `types/index.ts`
+2. Add to `SpisFormData` interface
+3. Add input element in relevant form component
+4. Update `useSpisEntryLogic` if needed
+5. Include in PDF generation if applicable
 
 ### Adding New Quote Type
 
-1. Create form component in `src/features/Spis/components/`
-2. Add calculation function in `priceCalculations.ts`
-3. Update `pdfGenerator.ts` for PDF support
-4. Add type to CenovaPonukaItem type union
-5. Register in AddTemplateModal and CenovePonukyTab
+1. Create form component (e.g., `VlneniForm.tsx`)
+2. Add interface to `types/index.ts`
+3. Add calculation function to `priceCalculations.ts`
+4. Update `pdfGenerator.ts` for PDF support
+5. Add to `AddTemplateModal.tsx` type options
+6. Update `CenovePonukyTab.tsx` to handle new type
+7. Add to `CenovaPonukaItem` type union
 
-### Color Scheme Updates
+### Adding New Context Provider
 
-Search for these Tailwind classes:
-- `bg-[#e11b28]`, `hover:bg-[#c71325]` - Primary buttons
-- `border-[#e11b28]`, `text-[#e11b28]` - Active states
-- `focus:ring-[#e11b28]` - Focus rings
-- `from-[#e11b28] to-[#b8141f]` - Sidebar gradient
+1. Create context file in `src/contexts/`
+2. Define interface with all state and methods
+3. Create Provider component with hooks
+4. Export `useContextName` hook
+5. Add Provider to hierarchy in `App.tsx`
 
-## Dependencies
+## Environment Variables
+
+```env
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+```
+
+**Note:** Never commit `.env` to git.
+
+## Dependencies (Updated)
 
 ```json
 {
   "react": "^18.2.0",
-  "react-router-dom": "^6.8.0",
+  "react-router-dom": "^6.30.2",
+  "typescript": "^5.9.3",
+  "tailwindcss": "^3.4.19",
   "jspdf": "^3.0.4",
   "jspdf-autotable": "^5.0.2",
-  "tailwindcss": "^3.2.7",
-  "typescript": "^4.9.0"
+  "@supabase/supabase-js": "^2.x"
 }
 ```
 
 ## Git Workflow
 
-Conventional commit messages with:
-- Descriptive title summarizing the change
-- Bullet points of specific changes made
-- Footer with Claude Code attribution
+Conventional commit messages:
+```
+type: Short description
+
+- Specific change 1
+- Specific change 2
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `perf`, `test`
+
+## Deployment
+
+### Netlify Configuration
+
+- Build command: `npm run build`
+- Publish directory: `build`
+- SPA routing: All paths redirect to `/index.html`
+- Security headers configured in `netlify.toml`
 
 ---
 
-# Recommendations
+## Recommendations
 
-## High Priority
+### Completed ✅
 
-### 1. Security Improvements
-- **Hash passwords**: Currently stored in plain text. Use bcrypt or similar before any production use.
-- **Sanitize inputs**: Add XSS protection for user-generated content displayed in UI.
-- **Add HTTPS enforcement**: Ensure deployed version uses HTTPS only.
+- [x] Lazy loading for SpisEntryModal tabs
+- [x] Pagination for spis_entries (50 per page)
+- [x] Memoization for price calculations
+- [x] Photo storage migration to Supabase Storage
+- [x] JSDoc comments on complex functions
+- [x] README with setup instructions
+- [x] Updated dependencies to latest safe versions
 
-### 2. Data Integrity
-- **Add data validation schemas**: Use Zod or Yup for runtime validation of localStorage data.
-- **Implement data migration**: Version localStorage schema and add migrations for breaking changes.
-- **Add data export/import**: Allow users to backup their data as JSON files.
+### High Priority
 
-### 3. Performance
-- **Optimize photo storage**: Base64 in localStorage is inefficient. Consider IndexedDB for large files.
-- **Lazy load heavy components**: SpisEntryModal is large; consider code splitting.
-- **Memoize expensive calculations**: Price calculations run on every render.
+1. **Security**
+   - Supabase Auth handles password hashing
+   - Add input sanitization for XSS protection
+   - HTTPS enforced via Netlify
 
-## Medium Priority
+2. **Data Integrity**
+   - Add Zod schemas for runtime validation
+   - Implement data export/import feature
 
-### 4. Code Organization
-- **Extract remaining components**: Move Objednavky, Kontakty logic into feature folders like Spis.
-- **Create shared hooks**: Extract common localStorage patterns into reusable hooks.
-- **Centralize constants**: Move magic strings (localStorage keys, routes) to constants file.
+### Medium Priority
 
-### 5. Testing
-- **Add unit tests**: Price calculation functions are ideal candidates.
-- **Add component tests**: Test form validation and context interactions.
-- **Add E2E tests**: Critical flows (login, create quote, generate PDF).
+3. **Testing**
+   - Unit tests for price calculations
+   - Component tests for form validation
+   - E2E tests for critical flows
 
-### 6. User Experience
-- **Add loading states**: Show spinners during async operations.
-- **Add error boundaries**: Catch React errors gracefully.
-- **Improve mobile UX**: Some modals are cramped on small screens.
-- **Add keyboard navigation**: Tab support in forms and tables.
+4. **UX Improvements**
+   - Better mobile modal experience
+   - Keyboard navigation in tables
+   - Error boundaries for graceful failures
 
-## Low Priority
+### Low Priority
 
-### 7. Documentation
-- **Add JSDoc comments**: Complex functions like `useSpisEntryLogic` need documentation.
-- **Create component storybook**: Visual documentation for UI components.
-
-### 8. Future Features
-- **Offline-first with service worker**: Enable PWA capabilities.
-- **Multi-language support**: Extract Slovak text to i18n files.
-- **Print stylesheets**: Better printing support for quotes.
-- **Cloud sync option**: Optional backend for data sync across devices.
-
-### 9. Code Quality
-- **Enable strict TypeScript**: Fix any type usages.
-- **Add ESLint rules**: Enforce consistent code style.
-- **Remove dead code**: Clean up deleted components (CennikMaterialov.tsx, Technicke.tsx marked as deleted in git).
+5. **Future Features**
+   - PWA with service worker
+   - Multi-language support (i18n)
+   - Real-time collaboration via Supabase Realtime

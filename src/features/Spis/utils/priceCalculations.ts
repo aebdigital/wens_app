@@ -1,9 +1,31 @@
+/**
+ * Price Calculations Module
+ *
+ * Handles all quote price calculations for the WENS DOOR CRM.
+ * Includes memoization with TTL cache to optimize repeated calculations.
+ *
+ * @module priceCalculations
+ */
+
 import { DvereData, NabytokData, SchodyData, PuzdraData } from '../types';
 
-// DPH rate constant
+/** Slovak VAT (DPH) rate - 23% */
 const DPH_RATE = 0.23;
 
-// Types for calculation results
+/**
+ * Result of quote price calculations for Dvere, Nabytok, and Schody quotes.
+ *
+ * @property vyrobkyTotal - Total price of all products
+ * @property priplatkyTotal - Total price of all supplements/extras
+ * @property subtotal - Sum of vyrobkyTotal + priplatkyTotal
+ * @property zlava - Discount amount (calculated from percentage)
+ * @property afterZlava - Subtotal after discount applied
+ * @property kovanieTotal - Total price of hardware items
+ * @property montazTotal - Total price of assembly/installation
+ * @property cenaBezDPH - Price without VAT
+ * @property dph - VAT amount (23%)
+ * @property cenaSDPH - Final price with VAT
+ */
 export interface QuoteTotals {
   vyrobkyTotal: number;
   priplatkyTotal: number;
@@ -17,17 +39,33 @@ export interface QuoteTotals {
   cenaSDPH: number;
 }
 
+/**
+ * Simplified result for Puzdra (frames) quotes.
+ * Puzdra quotes have a simpler structure without discounts or hardware.
+ */
 export interface PuzdraTotals {
   cenaBezDPH: number;
   dph: number;
   cenaSDPH: number;
 }
 
-// Simple memoization cache
-const calculationCache = new Map<string, { result: QuoteTotals | PuzdraTotals; timestamp: number }>();
-const CACHE_TTL = 5000; // 5 seconds cache TTL
+// ============================================================================
+// MEMOIZATION CACHE
+// ============================================================================
 
-// Create a stable cache key from data
+/** Cache storage for calculation results with timestamps */
+const calculationCache = new Map<string, { result: QuoteTotals | PuzdraTotals; timestamp: number }>();
+
+/** Cache time-to-live in milliseconds (5 seconds) */
+const CACHE_TTL = 5000;
+
+/**
+ * Creates a stable cache key from quote data by JSON stringifying it.
+ *
+ * @param prefix - Type prefix (e.g., 'dvere:', 'nabytok:')
+ * @param data - Quote data to hash
+ * @returns Cache key string
+ */
 const createCacheKey = (prefix: string, data: unknown): string => {
   try {
     return prefix + JSON.stringify(data);
@@ -36,7 +74,12 @@ const createCacheKey = (prefix: string, data: unknown): string => {
   }
 };
 
-// Get cached result or null
+/**
+ * Retrieves a cached calculation result if it exists and hasn't expired.
+ *
+ * @param key - Cache key to look up
+ * @returns Cached result or null if not found/expired
+ */
 const getCached = <T>(key: string): T | null => {
   const cached = calculationCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -46,7 +89,13 @@ const getCached = <T>(key: string): T | null => {
   return null;
 };
 
-// Set cache
+/**
+ * Stores a calculation result in the cache.
+ * Automatically evicts oldest entry if cache exceeds 100 items.
+ *
+ * @param key - Cache key
+ * @param result - Calculation result to cache
+ */
 const setCache = (key: string, result: QuoteTotals | PuzdraTotals): void => {
   // Limit cache size to prevent memory issues
   if (calculationCache.size > 100) {
@@ -56,7 +105,32 @@ const setCache = (key: string, result: QuoteTotals | PuzdraTotals): void => {
   calculationCache.set(key, { result, timestamp: Date.now() });
 };
 
-// Common calculation logic for quotes with vyrobky, priplatky, kovanie, montaz
+// ============================================================================
+// CALCULATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Common calculation logic shared by Dvere, Nabytok, and Schody quote types.
+ *
+ * Formula:
+ * 1. subtotal = vyrobkyTotal + priplatkyTotal
+ * 2. zlava = subtotal * zlavaPercent / 100
+ * 3. afterZlava = subtotal - zlava
+ * 4. cenaBezDPH = afterZlava + kovanieTotal + montazTotal
+ * 5. dph = cenaBezDPH * 0.23
+ * 6. cenaSDPH = cenaBezDPH + dph
+ *
+ * If manualCenaSDPH is provided, it overrides the calculated total and
+ * back-calculates cenaBezDPH and dph from it.
+ *
+ * @param vyrobkyTotal - Sum of all product prices
+ * @param priplatkyTotal - Sum of all supplement prices
+ * @param zlavaPercent - Discount percentage (0-100)
+ * @param kovanieItems - Array of hardware items with cenaCelkom
+ * @param montazItems - Array of assembly items with cenaCelkom
+ * @param manualCenaSDPH - Optional manual price override
+ * @returns Complete quote totals breakdown
+ */
 const calculateCommonTotals = (
   vyrobkyTotal: number,
   priplatkyTotal: number,
@@ -95,6 +169,24 @@ const calculateCommonTotals = (
   };
 };
 
+/**
+ * Calculates price totals for a Dvere (doors) quote.
+ *
+ * Dvere products have multiple components:
+ * - dvere (doors): ks * cenaDvere
+ * - zarubna (frames): ksZarubna * cenaZarubna
+ * - obklad (cladding): ksObklad * cenaObklad
+ * - prazdne (blanks): ksPrazdne * cenaPrazdne
+ *
+ * Results are cached for 5 seconds to optimize repeated renders.
+ *
+ * @param data - Complete Dvere quote data
+ * @returns Calculated totals with VAT breakdown
+ *
+ * @example
+ * const totals = calculateDvereTotals(dvereQuote);
+ * console.log(`Total with VAT: ${totals.cenaSDPH}€`);
+ */
 export const calculateDvereTotals = (data: DvereData): QuoteTotals => {
   const cacheKey = createCacheKey('dvere:', data);
   const cached = getCached<QuoteTotals>(cacheKey);
@@ -123,6 +215,15 @@ export const calculateDvereTotals = (data: DvereData): QuoteTotals => {
   return result;
 };
 
+/**
+ * Calculates price totals for a Nabytok (furniture) quote.
+ *
+ * Furniture products use a simpler cenaCelkom (total price) per item.
+ * Results are cached for 5 seconds.
+ *
+ * @param data - Complete Nabytok quote data
+ * @returns Calculated totals with VAT breakdown
+ */
 export const calculateNabytokTotals = (data: NabytokData): QuoteTotals => {
   const cacheKey = createCacheKey('nabytok:', data);
   const cached = getCached<QuoteTotals>(cacheKey);
@@ -144,6 +245,15 @@ export const calculateNabytokTotals = (data: NabytokData): QuoteTotals => {
   return result;
 };
 
+/**
+ * Calculates price totals for a Schody (stairs) quote.
+ *
+ * Stairs products use the same structure as furniture (cenaCelkom per item).
+ * Results are cached for 5 seconds.
+ *
+ * @param data - Complete Schody quote data
+ * @returns Calculated totals with VAT breakdown
+ */
 export const calculateSchodyTotals = (data: SchodyData): QuoteTotals => {
   const cacheKey = createCacheKey('schody:', data);
   const cached = getCached<QuoteTotals>(cacheKey);
@@ -165,6 +275,16 @@ export const calculateSchodyTotals = (data: SchodyData): QuoteTotals => {
   return result;
 };
 
+/**
+ * Calculates price totals for a Puzdra (frames) quote.
+ *
+ * Puzdra has a simpler structure - just items with optional prices.
+ * No discounts, hardware, or assembly sections.
+ * Results are cached for 5 seconds.
+ *
+ * @param data - Complete Puzdra quote data
+ * @returns Simplified totals (cenaBezDPH, dph, cenaSDPH)
+ */
 export const calculatePuzdraTotals = (data: PuzdraData): PuzdraTotals => {
   const cacheKey = createCacheKey('puzdra:', data);
   const cached = getCached<PuzdraTotals>(cacheKey);
@@ -186,7 +306,26 @@ export const calculatePuzdraTotals = (data: PuzdraData): PuzdraTotals => {
   return result;
 };
 
-// Hook-friendly memoized calculation
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+/**
+ * Hook-friendly wrapper for memoized calculations.
+ *
+ * Use this in React components when you need to calculate totals
+ * based on changing dependencies. The result is cached based on deps.
+ *
+ * @param calculateFn - Function that performs the calculation
+ * @param deps - Dependencies array (like useMemo deps)
+ * @returns Cached or freshly calculated result
+ *
+ * @example
+ * const totals = useMemoizedCalculation(
+ *   () => calculateDvereTotals(quoteData),
+ *   [quoteData]
+ * );
+ */
 export const useMemoizedCalculation = <T extends QuoteTotals | PuzdraTotals>(
   calculateFn: () => T,
   deps: unknown[]
@@ -200,7 +339,14 @@ export const useMemoizedCalculation = <T extends QuoteTotals | PuzdraTotals>(
   return result;
 };
 
-// Clear cache (useful for testing or forced recalculation)
+/**
+ * Clears the entire calculation cache.
+ *
+ * Useful for:
+ * - Testing (reset state between tests)
+ * - Forcing recalculation after data schema changes
+ * - Memory management in long-running sessions
+ */
 export const clearCalculationCache = (): void => {
   calculationCache.clear();
 };

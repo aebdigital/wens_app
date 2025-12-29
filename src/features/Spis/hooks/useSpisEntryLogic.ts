@@ -1,3 +1,13 @@
+/**
+ * useSpisEntryLogic Hook
+ *
+ * Central state management hook for the SpisEntryModal component.
+ * Handles all form state, tab navigation, photo uploads, contact management,
+ * quote calculations, and save operations for project files (Spis entries).
+ *
+ * @module useSpisEntryLogic
+ */
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useContacts, Contact } from '../../../contexts/ContactsContext';
@@ -6,7 +16,15 @@ import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, ca
 import { ContactChange, ContactAction, SectionActions, detectContactChanges } from '../components/ContactChangesModal';
 import { supabase } from '../../../lib/supabase';
 
-// Helper to compare relevant contact fields
+/**
+ * Compares contact fields between existing contact and form data.
+ * Used to detect if user has modified contact information.
+ *
+ * @param existing - The existing contact from the database
+ * @param formData - Current form data
+ * @param type - Contact type: 'zakaznik' (customer), 'architekt', or 'realizator' (executor)
+ * @returns true if any field has changed
+ */
 const hasContactChanged = (existing: Contact, formData: SpisFormData, type: 'zakaznik' | 'architekt' | 'realizator'): boolean => {
   if (type === 'zakaznik') {
     return (
@@ -50,6 +68,38 @@ const hasContactChanged = (existing: Contact, formData: SpisFormData, type: 'zak
   }
 };
 
+/**
+ * Main hook for managing Spis entry form state and logic.
+ *
+ * This hook centralizes all the complex state management needed for the
+ * SpisEntryModal, including:
+ * - Form data for all 8 tabs (Všeobecné, Cenové Ponuky, Objednávky, etc.)
+ * - Tab navigation and active tab state
+ * - Photo upload handling with compression
+ * - Contact change detection and fork management
+ * - Quote calculations with caching
+ * - Modal states for templates, orders, and contact changes
+ * - Save operations with change detection
+ *
+ * @param initialEntry - Existing entry to edit, or null for new entry
+ * @param entries - All current entries (used for quote number generation)
+ * @param isOpen - Whether the modal is currently open
+ * @param setFirmaOptions - Function to update company dropdown options
+ * @param firmaOptions - Current list of company options
+ * @param onSave - Callback when entry is saved
+ *
+ * @returns Object containing all state values and handler functions
+ *
+ * @example
+ * const {
+ *   formData,
+ *   setFormData,
+ *   activeTab,
+ *   setActiveTab,
+ *   handleSave,
+ *   hasChanges
+ * } = useSpisEntryLogic(entry, entries, isOpen, setFirmaOptions, firmaOptions, onSave);
+ */
 export const useSpisEntryLogic = (
   initialEntry: SpisEntry | null,
   entries: SpisEntry[],
