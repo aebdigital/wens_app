@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ProductsProvider } from './contexts/ProductsContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { DocumentLockProvider } from './contexts/DocumentLockContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import AuthWrapper from './components/AuthWrapper';
 import Spis from './components/Spis';
 import Objednavky from './components/Objednavky';
@@ -86,13 +87,15 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

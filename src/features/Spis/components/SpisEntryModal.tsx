@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
-// Force update for deployment
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useDocumentLock } from '../../../contexts/DocumentLockContext';
 import { SpisEntry, CenovaPonukaItem } from '../types';
@@ -8,6 +7,7 @@ import { VseobecneForm } from './VseobecneForm';
 import { generatePDF } from '../utils/pdfGenerator';
 import { useSpisEntryLogic } from '../hooks/useSpisEntryLogic';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
+import { TabErrorBoundary } from '../../../components/common/ErrorBoundary';
 
 // Lazy load heavy tab components for better performance
 const CenovePonukyTab = lazy(() => import('./CenovePonukyTab').then(m => ({ default: m.CenovePonukyTab })));
@@ -608,6 +608,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   )}
 
                   {activeTab === 'cenove-ponuky' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <CenovePonukyTab
                         items={formData.cenovePonukyItems}
@@ -643,9 +644,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         onSave={performSave}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
 
                   {activeTab === 'objednavky' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <ObjednavkyTab
                         items={formData.objednavkyItems}
@@ -666,9 +669,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         }}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
 
                   {activeTab === 'meranie-dokumenty' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <MeranieTab
                         isDark={isDark}
@@ -678,9 +683,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         user={user}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
 
                   {activeTab === 'fotky' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <FotkyTab
                         uploadedPhotos={uploadedPhotos}
@@ -688,9 +695,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         isLocked={isEffectivelyLocked}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
 
                   {activeTab === 'vyrobne-vykresy' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <VyrobneVykresyTab
                         isDark={isDark}
@@ -700,9 +709,11 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         user={user}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
 
                   {activeTab === 'technicke-vykresy' && (
+                    <TabErrorBoundary>
                     <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
                       <TechnickeVykresyTab
                         isDark={isDark}
@@ -712,6 +723,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         user={user}
                       />
                     </Suspense>
+                    </TabErrorBoundary>
                   )}
                 </div>
 
