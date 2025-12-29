@@ -15,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<boolean>;
+  clearSession: () => void;
   isLoading: boolean;
 }
 
@@ -49,20 +50,53 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
   return Promise.race([promise, timeout]);
 };
 
+// Clear all Supabase-related localStorage keys
+const clearSupabaseStorage = () => {
+  try {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (e) {
+    console.error('Failed to clear localStorage:', e);
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isInitialized = useRef(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Safety function to clear session and localStorage
+  const clearSession = () => {
+    console.log('Clearing session and localStorage...');
+    setUser(null);
+    setIsLoading(false);
+    clearSupabaseStorage();
+    supabase.auth.signOut().catch(() => {});
+  };
 
   useEffect(() => {
     // Prevent double initialization
     if (isInitialized.current) return;
     isInitialized.current = true;
 
+    // Safety timeout - if loading takes more than 8 seconds, force show login
+    // This catches any edge case where the flow gets stuck
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.warn('Auth loading timeout - forcing login screen');
+      setUser(null);
+      setIsLoading(false);
+      // Clear potentially corrupted localStorage
+      clearSupabaseStorage();
+    }, 8000);
+
     // Check for existing Supabase Auth session
     const checkSession = async () => {
       try {
-        // Add timeout to prevent hanging - but give enough time for slow connections
+        // Add timeout to prevent hanging
         const { data: { session } } = await withTimeout(
           supabase.auth.getSession(),
           5000
@@ -76,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // If token is expired, clear session and show login
           if (expiresAt && expiresAt < now) {
             console.log('Session expired, clearing...');
-            // Don't await signOut - just clear state immediately
+            clearSupabaseStorage();
             supabase.auth.signOut().catch(() => {});
             setIsLoading(false);
             return;
@@ -87,7 +121,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             try {
               await withTimeout(supabase.auth.refreshSession(), 3000);
             } catch (refreshError) {
-              console.warn('Token refresh failed, signing out');
+              console.warn('Token refresh failed, clearing session');
+              clearSupabaseStorage();
               supabase.auth.signOut().catch(() => {});
               setIsLoading(false);
               return;
@@ -108,19 +143,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!error && profile) {
             setUser(dbUserToUser(profile as DbUser));
           } else {
-            // Profile fetch failed - sign out (don't await)
+            // Profile fetch failed - clear everything
             console.error('Profile fetch failed:', error);
+            clearSupabaseStorage();
             supabase.auth.signOut().catch(() => {});
           }
         }
       } catch (error) {
         console.error('Failed to check session:', error);
-        // On timeout or error, clear any stale state and let user re-login
-        // Don't await signOut - just fire and forget
+        // On timeout or error, clear any stale state and localStorage
+        clearSupabaseStorage();
         supabase.auth.signOut().catch(() => {});
         setUser(null);
+      } finally {
+        // Always clear the safety timeout and set loading to false
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSession();
@@ -202,6 +244,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -250,7 +295,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear user immediately for instant UI response
     setUser(null);
 
-    // Then sign out from Supabase (don't wait, don't set loading)
+    // Clear localStorage and sign out
+    clearSupabaseStorage();
     try {
       await supabase.auth.signOut();
     } catch (error) {
@@ -281,6 +327,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     changePassword,
+    clearSession,
     isLoading
   };
 
