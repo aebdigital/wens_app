@@ -105,8 +105,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Auth state change:', event, session?.user?.id);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        await fetchAndSetProfile(session.user.id);
-        setIsLoading(false);
+        try {
+          await fetchAndSetProfile(session.user.id);
+        } finally {
+          setIsLoading(false);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsLoading(false);
