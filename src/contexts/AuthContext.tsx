@@ -124,12 +124,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (event === 'INITIAL_SESSION') {
         // Initial session check completed
         if (session?.user) {
-          // If we have a session, fetch profile (if not already done by SIGNED_IN)
-          if (!user) {
-             await fetchAndSetProfile(session.user.id);
-          }
+          // If we have a session, fetch profile (even if user state might already be set by SIGNED_IN, ensure it's fresh)
+          await fetchAndSetProfile(session.user.id);
         }
-        // Always stop loading after initial check
+        // Always stop loading after initial check, regardless of session presence
         setIsLoading(false);
       }
     });
