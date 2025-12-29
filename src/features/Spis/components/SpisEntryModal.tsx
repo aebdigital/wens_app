@@ -272,20 +272,38 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         const data = selectedItem.data;
         const cenaSDPH = selectedItem.cenaSDPH || 0;
 
-        // Helper function to round to nearest 10
-        const roundTo10 = (value: number) => Math.round(value / 10) * 10;
+        // Helper function to round UP to nearest 10 (matches QuoteFooter display)
+        const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
 
-        // Use manual override amounts if set, otherwise calculate from percentages and round
-        const platba1 = data.platba1Amount != null
-          ? data.platba1Amount
-          : roundTo10(cenaSDPH * (data.platba1Percent || 60) / 100);
-        const platba2 = data.platba2Amount != null
-          ? data.platba2Amount
-          : roundTo10(cenaSDPH * (data.platba2Percent || 30) / 100);
-        // Third payment is the remainder to ensure total matches
-        const platba3 = data.platba3Amount != null
-          ? data.platba3Amount
-          : cenaSDPH - platba1 - platba2;
+        // Check if using default 60/30/10 split
+        const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+        const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+
+        // Use saved amounts if available, otherwise calculate with rounding
+        let platba1, platba2, platba3;
+        if (data.platba1Amount != null) {
+          platba1 = data.platba1Amount;
+        } else if (isDefaultSplit && hasNoManualAmounts) {
+          platba1 = roundUpToTen(cenaSDPH * 0.60);
+        } else {
+          platba1 = cenaSDPH * (data.platba1Percent || 60) / 100;
+        }
+
+        if (data.platba2Amount != null) {
+          platba2 = data.platba2Amount;
+        } else if (isDefaultSplit && hasNoManualAmounts) {
+          platba2 = roundUpToTen(cenaSDPH * 0.30);
+        } else {
+          platba2 = cenaSDPH * (data.platba2Percent || 30) / 100;
+        }
+
+        if (data.platba3Amount != null) {
+          platba3 = data.platba3Amount;
+        } else if (isDefaultSplit && hasNoManualAmounts) {
+          platba3 = cenaSDPH - platba1 - platba2; // Remainder
+        } else {
+          platba3 = cenaSDPH * (data.platba3Percent || 10) / 100;
+        }
 
         financeUpdates = {
           cena: cenaSDPH.toFixed(2),

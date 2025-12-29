@@ -689,6 +689,28 @@ export const useSpisEntryLogic = (
     // Preserve the selected state from the existing item
     const isSelected = existingItem?.selected || false;
 
+    // Helper to round up to nearest 10 (matches QuoteFooter display logic)
+    const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
+
+    // Calculate the actual displayed payment amounts and save them to data
+    // This ensures PDF and Finance use the same values shown in the modal
+    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+    const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+
+    // If using default 60/30/10 split without manual overrides, save the rounded amounts
+    let dataToSave = data;
+    if (isDefaultSplit && hasNoManualAmounts && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
+      const amount1 = roundUpToTen(cenaSDPH * 0.60);
+      const amount2 = roundUpToTen(cenaSDPH * 0.30);
+      const amount3 = cenaSDPH - amount1 - amount2; // Remainder
+      dataToSave = {
+        ...data,
+        platba1Amount: amount1,
+        platba2Amount: amount2,
+        platba3Amount: amount3
+      };
+    }
+
     const entryData: CenovaPonukaItem = {
       id: newId,
       cisloCP: newCisloCP,
@@ -705,28 +727,18 @@ export const useSpisEntryLogic = (
       typ: type,
       cenaBezDPH: cenaBezDPH,
       cenaSDPH: cenaSDPH,
-      data: data,
+      data: dataToSave,
       selected: isSelected // Preserve selected state
     };
 
     // Calculate finance updates - only if this quote is selected (Schválená)
-    // Use manual override amounts if available, otherwise calculate and round to 10€
+    // Use the saved amounts from dataToSave (which has the rounded values)
     let financeUpdates = {};
     if (isSelected && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
-        // Helper function to round to nearest 10
-        const roundTo10 = (value: number) => Math.round(value / 10) * 10;
-
-        // Use manual override amounts if set, otherwise calculate from percentages and round
-        const platba1 = data.platba1Amount != null
-          ? data.platba1Amount
-          : roundTo10(cenaSDPH * (data.platba1Percent || 60) / 100);
-        const platba2 = data.platba2Amount != null
-          ? data.platba2Amount
-          : roundTo10(cenaSDPH * (data.platba2Percent || 30) / 100);
-        // Third payment is the remainder to ensure total matches
-        const platba3 = data.platba3Amount != null
-          ? data.platba3Amount
-          : cenaSDPH - platba1 - platba2;
+        // Use the saved amounts directly - they're already rounded in dataToSave
+        const platba1 = dataToSave.platba1Amount ?? 0;
+        const platba2 = dataToSave.platba2Amount ?? 0;
+        const platba3 = dataToSave.platba3Amount ?? 0;
 
         financeUpdates = {
           cena: cenaSDPH.toFixed(2),
@@ -753,10 +765,10 @@ export const useSpisEntryLogic = (
     // After first save, switch to edit mode so subsequent saves update instead of creating new
     if (!editingOfferId) {
       setEditingOfferId(newId);
-      setEditingOfferData({ type, data, cisloCP: newCisloCP });
+      setEditingOfferData({ type, data: dataToSave, cisloCP: newCisloCP });
     } else {
       // Update the editingOfferData with latest data
-      setEditingOfferData({ type, data, cisloCP: newCisloCP });
+      setEditingOfferData({ type, data: dataToSave, cisloCP: newCisloCP });
     }
 
     // Wait for state to update and ref to sync, then save to database
