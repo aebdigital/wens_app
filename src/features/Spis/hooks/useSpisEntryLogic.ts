@@ -240,6 +240,11 @@ export const useSpisEntryLogic = (
   }), [user, getNextCP]);
 
   const [formData, setFormData] = useState<SpisFormData>(createDefaultFormData());
+  const formDataRef = useRef<SpisFormData>(formData);
+  // Keep ref in sync with state
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
   const [lastSavedJson, setLastSavedJson] = useState('');
 
   // Reset or load data when modal opens/changes
@@ -613,7 +618,7 @@ export const useSpisEntryLogic = (
     setPendingContactChanges([]);
   }, []);
 
-  const handleAddTemplateSave = (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any) => {
+  const handleAddTemplateSave = async (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any): Promise<void> => {
     // If we are in Objednavky tab (which uses 'puzdra' usually), save to objednavkyItems
     if (activeTab === 'objednavky') {
         // Calculate next order ID
@@ -753,6 +758,11 @@ export const useSpisEntryLogic = (
       // Update the editingOfferData with latest data
       setEditingOfferData({ type, data, cisloCP: newCisloCP });
     }
+
+    // Wait for state to update and ref to sync, then save to database
+    // The 150ms delay ensures React has batched state updates and formDataRef is current
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await performSaveInternal();
   };
 
   const handleAddOrderSave = (data: any) => {
