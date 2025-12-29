@@ -91,15 +91,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Check for existing Supabase Auth session
     const checkSession = async () => {
+      // Create a timeout promise that rejects after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Session check timed out')), 5000);
+      });
+
       try {
+        // Race the session check against the timeout
         // Get session without aggressive timeout - let Supabase handle it
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data, error: sessionError } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise.then(() => { throw new Error('Session check timed out'); })
+        ]) as any;
 
         if (sessionError) {
           console.error('Session check error:', sessionError);
           setIsLoading(false);
           return;
         }
+
+        const session = data?.session; // Handle potentially undefined data structure from race result
 
         if (session?.user) {
           // Check if token is expired
