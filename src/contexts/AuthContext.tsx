@@ -45,6 +45,10 @@ const dbUserToUser = (dbUser: DbUser): User => ({
 // Clear all Supabase-related localStorage keys
 const clearSupabaseStorage = () => {
   try {
+    // Explicitly clear the configured storage key
+    localStorage.removeItem('wens-auth-token');
+    
+    // Clear any generic Supabase keys (legacy or default)
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('sb-')) {
         localStorage.removeItem(key);
@@ -234,6 +238,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    // Safety timeout to prevent infinite loading
+    const loginTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.error('Login timed out');
+        setIsLoading(false);
+      }
+    }, 15000); // 15 seconds max
+
     try {
       setIsLoading(true);
 
@@ -245,6 +257,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email,
         password,
       });
+
+      clearTimeout(loginTimeout);
 
       if (error || !data?.user) {
         console.error('Login error:', error);
