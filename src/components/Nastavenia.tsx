@@ -109,6 +109,13 @@ const Nastavenia = () => {
           };
         });
 
+        // Sort so current user (superadmin) appears first
+        usersWithPermissions.sort((a, b) => {
+          if (a.id === user?.id) return -1;
+          if (b.id === user?.id) return 1;
+          return a.email.localeCompare(b.email);
+        });
+
         setAllUsers(usersWithPermissions);
       } catch (error) {
         console.error('Failed to load users with permissions:', error);
@@ -371,7 +378,7 @@ const Nastavenia = () => {
             ) : (
               <div className="space-y-2">
                 {allUsers.map((u) => {
-                  const isSelf = u.email === 'richter@wens.sk';
+                  const isSelf = u.id === user?.id;
                   return (
                     <div
                       key={u.id}

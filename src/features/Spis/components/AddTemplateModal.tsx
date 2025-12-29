@@ -92,6 +92,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         { id: 1, type: 'dvere', value: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne' },
         { id: 2, type: 'zarubna', value: 'obložková, spoj „T", dyha dub bielený' }
       ],
+      productPhotos: [],
       showCustomerInfo: true,
       showArchitectInfo: false,
       vyrobky: Array(1).fill(null).map((_, i) => ({

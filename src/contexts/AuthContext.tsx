@@ -109,9 +109,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isInitialized.current) return;
     isInitialized.current = true;
 
+    // Safety timeout - if auth doesn't respond within 5 seconds, stop loading
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Auth initialization timed out, showing login screen');
+      setIsLoading(false);
+    }, 5000);
+
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log('Auth state change:', event, session?.user?.id);
+      clearTimeout(safetyTimeout);
 
       if (event === 'SIGNED_IN' && session?.user) {
         try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { CustomDatePicker } from './common/CustomDatePicker';
@@ -15,12 +15,114 @@ interface VacationEntry {
   createdAt: string;
 }
 
+// Slovak day names
+const DAY_NAMES = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'];
+const MONTH_NAMES = [
+  'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
+  'Júl', 'August', 'September', 'Október', 'November', 'December'
+];
+
+// Convert HSL to RGB
+const hslToRgb = (h: number, s: number, l: number): { r: number; g: number; b: number } => {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return {
+    r: Math.round(255 * f(0)),
+    g: Math.round(255 * f(8)),
+    b: Math.round(255 * f(4))
+  };
+};
+
+// Calculate relative luminance for contrast calculation
+const getRelativeLuminance = (r: number, g: number, b: number): number => {
+  const [rs, gs, bs] = [r, g, b].map(c => {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+};
+
+// Generate a consistent color from a string (name) using hash
+const stringToColor = (str: string): { bg: string; text: string } => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Generate hue from hash (0-360)
+  const hue = Math.abs(hash % 360);
+  // Fixed saturation and lightness for good visibility
+  const saturation = 65 + (Math.abs(hash >> 8) % 20); // 65-85%
+  const lightness = 45 + (Math.abs(hash >> 16) % 10); // 45-55%
+
+  // Calculate actual luminance to determine text color
+  const rgb = hslToRgb(hue, saturation, lightness);
+  const luminance = getRelativeLuminance(rgb.r, rgb.g, rgb.b);
+
+  // Use white text for dark backgrounds, black for light backgrounds
+  // Threshold of 0.179 is based on WCAG contrast ratio guidelines
+  const textColor = luminance > 0.179 ? '#000000' : '#ffffff';
+
+  return {
+    bg: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+    text: textColor
+  };
+};
+
+// Check if a date is within a vacation period
+const isDateInVacation = (date: Date, vacation: VacationEntry): boolean => {
+  const start = new Date(vacation.startDate);
+  const end = new Date(vacation.endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+  const checkDate = new Date(date);
+  checkDate.setHours(12, 0, 0, 0);
+  return checkDate >= start && checkDate <= end;
+};
+
+// Get all days in a month with proper padding for week alignment
+const getMonthDays = (year: number, month: number) => {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const days: (Date | null)[] = [];
+
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  // We want Monday = 0, so adjust
+  let startDay = firstDay.getDay() - 1;
+  if (startDay < 0) startDay = 6;
+
+  // Add empty slots for days before the first of the month
+  for (let i = 0; i < startDay; i++) {
+    days.push(null);
+  }
+
+  // Add all days of the month
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    days.push(new Date(year, month, day));
+  }
+
+  // Add empty slots to complete the last week
+  while (days.length % 7 !== 0) {
+    days.push(null);
+  }
+
+  return days;
+};
+
 const Dovolenky: React.FC = () => {
   const { isDark } = useTheme();
   const { user } = useAuth();
 
   const [vacations, setVacations] = useState<VacationEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Calendar state
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
 
   // New Vacation Form State
   const [newVacation, setNewVacation] = useState({
@@ -29,6 +131,18 @@ const Dovolenky: React.FC = () => {
     endDate: '',
     note: ''
   });
+
+  // Get days for current month
+  const monthDays = useMemo(() => getMonthDays(currentYear, currentMonth), [currentYear, currentMonth]);
+
+  // Navigate months
+  const goToPreviousMonth = () => {
+    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+  };
 
   // Load vacations from Supabase
   const loadVacations = useCallback(async () => {
@@ -221,6 +335,111 @@ const Dovolenky: React.FC = () => {
                         placeholder="Voliteľná poznámka..."
                     />
                 </div>
+            </div>
+
+            {/* Calendar View */}
+            <div className={`rounded-lg shadow-sm overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
+              {/* Calendar Header - Red with white text */}
+              <div className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={goToPreviousMonth}
+                    className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <h2 className="text-xl font-semibold text-white">
+                    {MONTH_NAMES[currentMonth]} {currentYear}
+                  </h2>
+                  <button
+                    onClick={goToNextMonth}
+                    className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Headers - Black and bold */}
+              <div className="grid grid-cols-7 gap-1 px-4 pt-4 pb-2">
+                {DAY_NAMES.map((day, index) => (
+                  <div
+                    key={day}
+                    className={`text-center py-2 text-sm font-bold ${
+                      index >= 5
+                        ? isDark ? 'text-red-400' : 'text-red-600'
+                        : isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1 p-4">
+                {monthDays.map((day, index) => {
+                  if (!day) {
+                    return <div key={`empty-${index}`} className="min-h-[80px]" />;
+                  }
+
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+                  // Find vacations for this day
+                  const dayVacations = vacations.filter(v => isDateInVacation(day, v));
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`min-h-[80px] p-1 rounded-lg border transition-colors ${
+                        isToday
+                          ? 'border-[#e11b28] border-2'
+                          : isDark
+                            ? 'border-dark-600 hover:border-dark-500'
+                            : 'border-gray-200 hover:border-gray-300'
+                      } ${isDark ? 'bg-dark-700' : 'bg-gray-50'}`}
+                    >
+                      {/* Day Number */}
+                      <div className={`text-xs font-medium mb-1 ${
+                        isToday
+                          ? 'text-[#e11b28]'
+                          : isWeekend
+                            ? isDark ? 'text-red-400' : 'text-red-500'
+                            : isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        {day.getDate()}
+                      </div>
+
+                      {/* Vacation Bars */}
+                      <div className="space-y-0.5">
+                        {dayVacations.slice(0, 3).map((vac) => {
+                          const color = stringToColor(vac.name);
+                          return (
+                            <div
+                              key={vac.id}
+                              style={{ backgroundColor: color.bg, color: color.text }}
+                              className="text-[9px] px-1 py-0.5 rounded truncate"
+                              title={`${vac.name}${vac.note ? `: ${vac.note}` : ''}`}
+                            >
+                              {vac.name}
+                            </div>
+                          );
+                        })}
+                        {dayVacations.length > 3 && (
+                          <div className={`text-[9px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            +{dayVacations.length - 3} ďalší
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Vacations Table */}

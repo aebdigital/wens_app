@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { CustomDatePicker } from './CustomDatePicker';
 
 export interface Column<T> {
   key: keyof T | string;
@@ -205,24 +206,20 @@ export const SortableTable = <T extends { [key: string]: any }>({
                             </svg>
                           </button>
                         </div>
-                        <input
-                          type="date"
+                        <CustomDatePicker
                           value={dateFilter?.from || ''}
-                          onChange={(e) => handleDateRangeFilter(colKey, 'from', e.target.value)}
-                          style={{
-                            boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030'
-                          }}
-                          className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white date-input-white"
+                          onChange={(val) => handleDateRangeFilter(colKey, 'from', val)}
+                          placeholder="Od..."
+                          compact
+                          className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white placeholder-white/60"
                         />
                         <span className="text-white/80 text-[10px]">Do dátumu:</span>
-                        <input
-                          type="date"
+                        <CustomDatePicker
                           value={dateFilter?.to || ''}
-                          onChange={(e) => handleDateRangeFilter(colKey, 'to', e.target.value)}
-                          style={{
-                            boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030'
-                          }}
-                          className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white date-input-white"
+                          onChange={(val) => handleDateRangeFilter(colKey, 'to', val)}
+                          placeholder="Do..."
+                          compact
+                          className="w-full text-xs px-2 py-1 border border-white/30 rounded focus:outline-none focus:ring-2 focus:ring-white/50 transition-all bg-white/20 text-white placeholder-white/60"
                         />
                       </div>
                     ) : (
