@@ -702,16 +702,42 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Totals & Payment Plan Tables (neutral, no header)
     const cenaSDPH = item.cenaSDPH;
-    // Use saved amounts if available, otherwise calculate from percentages
-    const platba1Amount = data.platba1Amount != null
-      ? data.platba1Amount.toFixed(2)
-      : (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
-    const platba2Amount = data.platba2Amount != null
-      ? data.platba2Amount.toFixed(2)
-      : (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
-    const platba3Amount = data.platba3Amount != null
-      ? data.platba3Amount.toFixed(2)
-      : (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+
+    // Helper to round UP to nearest 10 (matches QuoteFooter display)
+    const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
+
+    // Check if using default 60/30/10 split
+    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+    const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+
+    // Use saved amounts if available, otherwise calculate with rounding for default split
+    let platba1Amount: string, platba2Amount: string, platba3Amount: string;
+    if (data.platba1Amount != null) {
+      platba1Amount = data.platba1Amount.toFixed(2);
+    } else if (isDefaultSplit && hasNoManualAmounts) {
+      platba1Amount = roundUpToTen(cenaSDPH * 0.60).toFixed(2);
+    } else {
+      platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+    }
+
+    if (data.platba2Amount != null) {
+      platba2Amount = data.platba2Amount.toFixed(2);
+    } else if (isDefaultSplit && hasNoManualAmounts) {
+      platba2Amount = roundUpToTen(cenaSDPH * 0.30).toFixed(2);
+    } else {
+      platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+    }
+
+    if (data.platba3Amount != null) {
+      platba3Amount = data.platba3Amount.toFixed(2);
+    } else if (isDefaultSplit && hasNoManualAmounts) {
+      // Remainder after rounding
+      const p1 = roundUpToTen(cenaSDPH * 0.60);
+      const p2 = roundUpToTen(cenaSDPH * 0.30);
+      platba3Amount = (cenaSDPH - p1 - p2).toFixed(2);
+    } else {
+      platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+    }
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
     const tableWidth = 73;
@@ -1091,16 +1117,42 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
         ? data.manualCenaSDPH
         : cenaBezDPH * 1.23;
-    // Use saved amounts if available, otherwise calculate from percentages
-    const platba1Amount = data.platba1Amount != null
-      ? data.platba1Amount.toFixed(2)
-      : (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
-    const platba2Amount = data.platba2Amount != null
-      ? data.platba2Amount.toFixed(2)
-      : (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
-    const platba3Amount = data.platba3Amount != null
-      ? data.platba3Amount.toFixed(2)
-      : (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+
+    // Helper to round UP to nearest 10 (matches QuoteFooter display)
+    const roundUpToTen2 = (value: number) => Math.ceil(value / 10) * 10;
+
+    // Check if using default 60/30/10 split
+    const isDefaultSplit2 = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+    const hasNoManualAmounts2 = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+
+    // Use saved amounts if available, otherwise calculate with rounding for default split
+    let platba1Amount: string, platba2Amount: string, platba3Amount: string;
+    if (data.platba1Amount != null) {
+      platba1Amount = data.platba1Amount.toFixed(2);
+    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+      platba1Amount = roundUpToTen2(cenaSDPH * 0.60).toFixed(2);
+    } else {
+      platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+    }
+
+    if (data.platba2Amount != null) {
+      platba2Amount = data.platba2Amount.toFixed(2);
+    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+      platba2Amount = roundUpToTen2(cenaSDPH * 0.30).toFixed(2);
+    } else {
+      platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+    }
+
+    if (data.platba3Amount != null) {
+      platba3Amount = data.platba3Amount.toFixed(2);
+    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+      // Remainder after rounding
+      const p1 = roundUpToTen2(cenaSDPH * 0.60);
+      const p2 = roundUpToTen2(cenaSDPH * 0.30);
+      platba3Amount = (cenaSDPH - p1 - p2).toFixed(2);
+    } else {
+      platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+    }
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
     const tableWidth = 73;
