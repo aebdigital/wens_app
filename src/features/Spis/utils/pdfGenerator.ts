@@ -390,12 +390,14 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Render product photos on the right side of specifications
+    // Note: Photos are already cropped to square at upload time in DvereForm
     let photosEndY = specsStartY;
     if (hasPhotos) {
         const photoStartX = leftMargin + specSectionWidth + 5; // Start after specs + gap
-        const photoWidth = 28; // Width of each photo in mm
-        const photoHeight = 28; // Height of each photo in mm
-        const photoGap = 4; // Gap between photos
+        const photoSize = 28; // Size of square photo in mm
+        const photoGapX = 4; // Gap between photos horizontally
+        const photoGapY = 2; // Reduced gap between rows
+        const descHeight = 6; // Space for description
         const photosPerRow = 2;
 
         let currentPhotoY = specsStartY;
@@ -406,28 +408,28 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
             const rowIndex = Math.floor(i / photosPerRow);
 
             // Calculate position
-            const photoX = photoStartX + colIndex * (photoWidth + photoGap);
-            const photoY = specsStartY + rowIndex * (photoHeight + 10 + photoGap); // 10mm for description
+            const photoX = photoStartX + colIndex * (photoSize + photoGapX);
+            const photoY = specsStartY + rowIndex * (photoSize + descHeight + photoGapY);
 
             try {
-                // Add the image
-                doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
+                // Add the image (already cropped to square at upload)
+                doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoSize, photoSize);
 
                 // Add border around photo
                 doc.setDrawColor(200);
-                doc.rect(photoX, photoY, photoWidth, photoHeight);
+                doc.rect(photoX, photoY, photoSize, photoSize);
 
                 // Add description below photo if exists
                 if (photo.description) {
                     doc.setFontSize(6);
                     doc.setTextColor(0);
                     doc.setFont(fontName, 'normal');
-                    const descLines = doc.splitTextToSize(photo.description, photoWidth);
-                    doc.text(descLines, photoX, photoY + photoHeight + 3);
+                    const descLines = doc.splitTextToSize(photo.description, photoSize);
+                    doc.text(descLines, photoX, photoY + photoSize + 2);
                 }
 
                 // Track the bottom position
-                currentPhotoY = photoY + photoHeight + (photo.description ? 10 : 5);
+                currentPhotoY = photoY + photoSize + descHeight;
             } catch (e) {
                 console.warn('Failed to add product photo to PDF:', e);
             }

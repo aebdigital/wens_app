@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Session, AuthTokenResponsePassword } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase, DbUser } from '../lib/supabase';
 
 interface User {
@@ -41,14 +41,6 @@ const dbUserToUser = (dbUser: DbUser): User => ({
   lastName: dbUser.last_name,
   createdAt: dbUser.created_at,
 });
-
-// Helper to add timeout to promises
-const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('Timeout')), ms)
-  );
-  return Promise.race([promise, timeout]);
-};
 
 // Clear all Supabase-related localStorage keys
 const clearSupabaseStorage = () => {
@@ -96,22 +88,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for existing Supabase Auth session
     const checkSession = async () => {
       try {
-        // Add timeout to prevent hanging
-        const { data: { session } } = await withTimeout(
-          supabase.auth.getSession(),
-          5000
-        );
+        // Get session without aggressive timeout - let Supabase handle it
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Session check error:', sessionError);
+          setIsLoading(false);
+          return;
+        }
 
         if (session?.user) {
-          // Check if token is expired or expiring soon
+          // Check if token is expired
           const expiresAt = session.expires_at;
           const now = Math.floor(Date.now() / 1000);
 
-          // If token is expired, clear session and show login
+          // If token is expired, just show login - don't aggressively clear
           if (expiresAt && expiresAt < now) {
-            console.log('Session expired, clearing...');
-            clearSupabaseStorage();
-            supabase.auth.signOut().catch(() => {});
+            console.log('Session expired, showing login...');
             setIsLoading(false);
             return;
           }
@@ -119,41 +112,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Try to refresh if expiring within 5 minutes
           if (expiresAt && expiresAt - now < 300) {
             try {
-              await withTimeout(supabase.auth.refreshSession(), 3000);
+              await supabase.auth.refreshSession();
             } catch (refreshError) {
-              console.warn('Token refresh failed, clearing session');
-              clearSupabaseStorage();
-              supabase.auth.signOut().catch(() => {});
+              console.warn('Token refresh failed, showing login');
               setIsLoading(false);
               return;
             }
           }
 
           // Fetch user profile from users table
-          const fetchProfile = async () => {
-            return supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-          };
-
-          const { data: profile, error } = await withTimeout(fetchProfile(), 3000);
+          const { data: profile, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
 
           if (!error && profile) {
             setUser(dbUserToUser(profile as DbUser));
           } else {
-            // Profile fetch failed - clear everything
+            // Profile fetch failed - just log, don't destroy session
             console.error('Profile fetch failed:', error);
-            clearSupabaseStorage();
-            supabase.auth.signOut().catch(() => {});
           }
         }
       } catch (error) {
         console.error('Failed to check session:', error);
-        // On timeout or error, clear any stale state and localStorage
-        clearSupabaseStorage();
-        supabase.auth.signOut().catch(() => {});
+        // On error, just show login - don't aggressively clear localStorage
         setUser(null);
       } finally {
         // Always clear the safety timeout and set loading to false
@@ -254,27 +237,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
 
-      // Clear any potentially corrupted localStorage before login attempt
-      clearSupabaseStorage();
+      // Don't clear localStorage before login - let Supabase handle the session
+      // Only clear on actual failures
 
-      // Add timeout to login to prevent hanging
-      let loginResult: AuthTokenResponsePassword;
-      try {
-        loginResult = await withTimeout(
-          supabase.auth.signInWithPassword({
-            email,
-            password,
-          }),
-          10000 // 10 second timeout for login
-        ) as AuthTokenResponsePassword;
-      } catch (timeoutError) {
-        console.error('Login timed out');
-        setIsLoading(false);
-        return false;
-      }
+      // Login with Supabase - no timeout wrapper, let it complete naturally
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (loginResult.error || !loginResult.data?.user) {
-        console.error('Login error:', loginResult.error);
+      if (error || !data?.user) {
+        console.error('Login error:', error);
         setIsLoading(false);
         return false;
       }
@@ -282,17 +255,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user profile directly instead of relying on onAuthStateChange
       // This ensures we always get the profile after successful login
       try {
-        const fetchProfile = async () => {
-          return supabase
-            .from('users')
-            .select('*')
-            .eq('id', loginResult.data!.user!.id)
-            .single();
-        };
-        const { data: profile, error: profileError } = await withTimeout(
-          fetchProfile(),
-          5000 // 5 second timeout for profile fetch
-        );
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
 
         if (!profileError && profile) {
           setUser(dbUserToUser(profile as DbUser));
@@ -302,8 +269,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // The user will be set when onAuthStateChange fires
         }
       } catch (profileFetchError) {
-        console.error('Profile fetch error (timeout?):', profileFetchError);
-        // Don't fail the login if just the profile fetch timed out
+        console.error('Profile fetch error:', profileFetchError);
+        // Don't fail the login if just the profile fetch failed
       }
 
       setIsLoading(false);
@@ -311,8 +278,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
-      // If login failed unexpectedly, clear any partial state
-      clearSupabaseStorage();
       return false;
     }
   };

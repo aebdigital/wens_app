@@ -199,13 +199,41 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
-        const newPhoto: ProductPhoto = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          base64,
-          description: ''
+
+        // Create an image to get dimensions and crop to centered square
+        const img = new Image();
+        img.onload = () => {
+          // Calculate crop dimensions for centered square
+          const srcSize = Math.min(img.naturalWidth, img.naturalHeight);
+          const srcX = (img.naturalWidth - srcSize) / 2;
+          const srcY = (img.naturalHeight - srcSize) / 2;
+
+          // Create canvas to crop the image
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          // Target size for stored image (good quality but not too large)
+          const targetSize = 800;
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+
+          if (ctx) {
+            // Draw the centered square portion of the image
+            ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, targetSize, targetSize);
+
+            // Get the cropped square image as base64
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+            const newPhoto: ProductPhoto = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              base64: croppedBase64,
+              description: ''
+            };
+            const currentPhotos = data.productPhotos || [];
+            onChange({ ...data, productPhotos: [...currentPhotos, newPhoto] });
+          }
         };
-        const currentPhotos = data.productPhotos || [];
-        onChange({ ...data, productPhotos: [...currentPhotos, newPhoto] });
+        img.src = base64;
       };
       reader.readAsDataURL(file);
     });
