@@ -109,24 +109,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isInitialized.current) return;
     isInitialized.current = true;
 
-    // Safety timeout - if auth doesn't respond within 5 seconds, stop loading
-    const safetyTimeout = setTimeout(() => {
-      console.warn('Auth initialization timed out, showing login screen');
+    // Safety timeout - if auth doesn't respond within 10 seconds, check session manually
+    const safetyTimeout = setTimeout(async () => {
+      console.warn('Auth initialization timed out, checking session manually...');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          console.log('Found valid session on timeout, restoring user...');
+          await fetchAndSetProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error('Failed to check session on timeout:', error);
+      }
       setIsLoading(false);
-    }, 5000);
+    }, 10000);
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log('Auth state change:', event, session?.user?.id);
-      clearTimeout(safetyTimeout);
 
       if (event === 'SIGNED_IN' && session?.user) {
+        clearTimeout(safetyTimeout);
         try {
           await fetchAndSetProfile(session.user.id);
         } finally {
           setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
+        clearTimeout(safetyTimeout);
         setUser(null);
         setIsLoading(false);
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
@@ -141,12 +151,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return currentUser;
         });
       } else if (event === 'INITIAL_SESSION') {
+        clearTimeout(safetyTimeout);
         // Initial session check completed
         if (session?.user) {
-          // If we have a session, fetch profile (even if user state might already be set by SIGNED_IN, ensure it's fresh)
-          await fetchAndSetProfile(session.user.id);
+          // If we have a session, fetch profile and restore user
+          console.log('INITIAL_SESSION with user, restoring session...');
+          try {
+            await fetchAndSetProfile(session.user.id);
+          } catch (error) {
+            console.error('Failed to restore session:', error);
+          }
+        } else {
+          console.log('INITIAL_SESSION without user, no session to restore');
         }
-        // Always stop loading after initial check, regardless of session presence
         setIsLoading(false);
       }
     });
