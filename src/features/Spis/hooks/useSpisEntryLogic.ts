@@ -329,6 +329,9 @@ export const useSpisEntryLogic = (
 
   const performSaveInternal = useCallback(async (contactActions?: { zakaznik?: ContactAction, architekt?: ContactAction, realizator?: ContactAction }) => {
     try {
+      // Use ref to get the latest formData (important for async saves after state updates)
+      const currentFormData = formDataRef.current;
+
       // Map photos to persistent format
       const persistentPhotos = uploadedPhotos.map(p => ({
         id: p.id,
@@ -343,66 +346,66 @@ export const useSpisEntryLogic = (
       const entryData: SpisEntry = {
         id: internalId,
         // Main table display fields
-        stav: formData.stav || 'CP',
-        cisloCP: formData.predmet || getNextCP(),
-        cisloZakazky: formData.cisloZakazky || '',
+        stav: currentFormData.stav || 'CP',
+        cisloCP: currentFormData.predmet || getNextCP(),
+        cisloZakazky: currentFormData.cisloZakazky || '',
         datum: new Date().toLocaleDateString('sk-SK'),
-        kontaktnaOsoba: `${formData.meno} ${formData.priezvisko}`.trim() || '',
-        architekt: `${formData.architektonickyPriezvisko || ''} ${formData.architektonickeMeno || ''}`.trim() || '',
-        realizator: `${formData.realizatorPriezvisko || ''} ${formData.realizatorMeno || ''}`.trim() || '',
-        popis: formData.popisProjektu || '',
-        firma: formData.firma || '',
-        spracovatel: formData.vypracoval || '',
-        kategoria: formData.kategoria || '',
-        terminDodania: formData.terminDokoncenia ? new Date(formData.terminDokoncenia).toLocaleDateString('sk-SK') : '',
+        kontaktnaOsoba: `${currentFormData.meno} ${currentFormData.priezvisko}`.trim() || '',
+        architekt: `${currentFormData.architektonickyPriezvisko || ''} ${currentFormData.architektonickeMeno || ''}`.trim() || '',
+        realizator: `${currentFormData.realizatorPriezvisko || ''} ${currentFormData.realizatorMeno || ''}`.trim() || '',
+        popis: currentFormData.popisProjektu || '',
+        firma: currentFormData.firma || '',
+        spracovatel: currentFormData.vypracoval || '',
+        kategoria: currentFormData.kategoria || '',
+        terminDodania: currentFormData.terminDokoncenia ? new Date(currentFormData.terminDokoncenia).toLocaleDateString('sk-SK') : '',
         color: 'white',
 
         // All form data for later retrieval
         fullFormData: {
-          ...formData,
+          ...currentFormData,
           fotky: persistentPhotos
         }
       };
 
-      const currentCisloCP = formData.predmet || getNextCP();
+      const currentCisloCP = currentFormData.predmet || getNextCP();
 
       // --- Contact Handling Logic (Customer) ---
       const zakaznikAction = contactActions?.zakaznik || 'update';
       if (zakaznikAction !== 'ignore') {
-        let customerContactIdToSave = formData.zakaznikId;
-        if (formData.priezvisko || formData.meno || formData.email || formData.telefon) {
+        let customerContactIdToSave = currentFormData.zakaznikId;
+        if (currentFormData.priezvisko || currentFormData.meno || currentFormData.email || currentFormData.telefon) {
           let existingCustomer = customerContactIdToSave ? getContactById(customerContactIdToSave) : undefined;
 
           // If not found by ID, try finding by name (for cases where ID wasn't stored initially)
-          if (!existingCustomer && formData.meno && formData.priezvisko) {
-              existingCustomer = getContactByNameAndType(formData.priezvisko, formData.meno, 'zakaznik');
+          if (!existingCustomer && currentFormData.meno && currentFormData.priezvisko) {
+              existingCustomer = getContactByNameAndType(currentFormData.priezvisko, currentFormData.meno, 'zakaznik');
               if (existingCustomer) customerContactIdToSave = existingCustomer.id; // Use this ID going forward
           }
 
           const isCustomerDataChanged = initialFormDataRef.current
             ? hasContactChanged(
                 {...existingCustomer!, id: existingCustomer?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact for helper
-                formData,
+                currentFormData,
                 'zakaznik'
               ) : false; // If no initial data, it's considered new or fully changed
 
           const customerData = {
-            meno: formData.meno || '',
-            priezvisko: formData.priezvisko || '',
-            telefon: formData.telefon || '',
-            email: formData.email || '',
-            ulica: formData.ulica || '',
-            mesto: formData.mesto || '',
-            psc: formData.psc || '',
-            ico: formData.ico || '',
-            icDph: formData.icDph || '',
-            dic: formData.dic || '',
+            meno: currentFormData.meno || '',
+            priezvisko: currentFormData.priezvisko || '',
+            telefon: currentFormData.telefon || '',
+            email: currentFormData.email || '',
+            ulica: currentFormData.ulica || '',
+            mesto: currentFormData.mesto || '',
+            psc: currentFormData.psc || '',
+            ico: currentFormData.ico || '',
+            icDph: currentFormData.icDph || '',
+            dic: currentFormData.dic || '',
             typ: 'zakaznik' as const,
-            kontaktnaPriezvisko: formData.kontaktnaPriezvisko || '',
-            kontaktnaMeno: formData.kontaktnaMeno || '',
-            kontaktnaTelefon: formData.kontaktnaTelefon || '',
-            kontaktnaEmail: formData.kontaktnaEmail || '',
-            popis: formData.popisProjektu || '',
+            kontaktnaPriezvisko: currentFormData.kontaktnaPriezvisko || '',
+            kontaktnaMeno: currentFormData.kontaktnaMeno || '',
+            kontaktnaTelefon: currentFormData.kontaktnaTelefon || '',
+            kontaktnaEmail: currentFormData.kontaktnaEmail || '',
+            popis: currentFormData.popisProjektu || '',
             projectIds: [currentCisloCP]
           };
 
@@ -441,34 +444,34 @@ export const useSpisEntryLogic = (
       // --- Contact Handling Logic (Architect) ---
       const architektAction = contactActions?.architekt || 'update';
       if (architektAction !== 'ignore') {
-        let architectContactIdToSave = formData.architektId;
-        if (formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyEmail || formData.architektonickyTelefon) {
+        let architectContactIdToSave = currentFormData.architektId;
+        if (currentFormData.architektonickyPriezvisko || currentFormData.architektonickeMeno || currentFormData.architektonickyEmail || currentFormData.architektonickyTelefon) {
           let existingArchitect = architectContactIdToSave ? getContactById(architectContactIdToSave) : undefined;
 
           // If not found by ID, try finding by name
-          if (!existingArchitect && formData.architektonickeMeno && formData.architektonickyPriezvisko) {
-              existingArchitect = getContactByNameAndType(formData.architektonickyPriezvisko, formData.architektonickeMeno, 'architekt');
+          if (!existingArchitect && currentFormData.architektonickeMeno && currentFormData.architektonickyPriezvisko) {
+              existingArchitect = getContactByNameAndType(currentFormData.architektonickyPriezvisko, currentFormData.architektonickeMeno, 'architekt');
               if (existingArchitect) architectContactIdToSave = existingArchitect.id;
           }
 
           const isArchitectDataChanged = initialFormDataRef.current
             ? hasContactChanged(
                 {...existingArchitect!, id: existingArchitect?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-                formData,
+                currentFormData,
                 'architekt'
               ) : false;
 
           const architectData = {
-            meno: formData.architektonickeMeno || '',
-            priezvisko: formData.architektonickyPriezvisko || '',
-            telefon: formData.architektonickyTelefon || '',
-            email: formData.architektonickyEmail || '',
-            ulica: formData.architektonickyUlica || '',
-            mesto: formData.architektonickyMesto || '',
-            psc: formData.architektonickyPsc || '',
-            ico: formData.architektonickyIco || '',
-            icDph: formData.architektonickyIcDph || '',
-            dic: formData.architektonickyDic || '',
+            meno: currentFormData.architektonickeMeno || '',
+            priezvisko: currentFormData.architektonickyPriezvisko || '',
+            telefon: currentFormData.architektonickyTelefon || '',
+            email: currentFormData.architektonickyEmail || '',
+            ulica: currentFormData.architektonickyUlica || '',
+            mesto: currentFormData.architektonickyMesto || '',
+            psc: currentFormData.architektonickyPsc || '',
+            ico: currentFormData.architektonickyIco || '',
+            icDph: currentFormData.architektonickyIcDph || '',
+            dic: currentFormData.architektonickyDic || '',
             typ: 'architekt' as const,
             projectIds: [currentCisloCP]
           };
@@ -506,34 +509,34 @@ export const useSpisEntryLogic = (
       // --- Contact Handling Logic (Realizator) ---
       const realizatorAction = contactActions?.realizator || 'update';
       if (realizatorAction !== 'ignore') {
-        let realizatorContactIdToSave = formData.realizatorId;
-        if (formData.realizatorPriezvisko || formData.realizatorMeno || formData.realizatorEmail || formData.realizatorTelefon) {
+        let realizatorContactIdToSave = currentFormData.realizatorId;
+        if (currentFormData.realizatorPriezvisko || currentFormData.realizatorMeno || currentFormData.realizatorEmail || currentFormData.realizatorTelefon) {
           let existingRealizator = realizatorContactIdToSave ? getContactById(realizatorContactIdToSave) : undefined;
 
           // If not found by ID, try finding by name
-          if (!existingRealizator && formData.realizatorMeno && formData.realizatorPriezvisko) {
-              existingRealizator = getContactByNameAndType(formData.realizatorPriezvisko, formData.realizatorMeno, 'fakturacna_firma');
+          if (!existingRealizator && currentFormData.realizatorMeno && currentFormData.realizatorPriezvisko) {
+              existingRealizator = getContactByNameAndType(currentFormData.realizatorPriezvisko, currentFormData.realizatorMeno, 'fakturacna_firma');
               if (existingRealizator) realizatorContactIdToSave = existingRealizator.id;
           }
 
           const isRealizatorDataChanged = initialFormDataRef.current
             ? hasContactChanged(
                 {...existingRealizator!, id: existingRealizator?.id || '', projectIds: [], dateAdded: ''}, // Cast to Contact
-                formData,
+                currentFormData,
                 'realizator'
               ) : false;
 
           const realizatorData = {
-            meno: formData.realizatorMeno || '',
-            priezvisko: formData.realizatorPriezvisko || '',
-            telefon: formData.realizatorTelefon || '',
-            email: formData.realizatorEmail || '',
-            ulica: formData.realizatorUlica || '',
-            mesto: formData.realizatorMesto || '',
-            psc: formData.realizatorPsc || '',
-            ico: formData.realizatorIco || '',
-            icDph: formData.realizatorIcDph || '',
-            dic: formData.realizatorDic || '',
+            meno: currentFormData.realizatorMeno || '',
+            priezvisko: currentFormData.realizatorPriezvisko || '',
+            telefon: currentFormData.realizatorTelefon || '',
+            email: currentFormData.realizatorEmail || '',
+            ulica: currentFormData.realizatorUlica || '',
+            mesto: currentFormData.realizatorMesto || '',
+            psc: currentFormData.realizatorPsc || '',
+            ico: currentFormData.realizatorIco || '',
+            icDph: currentFormData.realizatorIcDph || '',
+            dic: currentFormData.realizatorDic || '',
             typ: 'fakturacna_firma' as const,
             projectIds: [currentCisloCP]
           };
@@ -569,18 +572,17 @@ export const useSpisEntryLogic = (
       }
 
       // Update firma options (handled by parent via setFirmaOptions callback)
-      if (formData.firma && !firmaOptions.includes(formData.firma)) {
-        setFirmaOptions([...firmaOptions, formData.firma]);
+      if (currentFormData.firma && !firmaOptions.includes(currentFormData.firma)) {
+        setFirmaOptions([...firmaOptions, currentFormData.firma]);
       }
 
-      setLastSavedJson(JSON.stringify(formData));
+      setLastSavedJson(JSON.stringify(currentFormData));
       onSave(entryData);
     } catch (error: any) {
       console.error('Failed to save entry:', error);
       alert('Nepodarilo sa uložiť záznam: ' + error.message);
     }
   }, [
-    formData,
     uploadedPhotos,
     addContact,
     updateContact,
