@@ -263,7 +263,10 @@ export const useSpisEntryLogic = (
         if (initialEntry.fullFormData.fotky) {
            const loadedPhotos = initialEntry.fullFormData.fotky.map((p: any) => ({
              id: p.id,
-             file: new File([""], p.name, { type: p.type }),
+             // Create a dummy File object with correct metadata but empty content.
+             // This is sufficient because we use the 'url' property for display and 'storagePath' for persistence.
+             // The critical part is preserving name and type so new uploads can be distinguished from existing ones.
+             file: new File([""], p.name, { type: p.type, lastModified: Date.now() }),
              url: p.storagePath ? p.url : p.base64, // Use URL if storagePath exists, otherwise base64
              description: p.description,
              storagePath: p.storagePath
