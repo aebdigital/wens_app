@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 // Force update for deployment
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useDocumentLock } from '../../../contexts/DocumentLockContext';
 import { SpisEntry, CenovaPonukaItem } from '../types';
 import { VseobecneSidebar } from './VseobecneSidebar';
 import { VseobecneForm } from './VseobecneForm';
@@ -148,6 +149,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   selectedOrderIndex
 }) => {
   const { isDark } = useTheme();
+  const { acquireLock, releaseLock, checkLockStatus } = useDocumentLock();
   const [isLocked, setIsLocked] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -156,6 +158,17 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   const [vzorModalTabs, setVzorModalTabs] = useState<('dvere' | 'nabytok' | 'schody' | 'puzdra')[]>(['dvere', 'nabytok', 'schody', 'puzdra']);
   const [isSaving, setIsSaving] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+
+  // Document lock state
+  const [isLockedByOther, setIsLockedByOther] = useState(false);
+  const [lockInfo, setLockInfo] = useState<{
+    lockedByName: string;
+    queuePosition: number;
+  } | null>(null);
+  const lockCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Computed: effectively locked if manually locked OR locked by another user
+  const isEffectivelyLocked = isLocked || isLockedByOther;
 
   const {
     activeTab,
@@ -189,6 +202,74 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     handleApplyContactChanges,
     handleCancelContactChanges
   } = useSpisEntryLogic(initialEntry, entries, isOpen, setFirmaOptions, firmaOptions, onSave);
+
+  // Document lock management
+  const checkAndUpdateLockStatus = useCallback(async () => {
+    if (!internalId) return;
+
+    try {
+      const status = await checkLockStatus(internalId, 'spis');
+
+      if (status.isLocked && !status.isOwnLock) {
+        // Document is locked by someone else
+        setIsLockedByOther(true);
+        setLockInfo({
+          lockedByName: status.lockedByName,
+          queuePosition: status.queuePosition
+        });
+      } else {
+        // Document is not locked or we have the lock
+        setIsLockedByOther(false);
+        setLockInfo(null);
+      }
+    } catch (error) {
+      console.error('Error checking lock status:', error);
+    }
+  }, [internalId, checkLockStatus]);
+
+  // Acquire lock when modal opens, release when it closes
+  useEffect(() => {
+    const setupLock = async () => {
+      if (isOpen && internalId) {
+        try {
+          const lockResult = await acquireLock(internalId, 'spis');
+
+          if (lockResult.isLocked && !lockResult.isOwnLock) {
+            // Someone else has the lock
+            setIsLockedByOther(true);
+            setLockInfo({
+              lockedByName: lockResult.lockedByName,
+              queuePosition: lockResult.queuePosition
+            });
+          } else {
+            setIsLockedByOther(false);
+            setLockInfo(null);
+          }
+
+          // Set up periodic lock status check (every 60 seconds)
+          lockCheckIntervalRef.current = setInterval(() => {
+            checkAndUpdateLockStatus();
+          }, 60000);
+        } catch (error) {
+          console.error('Error acquiring lock:', error);
+        }
+      }
+    };
+
+    setupLock();
+
+    // Cleanup function - release lock when modal closes
+    return () => {
+      if (lockCheckIntervalRef.current) {
+        clearInterval(lockCheckIntervalRef.current);
+        lockCheckIntervalRef.current = null;
+      }
+
+      if (internalId) {
+        releaseLock(internalId, 'spis').catch(console.error);
+      }
+    };
+  }, [isOpen, internalId, acquireLock, releaseLock, checkAndUpdateLockStatus]);
 
   const handleSaveClick = async () => {
     setIsSaving(true);
@@ -397,7 +478,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             setFormData={setFormData}
                             isDark={isDark}
                             firmaOptions={firmaOptions}
-                            isLocked={isLocked}
+                            isLocked={isEffectivelyLocked}
                           />
                         </div>
                         <div className="flex-1">
@@ -405,7 +486,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             formData={formData}
                             setFormData={setFormData}
                             isDark={isDark}
-                            isLocked={isLocked}
+                            isLocked={isEffectivelyLocked}
                           />
                         </div>
                       </div>
@@ -440,8 +521,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       newItems[index].popis = e.target.value;
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
-                                    disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    disabled={isEffectivelyLocked}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
@@ -452,8 +533,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       newItems[index].datum = val;
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
-                                    disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    disabled={isEffectivelyLocked}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
@@ -466,8 +547,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       newItems[index].pridal = e.target.value;
                                       setFormData(prev => ({...prev, popisItems: newItems}));
                                     }}
-                                    disabled={isLocked}
-                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                                    disabled={isEffectivelyLocked}
+                                    className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
                                   />
                                 </td>
                                 <td className={`border px-1 py-1 text-center ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
@@ -478,8 +559,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                       setNoteToDeleteIndex(index);
                                       setShowDeleteNoteConfirm(true);
                                     }}
-                                    disabled={isLocked}
-                                    className={`text-red-500 hover:text-red-700 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isEffectivelyLocked}
+                                    className={`text-red-500 hover:text-red-700 ${isEffectivelyLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -502,7 +583,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                 popisItems: [...prev.popisItems, { datum: today, popis: '', pridal: userName }]
                               }));
                             }}
-                            disabled={isLocked}
+                            disabled={isEffectivelyLocked}
                             className={`p-1 rounded-full border-2 transition-all duration-200 ${
                               isLocked
                                 ? 'border-gray-300 text-gray-400 cursor-not-allowed'
@@ -537,7 +618,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       onEdit={handleEditOffer}
                       onGeneratePDF={handleGeneratePDF}
                       isDark={isDark}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                       onAddVzor={() => {
                         setVzorModalTabs(['dvere', 'nabytok', 'schody']);
                         setEditingOfferId(null);
@@ -563,7 +644,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       user={user}
                       entries={entries}
                       selectedOrderIndex={selectedOrderIndex}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                       onAddVzor={() => {
                         setShowOrderModal(true);
                       }}
@@ -581,7 +662,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       isDark={isDark}
                       items={formData.meranieItems}
                       onUpdate={(items: any) => setFormData(prev => ({...prev, meranieItems: items}))}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                       user={user}
                     />
                   )}
@@ -590,7 +671,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                     <FotkyTab
                       uploadedPhotos={uploadedPhotos}
                       setUploadedPhotos={setUploadedPhotos}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                     />
                   )}
 
@@ -599,7 +680,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       isDark={isDark}
                       items={formData.vyrobneVykresy}
                       onUpdate={(items: any) => setFormData(prev => ({...prev, vyrobneVykresy: items}))}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                       user={user}
                     />
                   )}
@@ -609,7 +690,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                       isDark={isDark}
                       items={formData.technickeItems}
                       onUpdate={(items: any) => setFormData(prev => ({...prev, technickeItems: items}))}
-                      isLocked={isLocked}
+                      isLocked={isEffectivelyLocked}
                       user={user}
                     />
                   )}
@@ -628,8 +709,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
               >
                 <button
                   onClick={handleSaveClick}
-                  disabled={isLocked || isSaving}
-                  className={`px-3 py-3 text-sm flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-md ${isLocked || isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                  disabled={isLocked || isSaving || isLockedByOther}
+                  className={`px-3 py-3 text-sm flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-md ${isLocked || isSaving || isLockedByOther ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                 >
                   {isSaving ? (
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -643,7 +724,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                 </button>
                 <button
                   onClick={() => setIsLocked(!isLocked)}
-                  className={`px-3 py-3 text-sm flex items-center justify-center rounded-lg text-center transition-colors font-semibold ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300')}`}
+                  disabled={isLockedByOther}
+                  className={`px-3 py-3 text-sm flex items-center justify-center rounded-lg text-center transition-colors font-semibold ${isLockedByOther ? 'bg-gray-400 text-white cursor-not-allowed' : (isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'))}`}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {isLocked ? (
@@ -654,7 +736,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   </svg>
                   {isLocked ? 'Odomknúť' : 'Zamknúť'}
                 </button>
-                
+
                 <button
                   onClick={() => setShowTaskModal(true)}
                   className="px-3 py-3 text-sm flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition-colors font-semibold shadow-md"
@@ -667,62 +749,98 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
 
                 <button
                   onClick={handleDeleteClick}
-                  disabled={isLocked}
-                  className={`px-3 py-3 text-sm flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold mt-2 shadow-md ${isLocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                  disabled={isLocked || isLockedByOther}
+                  className={`px-3 py-3 text-sm flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold mt-2 shadow-md ${isLocked || isLockedByOther ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3m-3 0h14"></path></svg>
                   Vymazať
                 </button>
+
+                {/* Document lock message */}
+                {isLockedByOther && lockInfo && (
+                  <div className={`mt-3 p-3 rounded-lg text-xs ${isDark ? 'bg-orange-900/30 border border-orange-700 text-orange-300' : 'bg-orange-50 border border-orange-200 text-orange-700'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span className="font-semibold">Dokument upravuje:</span>
+                    </div>
+                    <div className="font-medium">{lockInfo.lockedByName}</div>
+                    {lockInfo.queuePosition > 1 && (
+                      <div className="mt-1 text-[10px] opacity-75">
+                        Vaša pozícia v rade: {lockInfo.queuePosition}
+                      </div>
+                    )}
+                    <div className="mt-2 text-[10px] opacity-75">
+                      Potom ako dokončia zmeny, budete môcť upravovať.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Mobile Fixed Buttons (Outside scroll area) */}
-            <div className={`lg:hidden p-3 border-t flex gap-2 flex-shrink-0 z-20 ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-200'}`}>
-              <button
-                onClick={handleSaveClick}
-                disabled={isLocked || isSaving}
-                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked || isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-              >
-                {isSaving ? (
-                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                )}
-                {isSaving ? 'Ukladám...' : 'Uložiť'}
-              </button>
-              <button
-                onClick={() => setIsLocked(!isLocked)}
-                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300')}`}
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {isLocked ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <div className={`lg:hidden border-t flex-shrink-0 z-20 ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-200'}`}>
+              {/* Mobile lock message */}
+              {isLockedByOther && lockInfo && (
+                <div className={`mx-3 mt-3 p-2 rounded-lg text-xs ${isDark ? 'bg-orange-900/30 border border-orange-700 text-orange-300' : 'bg-orange-50 border border-orange-200 text-orange-700'}`}>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Upravuje: <strong>{lockInfo.lockedByName}</strong></span>
+                    {lockInfo.queuePosition > 1 && <span className="opacity-75">(#{lockInfo.queuePosition} v rade)</span>}
+                  </div>
+                </div>
+              )}
+              <div className="p-3 flex gap-2">
+                <button
+                  onClick={handleSaveClick}
+                  disabled={isLocked || isSaving || isLockedByOther}
+                  className={`flex-1 px-2 py-3 text-xs flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked || isSaving || isLockedByOther ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                >
+                  {isSaving ? (
+                    <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                   )}
-                </svg>
-                {isLocked ? 'Odomknúť' : 'Zamknúť'}
-              </button>
-              <button
-                onClick={() => setShowTaskModal(true)}
-                className="flex-1 px-2 py-3 text-xs flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition-colors font-semibold shadow-sm"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Úloha
-              </button>
-              <button
-                onClick={handleDeleteClick}
-                disabled={isLocked}
-                className={`flex-1 px-2 py-3 text-xs flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3m-3 0h14"></path></svg>
-                Vymazať
-              </button>
+                  {isSaving ? 'Ukladám...' : 'Uložiť'}
+                </button>
+                <button
+                  onClick={() => setIsLocked(!isLocked)}
+                  disabled={isLockedByOther}
+                  className={`flex-1 px-2 py-3 text-xs flex items-center justify-center rounded-lg text-center transition-colors font-semibold shadow-sm ${isLockedByOther ? 'bg-gray-400 text-white cursor-not-allowed' : (isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'))}`}
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isLocked ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                    )}
+                  </svg>
+                  {isLocked ? 'Odomknúť' : 'Zamknúť'}
+                </button>
+                <button
+                  onClick={() => setShowTaskModal(true)}
+                  className="flex-1 px-2 py-3 text-xs flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition-colors font-semibold shadow-sm"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Úloha
+                </button>
+                <button
+                  onClick={handleDeleteClick}
+                  disabled={isLocked || isLockedByOther}
+                  className={`flex-1 px-2 py-3 text-xs flex items-center justify-center text-white rounded-lg text-center transition-colors font-semibold shadow-sm ${isLocked || isLockedByOther ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                  Vymazať
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -764,7 +882,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         }}
         editingData={editingOfferData}
         visibleTabs={vzorModalTabs}
-        isLocked={isLocked}
+        isLocked={isEffectivelyLocked}
       />
 
       <AddOrderModal
@@ -775,7 +893,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         telefon={userPhone} // Use user settings phone
         email={user?.email || ''} // Use user email
         editingData={editingOrderData}
-        isLocked={isLocked}
+        isLocked={isEffectivelyLocked}
         orderNumber={editingOrderNumber || nextOrderNumber}
       />
 

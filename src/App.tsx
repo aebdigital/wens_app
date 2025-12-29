@@ -7,6 +7,7 @@ import { TasksProvider } from './contexts/TasksContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProductsProvider } from './contexts/ProductsContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
+import { DocumentLockProvider } from './contexts/DocumentLockContext';
 import AuthWrapper from './components/AuthWrapper';
 import Spis from './components/Spis';
 import Objednavky from './components/Objednavky';
@@ -27,28 +28,30 @@ const TaskListener: React.FC = () => {
 const AuthenticatedApp: React.FC = () => {
   return (
     <PermissionsProvider>
-      <ContactsProvider>
-        <SpisProvider>
-          <TasksProvider>
-            <ProductsProvider>
-              <Layout>
-                <TaskListener />
-                <Routes>
-                  <Route path="/" element={<Navigate to="/spis" replace />} />
-                  <Route path="/login" element={<Navigate to="/spis" replace />} />
-                  <Route path="/spis" element={<Spis />} />
-                  <Route path="/objednavky" element={<Objednavky />} />
-                  <Route path="/kontakty" element={<Kontakty />} />
-                  <Route path="/zamestnanci" element={<Zamestnanci />} />
-                  <Route path="/dovolenky" element={<Dovolenky />} />
-                  <Route path="/nastavenia" element={<Nastavenia />} />
-                  <Route path="/ulohy" element={<Ulohy />} />
-                </Routes>
-              </Layout>
-            </ProductsProvider>
-          </TasksProvider>
-        </SpisProvider>
-      </ContactsProvider>
+      <DocumentLockProvider>
+        <ContactsProvider>
+          <SpisProvider>
+            <TasksProvider>
+              <ProductsProvider>
+                <Layout>
+                  <TaskListener />
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/spis" replace />} />
+                    <Route path="/login" element={<Navigate to="/spis" replace />} />
+                    <Route path="/spis" element={<Spis />} />
+                    <Route path="/objednavky" element={<Objednavky />} />
+                    <Route path="/kontakty" element={<Kontakty />} />
+                    <Route path="/zamestnanci" element={<Zamestnanci />} />
+                    <Route path="/dovolenky" element={<Dovolenky />} />
+                    <Route path="/nastavenia" element={<Nastavenia />} />
+                    <Route path="/ulohy" element={<Ulohy />} />
+                  </Routes>
+                </Layout>
+              </ProductsProvider>
+            </TasksProvider>
+          </SpisProvider>
+        </ContactsProvider>
+      </DocumentLockProvider>
     </PermissionsProvider>
   );
 };

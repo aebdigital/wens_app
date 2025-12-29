@@ -161,3 +161,14 @@ export interface DbProduct {
   created_at: string;
   updated_at: string;
 }
+
+export interface DbDocumentLock {
+  id: string;
+  document_id: string;
+  document_type: string;
+  locked_by: string;
+  locked_by_name: string;
+  locked_at: string;
+  last_heartbeat: string;
+  queue_position: number;
+}
