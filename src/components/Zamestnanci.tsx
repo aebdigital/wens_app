@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSpis } from '../contexts/SpisContext';
+import { usePermissions } from '../contexts/PermissionsContext';
 import { supabase, DbUser } from '../lib/supabase';
 
 interface User {
@@ -13,15 +15,6 @@ interface User {
   createdAt: string;
 }
 
-interface Dovolenka {
-  id: string;
-  userId: string;
-  startDate: string;
-  endDate: string;
-  type: 'dovolenka' | 'sick' | 'other';
-  note: string;
-  approved: boolean;
-}
 
 // Month names in Slovak
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
@@ -68,8 +61,8 @@ const Zamestnanci: React.FC = () => {
   const { isDark } = useTheme();
   const { user: currentUser } = useAuth();
   const { entries: spisEntries, isLoading: spisLoading } = useSpis();
+  const { canViewZamestnanci, isLoading: permissionsLoading } = usePermissions();
   const [users, setUsers] = useState<User[]>([]);
-  const [dovolenky, setDovolenky] = useState<Dovolenka[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -121,6 +114,7 @@ const Zamestnanci: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   // Update current user's last_seen periodically
@@ -147,6 +141,11 @@ const Zamestnanci: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentUser]);
 
+  // Redirect if user doesn't have permission (after permissions are loaded)
+  if (!permissionsLoading && !canViewZamestnanci) {
+    return <Navigate to="/spis" replace />;
+  }
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -170,44 +169,11 @@ const Zamestnanci: React.FC = () => {
         })));
       }
 
-      // Load dovolenky (if table exists)
-      try {
-        const { data: dovolenkyData, error: dovolenkyError } = await supabase
-          .from('dovolenky')
-          .select('*')
-          .order('start_date', { ascending: false });
-
-        if (!dovolenkyError && dovolenkyData) {
-          setDovolenky(dovolenkyData.map((d: any) => ({
-            id: d.id,
-            userId: d.user_id,
-            startDate: d.start_date,
-            endDate: d.end_date,
-            type: d.type || 'dovolenka',
-            note: d.note || '',
-            approved: d.approved || false,
-          })));
-        }
-      } catch {
-        // Table might not exist yet
-        setDovolenky([]);
-      }
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getUserName = (userId: string): string => {
-    const user = users.find(u => u.id === userId);
-    if (user) {
-      if (user.firstName || user.lastName) {
-        return `${user.firstName} ${user.lastName}`.trim();
-      }
-      return user.email;
-    }
-    return 'Neznámy';
   };
 
   if (isLoading || spisLoading) {
@@ -226,73 +192,6 @@ const Zamestnanci: React.FC = () => {
       {/* Page Title */}
       <div className="flex justify-between items-center mb-6">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Zamestnanci</h1>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkom používateľov</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{users.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Na dovolenke</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {dovolenky.filter(d => {
-                  const now = new Date();
-                  const start = new Date(d.startDate);
-                  const end = new Date(d.endDate);
-                  return now >= start && now <= end && d.approved;
-                }).length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Plánovaná dovolenka</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {dovolenky.filter(d => {
-                  const now = new Date();
-                  const start = new Date(d.startDate);
-                  return start > now;
-                }).length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Users Table */}
@@ -486,58 +385,6 @@ const Zamestnanci: React.FC = () => {
         </div>
       </div>
 
-      {/* Dovolenky Table */}
-      {dovolenky.length > 0 && (
-        <>
-          <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Dovolenky</h2>
-          <div
-            className={`rounded-lg overflow-x-auto ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-            style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-          >
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Zamestnanec</th>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Od</th>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Do</th>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Typ</th>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Poznámka</th>
-                  <th className="px-4 py-3 text-left font-semibold text-white">Stav</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dovolenky.map((dovolenka) => (
-                  <tr
-                    key={dovolenka.id}
-                    className={`border-t ${isDark ? 'border-dark-500 hover:bg-dark-700' : 'border-gray-200 hover:bg-gray-50'}`}
-                  >
-                    <td className={`px-4 py-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {getUserName(dovolenka.userId)}
-                    </td>
-                    <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {new Date(dovolenka.startDate).toLocaleDateString('sk-SK')}
-                    </td>
-                    <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {new Date(dovolenka.endDate).toLocaleDateString('sk-SK')}
-                    </td>
-                    <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {dovolenka.type === 'dovolenka' ? 'Dovolenka' : dovolenka.type === 'sick' ? 'PN' : 'Iné'}
-                    </td>
-                    <td className={`px-4 py-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {dovolenka.note || '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs ${dovolenka.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {dovolenka.approved ? 'Schválené' : 'Čaká'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
     </div>
   );
 };

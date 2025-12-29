@@ -81,3 +81,42 @@ CREATE POLICY "Sender or recipient can delete tasks" ON tasks
 CREATE INDEX IF NOT EXISTS idx_tasks_from_user ON tasks(from_user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_to_user ON tasks(to_user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at DESC);
+
+-- =====================================================
+-- 3. ADD TIMESTAMPS TO TASKS TABLE (for tracking when started/completed)
+-- =====================================================
+-- Run this migration if you have an existing tasks table with the new schema
+-- that uses created_by, assigned_to, status, priority, etc.
+
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+-- =====================================================
+-- 4. EMPLOYEE PERMISSIONS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS employee_permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  can_view_zamestnanci BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+-- Enable RLS
+ALTER TABLE employee_permissions ENABLE ROW LEVEL SECURITY;
+
+-- Policy: All authenticated users can view all permissions
+CREATE POLICY "Authenticated users can view permissions" ON employee_permissions
+  FOR SELECT TO authenticated USING (true);
+
+-- Policy: Only super admins (determined by your logic) can insert/update/delete
+-- For now, allow all authenticated users to manage permissions
+CREATE POLICY "Authenticated users can insert permissions" ON employee_permissions
+  FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update permissions" ON employee_permissions
+  FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can delete permissions" ON employee_permissions
+  FOR DELETE TO authenticated USING (true);

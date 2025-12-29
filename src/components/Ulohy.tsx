@@ -45,6 +45,25 @@ const Ulohy = () => {
     }
   };
 
+  // Format elapsed time since a given date
+  const formatElapsedTime = (dateStr: string | null): string => {
+    if (!dateStr) return '';
+
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    const minutes = Math.floor(diffMs / (1000 * 60));
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return 'práve teraz';
+    if (minutes < 60) return `pred ${minutes} min`;
+    if (hours < 24) return `pred ${hours} hod`;
+    if (days === 1) return 'včera';
+    return `pred ${days} dňami`;
+  };
+
   const handleStatusChange = (task: Task, newStatus: Task['status']) => {
     updateTask(task.id, { status: newStatus });
   };
@@ -142,6 +161,24 @@ const Ulohy = () => {
                     </svg>
                     Projekt: {task.spisCislo}
                   </button>
+                )}
+                {/* Show started/completed timestamps */}
+                {task.status === 'in_progress' && task.startedAt && (
+                  <span className="flex items-center gap-1 text-blue-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Začaté {formatElapsedTime(task.startedAt)}
+                  </span>
+                )}
+                {task.status === 'completed' && task.completedAt && (
+                  <span className="flex items-center gap-1 text-green-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Dokončené {formatElapsedTime(task.completedAt)}
+                  </span>
                 )}
               </div>
 

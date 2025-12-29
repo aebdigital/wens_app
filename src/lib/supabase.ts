@@ -140,6 +140,8 @@ export interface DbTask {
   due_date: string | null;
   spis_id: string | null;
   spis_cislo: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

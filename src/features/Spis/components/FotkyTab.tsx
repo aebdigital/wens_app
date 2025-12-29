@@ -213,16 +213,16 @@ export const FotkyTab: React.FC<FotkyTabProps> = ({ uploadedPhotos, setUploadedP
                       <div className="flex gap-2">
                           <button
                               onClick={(e) => handleDownload(e, photo)}
-                              className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 font-semibold flex items-center"
+                              className="text-xs text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1.5 rounded font-semibold flex items-center transition-colors"
                               title="Stiahnuť"
                           >
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                               Stiahnuť
                           </button>
                           <button
                           onClick={() => handleDelete(photo.id, photo.storagePath)}
                           disabled={isLocked}
-                          className={`text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-300 rounded hover:bg-red-50 font-semibold ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`text-xs text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded font-semibold transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                           Odstrániť
                           </button>

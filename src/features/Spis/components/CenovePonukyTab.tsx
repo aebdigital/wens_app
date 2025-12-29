@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CenovaPonukaItem } from '../types';
+import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
 
 interface CenovePonukyTabProps {
   items: CenovaPonukaItem[];
   onDelete: (index: number) => void;
   onEdit: (item: CenovaPonukaItem) => void;
-  onGeneratePDF: (item: CenovaPonukaItem) => void;
+  onGeneratePDF: (item: CenovaPonukaItem) => Promise<string>;
   isDark: boolean;
   isLocked?: boolean;
   onAddVzor: () => void;
@@ -24,6 +25,32 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onToggleSelect,
   onUpdate
 }) => {
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
+
+  const handlePreviewPDF = async (item: CenovaPonukaItem) => {
+    setIsGenerating(item.id);
+    try {
+      const blobUrl = await onGeneratePDF(item);
+      setPdfPreview({
+        url: blobUrl,
+        filename: `CP_${item.cisloCP}.pdf`
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Nepodarilo sa vygenerovať PDF');
+    } finally {
+      setIsGenerating(null);
+    }
+  };
+
+  const handleClosePreview = () => {
+    if (pdfPreview?.url) {
+      URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
+  };
+
   return (
     <div className="p-2 h-full flex flex-col">
       <div className="flex-1 overflow-auto">
@@ -95,18 +122,28 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                   />
                 </td>
                 <td className={`border px-2 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-1">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onGeneratePDF(item);
+                        handlePreviewPDF(item);
                       }}
-                      className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
-                      title="Stiahnuť PDF"
+                      disabled={isGenerating === item.id}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors ${isGenerating === item.id ? 'opacity-50' : ''}`}
+                      title="Zobraziť PDF"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                      {isGenerating === item.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                      PDF
                     </button>
                     <button
                       onClick={(e) => {
@@ -114,7 +151,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                         if (!isLocked) onDelete(index);
                       }}
                       disabled={isLocked}
-                      className={`p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`p-1.5 text-white bg-red-500 hover:bg-red-600 rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title="Odstrániť"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,6 +196,17 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
           Pridať cenovú ponuku
         </button>
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <PDFPreviewModal
+          isOpen={true}
+          onClose={handleClosePreview}
+          pdfUrl={pdfPreview.url}
+          filename={pdfPreview.filename}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 };

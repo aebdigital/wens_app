@@ -105,7 +105,7 @@ export const MeranieTab: React.FC<MeranieTabProps> = ({ isDark, items, onUpdate,
                    <div className="flex items-center justify-center gap-1">
                     <button
                         onClick={(e) => handleDownload(e, item)}
-                        className={`p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded ${(!item.file) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`p-1.5 text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors ${(!item.file) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Stiahnuť"
                         disabled={!item.file}
                     >
@@ -114,7 +114,7 @@ export const MeranieTab: React.FC<MeranieTabProps> = ({ isDark, items, onUpdate,
                     <button
                         onClick={() => handleDeleteItem(index)}
                         disabled={isLocked}
-                        className={`p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`p-1.5 text-white bg-red-500 hover:bg-red-600 rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Odstrániť"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTasks } from '../../contexts/TasksContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import StyledNavLink from './StyledNavLink';
 
 interface SidebarProps {
@@ -14,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const { setTheme, isDark } = useTheme();
   const { getUnreadCount } = useTasks();
+  const { canViewZamestnanci } = usePermissions();
   const unreadCount = getUnreadCount();
   const location = useLocation();
   const navigate = useNavigate();
@@ -97,12 +99,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
               <span>Kontakty</span>
           </StyledNavLink>
 
-          <StyledNavLink to="/zamestnanci">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <span>Zamestnanci</span>
-          </StyledNavLink>
+          {canViewZamestnanci && (
+            <StyledNavLink to="/zamestnanci">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>Zamestnanci</span>
+            </StyledNavLink>
+          )}
 
           <StyledNavLink to="/dovolenky">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

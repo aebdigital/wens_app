@@ -1116,7 +1116,19 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
-  doc.save(`CP_${item.cisloCP}.pdf`);
+  return doc.output('bloburl').toString();
+};
+
+// Backward compatible function that saves the PDF
+export const generateAndSavePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo) => {
+  const blobUrl = await generatePDF(item, formData, userInfo);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = `CP_${item.cisloCP}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(blobUrl);
 };
 
 export interface OrderPDFData {
@@ -1350,5 +1362,17 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
-  doc.save(`Objednavka_${orderNumber}.pdf`);
+  return doc.output('bloburl').toString();
+};
+
+// Backward compatible function that saves the Order PDF
+export const generateAndSaveOrderPDF = async (orderData: OrderPDFData) => {
+  const blobUrl = await generateOrderPDF(orderData);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = `Objednavka_${orderData.orderNumber}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(blobUrl);
 };

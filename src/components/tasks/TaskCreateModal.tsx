@@ -49,7 +49,9 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       assignedToName: users.find(u => u.id === assignedTo)?.firstName + ' ' + users.find(u => u.id === assignedTo)?.lastName,
       dueDate: null,
       spisId: spisId || null,
-      spisCislo: spisCislo || null
+      spisCislo: spisCislo || null,
+      startedAt: null,
+      completedAt: null
     });
 
     // Reset and close

@@ -3,6 +3,8 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useProducts } from '../../../contexts/ProductsContext';
 import { PuzdraForm } from './PuzdraForm';
 import { PuzdraData } from '../types';
+import { generateOrderPDF, OrderPDFData } from '../utils/pdfGenerator';
+import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
 
 interface AddOrderModalProps {
   isOpen: boolean;
@@ -31,6 +33,9 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
 }) => {
   const { isDark } = useTheme();
   const { addProduct, products } = useProducts();
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Initialize state with default values or editing data
   const [orderData, setOrderData] = useState<PuzdraData>(() => {
@@ -65,28 +70,87 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
     }
   }, [editingData]);
 
-  const handleSave = () => {
-    // Save new products
-    if (orderData.dodavatel?.nazov) {
-        orderData.polozky.forEach(item => {
-            if (item.nazov && item.nazov.trim() !== '') {
-                addProduct({
-                    name: item.nazov,
-                    kod: item.kod, // Save the code
-                    supplier: orderData.dodavatel.nazov,
-                    supplierDetails: {
-                        ulica: orderData.dodavatel.ulica,
-                        mesto: orderData.dodavatel.mesto,
-                        tel: orderData.dodavatel.tel,
-                        email: orderData.dodavatel.email
-                    }
-                });
-            }
-        });
-    }
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Save new products
+      if (orderData.dodavatel?.nazov) {
+          orderData.polozky.forEach(item => {
+              if (item.nazov && item.nazov.trim() !== '') {
+                  addProduct({
+                      name: item.nazov,
+                      kod: item.kod, // Save the code
+                      supplier: orderData.dodavatel.nazov,
+                      supplierDetails: {
+                          ulica: orderData.dodavatel.ulica,
+                          mesto: orderData.dodavatel.mesto,
+                          tel: orderData.dodavatel.tel,
+                          email: orderData.dodavatel.email
+                      }
+                  });
+              }
+          });
+      }
 
-    onSave(orderData);
-    onClose();
+      await onSave(orderData);
+      // Don't close the modal after saving
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePreviewPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      // Auto-save before generating preview
+      if (orderData.dodavatel?.nazov) {
+        orderData.polozky.forEach(item => {
+          if (item.nazov && item.nazov.trim() !== '') {
+            addProduct({
+              name: item.nazov,
+              kod: item.kod,
+              supplier: orderData.dodavatel.nazov,
+              supplierDetails: {
+                ulica: orderData.dodavatel.ulica,
+                mesto: orderData.dodavatel.mesto,
+                tel: orderData.dodavatel.tel,
+                email: orderData.dodavatel.email
+              }
+            });
+          }
+        });
+      }
+      await onSave(orderData);
+
+      const pdfData: OrderPDFData = {
+        orderNumber: orderNumber || 'PREVIEW',
+        nazov: orderData.zakazka || '',
+        data: orderData,
+        headerInfo: {
+          vypracoval,
+          telefon,
+          email
+        }
+      };
+
+      const blobUrl = await generateOrderPDF(pdfData);
+      setPdfPreview({
+        url: blobUrl,
+        filename: `Objednavka_${orderNumber || 'PREVIEW'}.pdf`
+      });
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
+      alert('Nepodarilo sa vygenerovať náhľad PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleClosePdfPreview = () => {
+    if (pdfPreview?.url) {
+      URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
   };
 
   if (!isOpen) return null;
@@ -138,22 +202,61 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
         </div>
 
         {/* Footer buttons */}
-        <div className={`flex justify-end gap-3 px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-          <button
-            onClick={onClose}
-            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-          >
-            Zrušiť
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isLocked}
-            className={`px-6 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] shadow-lg ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Uložiť
-          </button>
+        <div className={`flex justify-between px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
+          <div>
+            <button
+              onClick={handlePreviewPDF}
+              disabled={isGeneratingPDF}
+              className={`flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors ${isGeneratingPDF ? 'opacity-50' : ''}`}
+            >
+              {isGeneratingPDF ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+              Náhľad PDF
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Zrušiť
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isLocked || isSaving}
+              className={`flex items-center gap-2 px-6 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg font-semibold hover:from-[#c71325] hover:to-[#9e1019] shadow-lg ${isLocked || isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isSaving && (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {isSaving ? 'Ukladám...' : 'Uložiť'}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <PDFPreviewModal
+          isOpen={true}
+          onClose={handleClosePdfPreview}
+          pdfUrl={pdfPreview.url}
+          filename={pdfPreview.filename}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 };

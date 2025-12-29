@@ -28,8 +28,13 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
   const [localTotal, setLocalTotal] = useState<string>('');
   const [editingTotal, setEditingTotal] = useState<boolean>(false);
 
+  // Helper to round up to nearest 10
+  const roundUpToTen = (value: number): number => {
+    return Math.ceil(value / 10) * 10;
+  };
+
   // Calculate displayed amounts - use manual amount if set, otherwise calculate from percentage
-  // When some amounts are manually set, remaining amounts are calculated from remaining total
+  // For default 60/30/10 split: 60% and 30% are rounded up to nearest 10, 10% gets the remainder
   const getDisplayAmount = (index: 1 | 2 | 3): number => {
     const total = totals.cenaSDPH;
 
@@ -38,9 +43,15 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
     const fixed2 = data.platba2Amount != null ? data.platba2Amount : null;
     const fixed3 = data.platba3Amount != null ? data.platba3Amount : null;
 
+    // Check if using default percentages (60/30/10)
+    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+
     if (index === 1) {
       if (fixed1 != null) return fixed1;
-      // If not fixed, calculate from percentage
+      // If default split and no manual amounts, round up to nearest 10
+      if (isDefaultSplit && fixed2 == null && fixed3 == null) {
+        return roundUpToTen(total * 0.60);
+      }
       return total * data.platba1Percent / 100;
     } else if (index === 2) {
       if (fixed2 != null) return fixed2;
@@ -53,6 +64,10 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       } else if (fixed1 != null && fixed3 != null) {
         // Both 1 and 3 are fixed, 2 gets the rest
         return remaining;
+      }
+      // If default split and no manual amounts, round up to nearest 10
+      if (isDefaultSplit && fixed1 == null && fixed3 == null) {
+        return roundUpToTen(total * 0.30);
       }
       return total * data.platba2Percent / 100;
     } else {
@@ -67,16 +82,37 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
         // Both 1 and 2 are fixed, 3 gets the rest
         return remaining;
       }
+      // If default split and no manual amounts, payment 3 gets the remainder
+      if (isDefaultSplit && fixed1 == null && fixed2 == null) {
+        const amount1 = roundUpToTen(total * 0.60);
+        const amount2 = roundUpToTen(total * 0.30);
+        return total - amount1 - amount2;
+      }
       return total * data.platba3Percent / 100;
     }
   };
 
-  // Calculate display percentage - always derived from displayed amount for consistency
+  // Calculate display percentage - show nominal percentage for default split, otherwise calculate from amount
   const getDisplayPercent = (index: 1 | 2 | 3): number => {
     const total = totals.cenaSDPH;
     if (total === 0) return index === 1 ? 60 : index === 2 ? 30 : 10;
 
-    // Always calculate percentage from the displayed amount for consistency
+    // Get fixed amounts (manually set)
+    const fixed1 = data.platba1Amount != null ? data.platba1Amount : null;
+    const fixed2 = data.platba2Amount != null ? data.platba2Amount : null;
+    const fixed3 = data.platba3Amount != null ? data.platba3Amount : null;
+
+    // Check if using default percentages (60/30/10) with no manual overrides
+    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+    const hasNoManualAmounts = fixed1 == null && fixed2 == null && fixed3 == null;
+
+    // For default split without manual amounts, show nominal percentages (60/30/10)
+    // even though actual amounts are rounded
+    if (isDefaultSplit && hasNoManualAmounts) {
+      return index === 1 ? 60 : index === 2 ? 30 : 10;
+    }
+
+    // Otherwise calculate percentage from the displayed amount
     const amount = getDisplayAmount(index);
     return (amount / total) * 100;
   };

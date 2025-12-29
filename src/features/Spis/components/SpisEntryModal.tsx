@@ -237,8 +237,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     setNoteToDeleteIndex(null);
   };
 
-  const handleGeneratePDF = (item: CenovaPonukaItem) => {
-    generatePDF(item, formData, {
+  const handleGeneratePDF = async (item: CenovaPonukaItem): Promise<string> => {
+    return generatePDF(item, formData, {
       vypracoval: formData.vypracoval,
       telefon: userPhone,
       email: user?.email || ''

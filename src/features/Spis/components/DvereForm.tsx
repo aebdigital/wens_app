@@ -336,7 +336,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 <th className="px-2 py-2 text-left border-r border-white/20">poznámka</th>
                 <th className="px-2 py-2 text-right border-r border-white/20">ks</th>
                 <th className="px-2 py-2 text-right border-r border-white/20">cena / ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20">cena celkom</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 whitespace-nowrap min-w-[90px]">cena celkom</th>
                 <th className="px-2 py-2 text-center w-8"></th>
               </tr>
             </thead>

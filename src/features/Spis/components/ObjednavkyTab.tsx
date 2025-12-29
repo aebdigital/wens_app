@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { generateOrderPDF, OrderPDFData } from '../utils/pdfGenerator';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
+import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
 
 interface ObjednavkyTabProps {
   items: any[];
@@ -31,25 +32,50 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
   onEdit,
   headerInfo
 }) => {
-  const handleGeneratePDF = async (item: any) => {
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
+
+  const handlePreviewPDF = async (item: any) => {
     if (!item.puzdraData) {
       alert('Táto objednávka nemá dáta na export do PDF.');
       return;
     }
 
-    const pdfData: OrderPDFData = {
-      orderNumber: item.cisloObjednavky || item.id || 'N/A',
-      nazov: item.nazov,
-      data: item.puzdraData,
-      headerInfo: headerInfo || {
-        vypracoval: item.vypracoval || user?.name || '',
-        telefon: user?.telefon || '',
-        email: user?.email || ''
-      }
-    };
+    const itemId = item.id || item.cisloObjednavky || 'temp';
+    setIsGenerating(itemId);
 
-    await generateOrderPDF(pdfData);
+    try {
+      const pdfData: OrderPDFData = {
+        orderNumber: item.cisloObjednavky || item.id || 'N/A',
+        nazov: item.nazov,
+        data: item.puzdraData,
+        headerInfo: headerInfo || {
+          vypracoval: item.vypracoval || user?.name || '',
+          telefon: user?.telefon || '',
+          email: user?.email || ''
+        }
+      };
+
+      const blobUrl = await generateOrderPDF(pdfData);
+      setPdfPreview({
+        url: blobUrl,
+        filename: `Objednavka_${pdfData.orderNumber}.pdf`
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Nepodarilo sa vygenerovať PDF');
+    } finally {
+      setIsGenerating(null);
+    }
   };
+
+  const handleClosePreview = () => {
+    if (pdfPreview?.url) {
+      URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
+  };
+
   return (
     <div className="p-2 h-full flex flex-col">
       <div className="flex-1 overflow-auto">
@@ -69,6 +95,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
             {items.map((item, index) => {
               // Check if this is the highlighted order from navigation
               const isHighlighted = selectedOrderIndex === index;
+              const itemId = item.id || item.cisloObjednavky || `objednavka-${index}`;
 
               // Format date for display
               const formatDate = (dateStr: string) => {
@@ -79,7 +106,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
 
               return (
                 <tr
-                  key={item.id || `objednavka-${index}`}
+                  key={itemId}
                   className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
                   onClick={() => onEdit && onEdit(item)}
                 >
@@ -122,18 +149,28 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                     />
                   </td>
                   <td className={`border px-2 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleGeneratePDF(item);
+                          handlePreviewPDF(item);
                         }}
-                        className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
-                        title="Stiahnuť PDF"
+                        disabled={isGenerating === itemId}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors ${isGenerating === itemId ? 'opacity-50' : ''}`}
+                        title="Zobraziť PDF"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        {isGenerating === itemId ? (
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                        PDF
                       </button>
                       <button
                         onClick={(e) => {
@@ -143,7 +180,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                           onUpdate(updated);
                         }}
                         disabled={isLocked}
-                        className={`p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`p-1.5 text-white bg-red-500 hover:bg-red-600 rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Odstrániť"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,6 +211,17 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
           Pridať objednávku
         </button>
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <PDFPreviewModal
+          isOpen={true}
+          onClose={handleClosePreview}
+          pdfUrl={pdfPreview.url}
+          filename={pdfPreview.filename}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 };

@@ -15,6 +15,8 @@ export interface Task {
   dueDate: string | null;
   spisId: string | null;
   spisCislo: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
   createdAt: string;
 }
 
@@ -104,6 +106,8 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
     dueDate: db.due_date,
     spisId: db.spis_id,
     spisCislo: db.spis_cislo,
+    startedAt: db.started_at,
+    completedAt: db.completed_at,
     createdAt: db.created_at
   }), [getUserName]);
 
@@ -181,12 +185,33 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
       const dbUpdates: any = {};
+      const localUpdates: Partial<Task> = { ...updates };
+
       if (updates.title !== undefined) dbUpdates.title = updates.title;
       if (updates.description !== undefined) dbUpdates.description = updates.description;
-      if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
       if (updates.assignedTo !== undefined) dbUpdates.assigned_to = updates.assignedTo;
       if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
+
+      // Handle status changes with timestamps
+      if (updates.status !== undefined) {
+        dbUpdates.status = updates.status;
+        const now = new Date().toISOString();
+
+        if (updates.status === 'in_progress') {
+          dbUpdates.started_at = now;
+          localUpdates.startedAt = now;
+        } else if (updates.status === 'completed') {
+          dbUpdates.completed_at = now;
+          localUpdates.completedAt = now;
+        } else if (updates.status === 'pending') {
+          // Reset timestamps when going back to pending
+          dbUpdates.started_at = null;
+          dbUpdates.completed_at = null;
+          localUpdates.startedAt = null;
+          localUpdates.completedAt = null;
+        }
+      }
 
       const { error } = await supabase
         .from('tasks')
@@ -198,7 +223,7 @@ export const TasksProvider: React.FC<TasksProviderProps> = ({ children }) => {
         return;
       }
 
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...localUpdates } : t));
     } catch (error) {
       console.error('Failed to update task:', error);
     }
