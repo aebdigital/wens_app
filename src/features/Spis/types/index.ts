@@ -124,11 +124,18 @@ export interface CenovaPonukaItem {
   selected?: boolean;
 }
 
+export interface ProductPhoto {
+  id: string;
+  base64: string;
+  description: string;
+}
+
 export interface DvereData {
   popisVyrobkov: string;
   dvereTyp: string; // Deprecated or kept for compatibility
   zarubnaTyp: string; // Deprecated or kept for compatibility
   specifications: { id: number, type: 'dvere' | 'zarubna' | 'obklad', value: string }[];
+  productPhotos?: ProductPhoto[]; // Photos for the Výrobky section
   showCustomerInfo: boolean;
   showArchitectInfo: boolean;
   vyrobky: any[];

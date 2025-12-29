@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session, AuthTokenResponsePassword } from '@supabase/supabase-js';
 import { supabase, DbUser } from '../lib/supabase';
 
 interface User {
@@ -258,7 +258,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearSupabaseStorage();
 
       // Add timeout to login to prevent hanging
-      let loginResult;
+      let loginResult: AuthTokenResponsePassword;
       try {
         loginResult = await withTimeout(
           supabase.auth.signInWithPassword({
@@ -266,14 +266,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             password,
           }),
           10000 // 10 second timeout for login
-        );
+        ) as AuthTokenResponsePassword;
       } catch (timeoutError) {
         console.error('Login timed out');
         setIsLoading(false);
         return false;
       }
 
-      if (loginResult.error || !loginResult.data.user) {
+      if (loginResult.error || !loginResult.data?.user) {
         console.error('Login error:', loginResult.error);
         setIsLoading(false);
         return false;
@@ -282,12 +282,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user profile directly instead of relying on onAuthStateChange
       // This ensures we always get the profile after successful login
       try {
-        const { data: profile, error: profileError } = await withTimeout(
-          supabase
+        const fetchProfile = async () => {
+          return supabase
             .from('users')
             .select('*')
-            .eq('id', loginResult.data.user.id)
-            .single(),
+            .eq('id', loginResult.data!.user!.id)
+            .single();
+        };
+        const { data: profile, error: profileError } = await withTimeout(
+          fetchProfile(),
           5000 // 5 second timeout for profile fetch
         );
 

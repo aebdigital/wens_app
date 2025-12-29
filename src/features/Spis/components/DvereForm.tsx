@@ -1,5 +1,5 @@
-import React from 'react';
-import { DvereData } from '../types';
+import React, { useRef } from 'react';
+import { DvereData, ProductPhoto } from '../types';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
 import { GenericItemsTable } from './common/GenericItemsTable';
@@ -184,6 +184,51 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
   };
 
+  // Photo upload handling
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddPhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        const newPhoto: ProductPhoto = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          base64,
+          description: ''
+        };
+        const currentPhotos = data.productPhotos || [];
+        onChange({ ...data, productPhotos: [...currentPhotos, newPhoto] });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemovePhoto = (photoId: string) => {
+    const currentPhotos = data.productPhotos || [];
+    onChange({ ...data, productPhotos: currentPhotos.filter(p => p.id !== photoId) });
+  };
+
+  const handleUpdatePhotoDescription = (photoId: string, description: string) => {
+    const currentPhotos = data.productPhotos || [];
+    onChange({
+      ...data,
+      productPhotos: currentPhotos.map(p => p.id === photoId ? { ...p, description } : p)
+    });
+  };
+
   return (
     <QuoteLayout 
         isDark={isDark} 
@@ -204,117 +249,184 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         />
       </div>
 
-      {/* Specifications Section */}
+      {/* Specifications Section with Photos */}
       <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>
         <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
-        <div className="space-y-3">
-          {/* Dvere group */}
-          {(() => {
-            const dvereSpecs = (data.specifications || [])
-              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
-              .filter(spec => spec.type === 'dvere');
-            if (dvereSpecs.length === 0) return null;
-            return (
-              <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Dvere:</span>
-                <div className="flex-1 space-y-1">
-                  {dvereSpecs.map((spec) => (
-                    <div key={spec.id} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={spec.value}
-                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
-                      />
-                      <button
-                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                  <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+        <div className="flex gap-4">
+          {/* Left side - Specifications */}
+          <div className="flex-1 space-y-3">
+            {/* Dvere group */}
+            {(() => {
+              const dvereSpecs = (data.specifications || [])
+                .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+                .filter(spec => spec.type === 'dvere');
+              if (dvereSpecs.length === 0) return null;
+              return (
+                <div className="flex gap-2">
+                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Dvere:</span>
+                  <div className="flex-1 space-y-1">
+                    {dvereSpecs.map((spec) => (
+                      <div key={spec.id} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                          className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        />
+                        <button
+                          onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          {/* Zárubňa group */}
-          {(() => {
-            const zarubnaSpecs = (data.specifications || [])
-              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
-              .filter(spec => spec.type === 'zarubna');
-            if (zarubnaSpecs.length === 0) return null;
-            return (
-              <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zárubňa:</span>
-                <div className="flex-1 space-y-1">
-                  {zarubnaSpecs.map((spec) => (
-                    <div key={spec.id} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={spec.value}
-                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
-                      />
-                      <button
-                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                  <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+            {/* Zárubňa group */}
+            {(() => {
+              const zarubnaSpecs = (data.specifications || [])
+                .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+                .filter(spec => spec.type === 'zarubna');
+              if (zarubnaSpecs.length === 0) return null;
+              return (
+                <div className="flex gap-2">
+                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zárubňa:</span>
+                  <div className="flex-1 space-y-1">
+                    {zarubnaSpecs.map((spec) => (
+                      <div key={spec.id} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                          className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        />
+                        <button
+                          onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          {/* Obklad group */}
-          {(() => {
-            const obkladSpecs = (data.specifications || [])
-              .map((spec, idx) => ({ ...spec, originalIndex: idx }))
-              .filter(spec => spec.type === 'obklad');
-            if (obkladSpecs.length === 0) return null;
-            return (
-              <div className="flex gap-2">
-                <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Obklad:</span>
-                <div className="flex-1 space-y-1">
-                  {obkladSpecs.map((spec) => (
-                    <div key={spec.id} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={spec.value}
-                        onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
-                      />
-                      <button
-                        onClick={() => handleRemoveSpecification(spec.originalIndex)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                  <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+            {/* Obklad group */}
+            {(() => {
+              const obkladSpecs = (data.specifications || [])
+                .map((spec, idx) => ({ ...spec, originalIndex: idx }))
+                .filter(spec => spec.type === 'obklad');
+              if (obkladSpecs.length === 0) return null;
+              return (
+                <div className="flex gap-2">
+                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Obklad:</span>
+                  <div className="flex-1 space-y-1">
+                    {obkladSpecs.map((spec) => (
+                      <div key={spec.id} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => handleUpdateSpecification(spec.originalIndex, e.target.value)}
+                          className={`flex-1 px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border`}
+                        />
+                        <button
+                          onClick={() => handleRemoveSpecification(spec.originalIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+</button>
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          {/* Add buttons for types that don't have any entries yet */}
-          <div className="flex gap-2 ml-[88px]">
-            {!(data.specifications || []).some(s => s.type === 'dvere') && (
-              <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
-            )}
-            {!(data.specifications || []).some(s => s.type === 'zarubna') && (
-              <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
-            )}
-            {!(data.specifications || []).some(s => s.type === 'obklad') && (
-              <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
-            )}
+            {/* Add buttons for types that don't have any entries yet */}
+            <div className="flex gap-2 ml-[88px]">
+              {!(data.specifications || []).some(s => s.type === 'dvere') && (
+                <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
+              )}
+              {!(data.specifications || []).some(s => s.type === 'zarubna') && (
+                <button onClick={() => handleAddSpecification('zarubna')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Zárubňa</button>
+              )}
+              {!(data.specifications || []).some(s => s.type === 'obklad') && (
+                <button onClick={() => handleAddSpecification('obklad')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Obklad</button>
+              )}
+            </div>
+          </div>
+
+          {/* Right side - Photo Upload */}
+          <div className={`w-64 border-l ${isDark ? 'border-dark-500' : 'border-gray-200'} pl-4`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Fotky výrobkov:</span>
+              <button
+                onClick={handleAddPhoto}
+                className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+              >
+                + Pridať
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+
+            {/* Photos Grid - 2 per row */}
+            <div className="grid grid-cols-2 gap-2">
+              {(data.productPhotos || []).map((photo) => (
+                <div key={photo.id} className={`relative rounded border ${isDark ? 'border-dark-500 bg-dark-600' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className="aspect-square relative overflow-hidden rounded-t">
+                    <img
+                      src={photo.base64}
+                      alt={photo.description || 'Product photo'}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => handleRemovePhoto(photo.id)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={photo.description}
+                    onChange={(e) => handleUpdatePhotoDescription(photo.id, e.target.value)}
+                    placeholder="Popis..."
+                    className={`w-full px-1 py-1 text-[10px] border-t ${isDark ? 'bg-dark-600 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-200'} focus:outline-none rounded-b`}
+                  />
+                </div>
+              ))}
+
+              {/* Empty placeholder if no photos */}
+              {(!data.productPhotos || data.productPhotos.length === 0) && (
+                <div
+                  onClick={handleAddPhoto}
+                  className={`aspect-square rounded border-2 border-dashed ${isDark ? 'border-dark-500 hover:border-gray-400' : 'border-gray-300 hover:border-gray-400'} flex items-center justify-center cursor-pointer transition-colors col-span-2`}
+                >
+                  <div className={`text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs">Kliknite pre pridanie</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

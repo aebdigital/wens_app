@@ -195,6 +195,20 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     });
     yPos = (doc as any).lastAutoTable.finalY + 5; // Add some gap, matching other tables
 
+    // Product photos - render on the right side
+    const productPhotos = data.productPhotos || [];
+    const hasPhotos = productPhotos.length > 0;
+
+    // Calculate layout widths
+    const leftMargin = 14;
+    const rightMargin = 14;
+    const totalWidth = pageWidth - leftMargin - rightMargin;
+    const photoSectionWidth = hasPhotos ? 60 : 0; // 60mm for photos (2 photos per row at 28mm each + gap)
+    const specSectionWidth = hasPhotos ? totalWidth - photoSectionWidth - 5 : totalWidth; // 5mm gap between sections
+
+    // Store yPos for specs start to align photos
+    const specsStartY = yPos;
+
     // Build specification rows for Výrobky table (Dvere, Zárubňa, Obklad)
     const specRows: any[][] = [];
     let specRowCount = 0;
@@ -358,6 +372,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }, 0);
 
     // First table: Výrobky header info with "Výrobky" spanning left column
+    let specsEndY = yPos;
     if (specRows.length > 0) {
         autoTable(doc, {
             startY: yPos,
@@ -368,10 +383,61 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
                 1: { cellWidth: 14, halign: 'left' }, // Same width as Položka column for labels (Dvere, Zárubňa, etc.)
                 2: { halign: 'left' } // Rest for value (spans remaining columns)
             },
-            theme: 'grid'
+            theme: 'grid',
+            tableWidth: hasPhotos ? specSectionWidth : 'auto'
         });
-        yPos = (doc as any).lastAutoTable.finalY;
+        specsEndY = (doc as any).lastAutoTable.finalY;
     }
+
+    // Render product photos on the right side of specifications
+    let photosEndY = specsStartY;
+    if (hasPhotos) {
+        const photoStartX = leftMargin + specSectionWidth + 5; // Start after specs + gap
+        const photoWidth = 28; // Width of each photo in mm
+        const photoHeight = 28; // Height of each photo in mm
+        const photoGap = 4; // Gap between photos
+        const photosPerRow = 2;
+
+        let currentPhotoY = specsStartY;
+
+        for (let i = 0; i < productPhotos.length; i++) {
+            const photo = productPhotos[i];
+            const colIndex = i % photosPerRow;
+            const rowIndex = Math.floor(i / photosPerRow);
+
+            // Calculate position
+            const photoX = photoStartX + colIndex * (photoWidth + photoGap);
+            const photoY = specsStartY + rowIndex * (photoHeight + 10 + photoGap); // 10mm for description
+
+            try {
+                // Add the image
+                doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
+
+                // Add border around photo
+                doc.setDrawColor(200);
+                doc.rect(photoX, photoY, photoWidth, photoHeight);
+
+                // Add description below photo if exists
+                if (photo.description) {
+                    doc.setFontSize(6);
+                    doc.setTextColor(0);
+                    doc.setFont(fontName, 'normal');
+                    const descLines = doc.splitTextToSize(photo.description, photoWidth);
+                    doc.text(descLines, photoX, photoY + photoHeight + 3);
+                }
+
+                // Track the bottom position
+                currentPhotoY = photoY + photoHeight + (photo.description ? 10 : 5);
+            } catch (e) {
+                console.warn('Failed to add product photo to PDF:', e);
+            }
+        }
+
+        photosEndY = currentPhotoY;
+    }
+
+    // Use the maximum Y position between specs and photos
+    yPos = Math.max(specsEndY, photosEndY);
 
     // Second part: Column headers and data rows
     const headerRow = [
