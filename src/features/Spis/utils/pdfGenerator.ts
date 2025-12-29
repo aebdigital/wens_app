@@ -702,9 +702,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Totals & Payment Plan Tables (neutral, no header)
     const cenaSDPH = item.cenaSDPH;
-    const platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
-    const platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
-    const platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+    // Use saved amounts if available, otherwise calculate from percentages
+    const platba1Amount = data.platba1Amount != null
+      ? data.platba1Amount.toFixed(2)
+      : (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+    const platba2Amount = data.platba2Amount != null
+      ? data.platba2Amount.toFixed(2)
+      : (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+    const platba3Amount = data.platba3Amount != null
+      ? data.platba3Amount.toFixed(2)
+      : (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
     const tableWidth = 73;
@@ -1084,9 +1091,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
         ? data.manualCenaSDPH
         : cenaBezDPH * 1.23;
-    const platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
-    const platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
-    const platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+    // Use saved amounts if available, otherwise calculate from percentages
+    const platba1Amount = data.platba1Amount != null
+      ? data.platba1Amount.toFixed(2)
+      : (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+    const platba2Amount = data.platba2Amount != null
+      ? data.platba2Amount.toFixed(2)
+      : (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+    const platba3Amount = data.platba3Amount != null
+      ? data.platba3Amount.toFixed(2)
+      : (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
     const tableWidth = 73;
