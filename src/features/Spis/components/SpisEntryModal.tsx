@@ -266,6 +266,35 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         // else if (selectedItem.typ === 'puzdra' && selectedItem.data.polozky) { ... }
     }
 
+    // Calculate finance updates when selecting (not unselecting)
+    let financeUpdates: { cena?: string; zaloha1?: string; zaloha2?: string; doplatok?: string } = {};
+    if (!isCurrentlySelected && selectedItem.data) {
+        const data = selectedItem.data;
+        const cenaSDPH = selectedItem.cenaSDPH || 0;
+
+        // Helper function to round to nearest 10
+        const roundTo10 = (value: number) => Math.round(value / 10) * 10;
+
+        // Use manual override amounts if set, otherwise calculate from percentages and round
+        const platba1 = data.platba1Amount != null
+          ? data.platba1Amount
+          : roundTo10(cenaSDPH * (data.platba1Percent || 60) / 100);
+        const platba2 = data.platba2Amount != null
+          ? data.platba2Amount
+          : roundTo10(cenaSDPH * (data.platba2Percent || 30) / 100);
+        // Third payment is the remainder to ensure total matches
+        const platba3 = data.platba3Amount != null
+          ? data.platba3Amount
+          : cenaSDPH - platba1 - platba2;
+
+        financeUpdates = {
+          cena: cenaSDPH.toFixed(2),
+          zaloha1: platba1.toFixed(2),
+          zaloha2: platba2.toFixed(2),
+          doplatok: platba3.toFixed(2)
+        };
+    }
+
     setFormData(prev => {
         const newItems = prev.cenovePonukyItems.map(item => ({
             ...item,
@@ -279,7 +308,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             ...prev,
             cenovePonukyItems: newItems,
             odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? (selectedItem.cisloCP.split('/').pop() || '') : '') : '',
-            odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : ''
+            odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : '',
+            ...financeUpdates
         };
     });
   };

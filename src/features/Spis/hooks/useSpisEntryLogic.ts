@@ -681,6 +681,9 @@ export const useSpisEntryLogic = (
       ? existingItem?.cisloCP || ''
       : formData.predmet + '-' + (formData.cenovePonukyItems.length + 1).toString().padStart(2, '0');
 
+    // Preserve the selected state from the existing item
+    const isSelected = existingItem?.selected || false;
+
     const entryData: CenovaPonukaItem = {
       id: newId,
       cisloCP: newCisloCP,
@@ -697,17 +700,34 @@ export const useSpisEntryLogic = (
       typ: type,
       cenaBezDPH: cenaBezDPH,
       cenaSDPH: cenaSDPH,
-      data: data
+      data: data,
+      selected: isSelected // Preserve selected state
     };
 
-    // Calculate finance updates
+    // Calculate finance updates - only if this quote is selected (Schválená)
+    // Use manual override amounts if available, otherwise calculate and round to 10€
     let financeUpdates = {};
-    if ((type === 'dvere' || type === 'nabytok' || type === 'schody') && data.platba1Percent) {
+    if (isSelected && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
+        // Helper function to round to nearest 10
+        const roundTo10 = (value: number) => Math.round(value / 10) * 10;
+
+        // Use manual override amounts if set, otherwise calculate from percentages and round
+        const platba1 = data.platba1Amount != null
+          ? data.platba1Amount
+          : roundTo10(cenaSDPH * (data.platba1Percent || 60) / 100);
+        const platba2 = data.platba2Amount != null
+          ? data.platba2Amount
+          : roundTo10(cenaSDPH * (data.platba2Percent || 30) / 100);
+        // Third payment is the remainder to ensure total matches
+        const platba3 = data.platba3Amount != null
+          ? data.platba3Amount
+          : cenaSDPH - platba1 - platba2;
+
         financeUpdates = {
           cena: cenaSDPH.toFixed(2),
-          zaloha1: (cenaSDPH * data.platba1Percent / 100).toFixed(2),
-          zaloha2: (cenaSDPH * data.platba2Percent / 100).toFixed(2),
-          doplatok: (cenaSDPH * data.platba3Percent / 100).toFixed(2)
+          zaloha1: platba1.toFixed(2),
+          zaloha2: platba2.toFixed(2),
+          doplatok: platba3.toFixed(2)
         };
     }
 
