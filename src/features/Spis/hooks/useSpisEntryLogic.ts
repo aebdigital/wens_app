@@ -674,20 +674,25 @@ export const useSpisEntryLogic = (
       popis = `Objednávka: ${data.polozky ? data.polozky.length : 0} položiek`;
     }
 
+    // Generate a new ID for new items, or use the existing ID for edits
+    const newId = editingOfferId || Date.now().toString();
+    const existingItem = editingOfferId ? formData.cenovePonukyItems.find(i => i.id === editingOfferId) : null;
+    const newCisloCP = editingOfferId
+      ? existingItem?.cisloCP || ''
+      : formData.predmet + '-' + (formData.cenovePonukyItems.length + 1).toString().padStart(2, '0');
+
     const entryData: CenovaPonukaItem = {
-      id: editingOfferId || Date.now().toString(),
-      cisloCP: editingOfferId 
-        ? formData.cenovePonukyItems.find(i => i.id === editingOfferId)?.cisloCP || '' 
-        : formData.predmet + '-' + (formData.cenovePonukyItems.length + 1).toString().padStart(2, '0'),
-      verzia: editingOfferId 
-        ? formData.cenovePonukyItems.find(i => i.id === editingOfferId)?.verzia || '1'
+      id: newId,
+      cisloCP: newCisloCP,
+      verzia: editingOfferId
+        ? existingItem?.verzia || '1'
         : '1',
       odoslane: editingOfferId
-        ? formData.cenovePonukyItems.find(i => i.id === editingOfferId)?.odoslane || ''
+        ? existingItem?.odoslane || ''
         : '',
       vytvoril: formData.vypracoval || (user ? `${user.firstName} ${user.lastName}` : '') || '',
-      popis: editingOfferId 
-        ? (formData.cenovePonukyItems.find(i => i.id === editingOfferId)?.popis || '')
+      popis: editingOfferId
+        ? (existingItem?.popis || '')
         : (popis.substring(0, 50) + (popis.length > 50 ? '...' : '')),
       typ: type,
       cenaBezDPH: cenaBezDPH,
@@ -719,6 +724,15 @@ export const useSpisEntryLogic = (
         cenovePonukyItems: newItems
       };
     });
+
+    // After first save, switch to edit mode so subsequent saves update instead of creating new
+    if (!editingOfferId) {
+      setEditingOfferId(newId);
+      setEditingOfferData({ type, data, cisloCP: newCisloCP });
+    } else {
+      // Update the editingOfferData with latest data
+      setEditingOfferData({ type, data, cisloCP: newCisloCP });
+    }
   };
 
   const handleAddOrderSave = (data: any) => {
