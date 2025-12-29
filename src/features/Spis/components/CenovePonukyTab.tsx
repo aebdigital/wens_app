@@ -12,6 +12,7 @@ interface CenovePonukyTabProps {
   onAddVzor: () => void;
   onToggleSelect: (item: CenovaPonukaItem) => void;
   onUpdate: (items: CenovaPonukaItem[]) => void;
+  onSave?: () => void;
 }
 
 export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
@@ -23,7 +24,8 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   isLocked = false,
   onAddVzor,
   onToggleSelect,
-  onUpdate
+  onUpdate,
+  onSave
 }) => {
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
@@ -31,6 +33,12 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   const handlePreviewPDF = async (item: CenovaPonukaItem) => {
     setIsGenerating(item.id);
     try {
+      // Auto-save before generating PDF to ensure data is not empty
+      if (onSave) {
+        onSave();
+        // Small delay to allow save to complete
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
       const blobUrl = await onGeneratePDF(item);
       setPdfPreview({
         url: blobUrl,

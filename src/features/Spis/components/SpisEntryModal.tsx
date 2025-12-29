@@ -503,6 +503,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         setShowVzorModal(true);
                       }}
                       onToggleSelect={handleToggleSelect}
+                      onSave={performSave}
                     />
                   )}
 
