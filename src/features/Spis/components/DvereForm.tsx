@@ -69,7 +69,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     { 
       key: 'ks' as keyof typeof data.priplatky[0], 
       label: 'ks', 
-      width: 'w-16', 
+      width: 'w-24', 
       align: 'center' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
@@ -86,7 +86,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     { 
       key: 'cenaKs' as keyof typeof data.priplatky[0], 
       label: 'cena / ks', 
-      width: 'w-24', 
+      width: 'w-32', 
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
          <div className="flex items-center justify-end">
@@ -97,7 +97,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 const cenaKs = parseFloat(e.target.value) || 0;
                 update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
               }}
-              className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+              className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
             />
             <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
          </div>
@@ -106,7 +106,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     { 
       key: 'cenaCelkom' as keyof typeof data.priplatky[0], 
       label: 'cena celkom', 
-      width: 'w-24', 
+      width: 'w-32', 
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }
@@ -266,21 +266,23 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         totals={totals}
     >
       {/* Product description */}
-      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} flex items-center gap-4`}>
-        <h3 className={`text-sm font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
-        <input
-          type="text"
-          value={data.popisVyrobkov}
-          onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
-          placeholder="Popis zakázky"
-          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
-        />
+      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+        <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
+        <div className="mt-1">
+            <input
+            type="text"
+            value={data.popisVyrobkov}
+            onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
+            placeholder="Popis zakázky"
+            className={`w-full px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+            />
+        </div>
       </div>
 
       {/* Specifications Section with Photos */}
       <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>
         <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           {/* Left side - Specifications */}
           <div className="flex-1 space-y-3">
             {/* Dvere group */}
@@ -394,7 +396,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </div>
 
           {/* Right side - Photo Upload */}
-          <div className={`w-64 border-l ${isDark ? 'border-dark-500' : 'border-gray-200'} pl-4`}>
+          <div className={`w-full md:w-64 border-t md:border-t-0 md:border-l ${isDark ? 'border-dark-500' : 'border-gray-200'} pt-4 md:pt-0 pl-0 md:pl-4 mt-2 md:mt-0`}>
             <div className="flex items-center justify-between mb-2">
               <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Fotky výrobkov:</span>
               <button

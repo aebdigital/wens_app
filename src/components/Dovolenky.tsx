@@ -112,12 +112,115 @@ const getMonthDays = (year: number, month: number) => {
   return days;
 };
 
+// Day detail popup component
+interface DayDetailPopupProps {
+  date: Date;
+  vacations: VacationEntry[];
+  onClose: () => void;
+  isDark: boolean;
+}
+
+const DayDetailPopup: React.FC<DayDetailPopupProps> = ({ date, vacations, onClose, isDark }) => {
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  const dayName = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'][date.getDay()];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className={`w-full max-w-md rounded-lg shadow-xl ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] px-4 py-3 rounded-t-lg flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">
+              {date.getDate()}. {MONTH_NAMES[date.getMonth()]} {date.getFullYear()}
+            </h3>
+            <p className={`text-sm ${isWeekend ? 'text-red-200' : 'text-white/80'}`}>
+              {dayName}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-white/20 transition-colors text-white"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 max-h-[60vh] overflow-y-auto">
+          {vacations.length === 0 ? (
+            <p className={`text-center py-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Žiadne dovolenky v tento deň
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {vacations.map((vac) => {
+                const color = stringToColor(vac.name);
+                return (
+                  <div
+                    key={vac.id}
+                    className={`rounded-lg p-3 border ${isDark ? 'border-dark-600' : 'border-gray-200'}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Color indicator */}
+                      <div
+                        className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
+                        style={{ backgroundColor: color.bg }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        {/* Name */}
+                        <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {vac.name}
+                        </h4>
+                        {/* Date range */}
+                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {new Date(vac.startDate).toLocaleDateString('sk-SK')} – {new Date(vac.endDate).toLocaleDateString('sk-SK')}
+                        </p>
+                        {/* Note if exists */}
+                        {vac.note && (
+                          <p className={`text-sm mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            {vac.note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className={`px-4 py-3 border-t ${isDark ? 'border-dark-600' : 'border-gray-200'}`}>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors font-medium text-sm"
+          >
+            Zavrieť
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Dovolenky: React.FC = () => {
   const { isDark } = useTheme();
   const { user } = useAuth();
 
   const [vacations, setVacations] = useState<VacationEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Day detail popup state
+  const [selectedDay, setSelectedDay] = useState<{ date: Date; vacations: VacationEntry[] } | null>(null);
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -393,16 +496,22 @@ const Dovolenky: React.FC = () => {
                   // Find vacations for this day
                   const dayVacations = vacations.filter(v => isDateInVacation(day, v));
 
+                  // Handle day click
+                  const handleDayClick = () => {
+                    setSelectedDay({ date: day, vacations: dayVacations });
+                  };
+
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`min-h-[80px] p-1 rounded-lg border transition-colors ${
+                      onClick={handleDayClick}
+                      className={`min-h-[80px] p-1 rounded-lg border transition-colors cursor-pointer ${
                         isToday
                           ? 'border-[#e11b28] border-2'
                           : isDark
                             ? 'border-dark-600 hover:border-dark-500'
                             : 'border-gray-200 hover:border-gray-300'
-                      } ${isDark ? 'bg-dark-700' : 'bg-gray-50'}`}
+                      } ${isDark ? 'bg-dark-700 hover:bg-dark-600' : 'bg-gray-50 hover:bg-gray-100'}`}
                     >
                       {/* Day Number */}
                       <div className={`text-xs font-medium mb-1 ${
@@ -486,6 +595,16 @@ const Dovolenky: React.FC = () => {
             </div>
 
         </div>
+
+      {/* Day Detail Popup */}
+      {selectedDay && (
+        <DayDetailPopup
+          date={selectedDay.date}
+          vacations={selectedDay.vacations}
+          onClose={() => setSelectedDay(null)}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 };

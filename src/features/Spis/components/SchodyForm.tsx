@@ -69,7 +69,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
     {
       key: 'ks' as keyof typeof data.priplatky[0],
       label: 'ks',
-      width: 'w-16',
+      width: 'w-24',
       align: 'center' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
@@ -86,7 +86,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
     {
       key: 'cenaKs' as keyof typeof data.priplatky[0],
       label: 'cena / ks',
-      width: 'w-24',
+      width: 'w-32',
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
          <div className="flex items-center justify-end">
@@ -97,7 +97,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                 const cenaKs = parseFloat(e.target.value) || 0;
                 update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
               }}
-              className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+              className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
             />
             <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
          </div>
@@ -106,7 +106,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
     {
       key: 'cenaCelkom' as keyof typeof data.priplatky[0],
       label: 'cena celkom',
-      width: 'w-24',
+      width: 'w-32',
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }

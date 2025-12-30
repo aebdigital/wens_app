@@ -109,15 +109,15 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
         </div>
       </div>
 
-      {/* Objednávame u nás */}
+      {/* Objednávame u Vás */}
       <div className={`p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-        <div className="flex items-center gap-4">
-          <span className={`font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-800'}`}>Objednávame u nás:</span>
+        <div className="flex flex-col gap-2">
+          <span className={`font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-800'}`}>Objednávame u Vás:</span>
           <input
             type="text"
             value={data.zakazka}
             onChange={(e) => onChange({...data, zakazka: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
       </div>

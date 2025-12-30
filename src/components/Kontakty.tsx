@@ -322,9 +322,9 @@ const Kontakty = () => {
 
       {/* Contact Form Popup */}
       {isPopupOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div
-            className={`rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transition-all duration-500 ease-in-out ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            className={`rounded-lg max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-500 ease-in-out ${isDark ? 'bg-dark-800' : 'bg-white'}`}
             style={{
               boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
             }}
@@ -350,27 +350,21 @@ const Kontakty = () => {
             {/* Popup Form */}
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               {/* Type Selection - Only for new contacts */}
-              <div className="flex items-center gap-4">
-                <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Typ kontaktu:</label>
+              <div className="space-y-2">
+                <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Typ kontaktu:</label>
                 {editingContactId ? (
-                  <span className={`px-3 py-1 rounded text-sm font-medium ${
-                    formData.typ === 'zakaznik' 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : formData.typ === 'architekt'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium bg-[#e11b28] text-white`}>
                     {formData.typ === 'zakaznik' ? 'Zákazník' : (formData.typ === 'architekt' ? 'Architekt' : 'Fakturačná firma')}
                   </span>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, typ: 'zakaznik' }))}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'zakaznik'
-                          ? 'bg-blue-600 text-white'
-                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          ? 'bg-[#e11b28] text-white'
+                          : isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
                       Zákazník
@@ -378,10 +372,10 @@ const Kontakty = () => {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, typ: 'architekt' }))}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'architekt'
-                          ? 'bg-purple-600 text-white'
-                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          ? 'bg-[#e11b28] text-white'
+                          : isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
                       Architekt
@@ -389,10 +383,10 @@ const Kontakty = () => {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, typ: 'fakturacna_firma' }))}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                         formData.typ === 'fakturacna_firma'
-                          ? 'bg-green-600 text-white'
-                          : isDark ? 'bg-dark-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          ? 'bg-[#e11b28] text-white'
+                          : isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
                       Fakturačná firma

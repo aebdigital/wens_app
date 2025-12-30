@@ -395,16 +395,27 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         className={`${isDark ? 'bg-dark-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col w-full h-full md:w-[95vw] md:h-[90vh] md:max-w-[1400px]`}
       >
         {/* Header with WENS DOOR logo and tabs */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-          <div className="flex items-center gap-8">
-            <div className="bg-white rounded-lg p-2 inline-block shadow-sm">
-              <img
-                src="/logo.png"
-                alt="WENS door"
-                className="h-8"
-              />
+        <div className={`flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
+          <div className="flex flex-col items-start md:flex-row md:items-center gap-3 md:gap-8 w-full md:w-auto">
+            <div className="flex items-center justify-between w-full md:w-auto">
+              <div className="bg-white rounded-lg p-2 inline-block shadow-sm">
+                <img
+                  src="/logo.png"
+                  alt="WENS door"
+                  className="h-8"
+                />
+              </div>
+              {/* Close button - mobile only */}
+              <button
+                onClick={onClose}
+                className={`md:hidden p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-2">
+            <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1 md:pb-2 w-full md:w-auto no-scrollbar">
               {(editingData || visibleTabs.length > 1
                 ? (editingData ? [activeTab] : visibleTabs)
                 : [] // If only one visible tab and not editing, don't show tab buttons
@@ -412,7 +423,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                  className={`px-4 md:px-6 py-1.5 md:py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${
                     activeTab === tab
                       ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow-lg'
                       : isDark
@@ -425,7 +436,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>
               Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
             </span>
@@ -545,7 +556,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
-                Náhľad PDF
+                Náhľad
               </button>
             )}
           </div>

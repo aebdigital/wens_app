@@ -37,7 +37,7 @@ export const GenericItemsTable = <T extends { id: string | number }>({
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>{title}</h3>
         </div>
       )}
-      <div className="overflow-x-visible">
+      <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">

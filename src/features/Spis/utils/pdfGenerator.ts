@@ -1411,11 +1411,11 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     textColor: [255, 255, 255] as [number, number, number]
   };
 
-  // Zakazka Table (Objednávame u nás)
+  // Zakazka Table (Objednávame u Vás)
   if (data.zakazka) {
     autoTable(doc, {
         startY: yPos,
-        body: [[`Objednávame u nás: ${data.zakazka}`]],
+        body: [[`Objednávame u Vás: ${data.zakazka}`]],
         styles: { ...tableStyles, fontSize: 9, halign: 'left', fontStyle: 'bold' },
         theme: 'grid',
         tableWidth: 'auto'
