@@ -127,96 +127,98 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
         <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Názov tovaru:</h3>
         </div>
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
-              <th className="px-4 py-2 text-left border-r border-white/20">Popis položky</th>
-              <th className="px-2 py-2 text-left border-r border-white/20 w-32">Kód</th>
-              <th className="px-2 py-2 text-center border-r border-white/20 w-24">Množstvo</th>
-              <th className="px-2 py-2 w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.polozky.map((item, index) => (
-              <tr key={item.id} className={`${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                <td className={`px-4 py-2 border-r relative ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                  <textarea
-                    value={item.nazov}
-                    onChange={(e) => {
-                      const newPolozky = [...data.polozky];
-                      newPolozky[index].nazov = e.target.value;
-                      onChange({...data, polozky: newPolozky});
-                      setActiveRowIndex(index);
-                    }}
-                    onFocus={() => setActiveRowIndex(index)}
-                    onBlur={() => setTimeout(() => setActiveRowIndex(null), 200)}
-                    rows={2}
-                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none resize-none`}
-                  />
-                  {activeRowIndex === index && item.nazov.length > 0 && availableProducts.length > 0 && (
-                      <div className={`absolute z-50 left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
-                          {availableProducts
-                            .filter(p => p.name.toLowerCase().includes(item.nazov.toLowerCase()))
-                            .map((p) => (
-                              <div
-                                key={p.id}
-                                onClick={() => handleProductSelect(index, p)}
-                                className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-dark-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
-                              >
-                                <div className="flex justify-between">
-                                    <span className="font-semibold">{p.name}</span>
-                                    {p.kod && <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{p.kod}</span>}
-                                </div>
-                                <span className={`block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>({p.supplier})</span>
-                              </div>
-                            ))
-                          }
-                      </div>
-                  )}
-                </td>
-                <td className={`px-2 py-2 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                  <input
-                    type="text"
-                    value={item.kod || ''}
-                    onChange={(e) => {
-                      const newPolozky = [...data.polozky];
-                      newPolozky[index].kod = e.target.value;
-                      onChange({...data, polozky: newPolozky});
-                    }}
-                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                    placeholder="Kód"
-                  />
-                </td>
-                <td className={`px-2 py-2 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                  <input
-                    type="number"
-                    value={item.mnozstvo}
-                    onChange={(e) => {
-                      const newPolozky = [...data.polozky];
-                      newPolozky[index].mnozstvo = parseInt(e.target.value) || 0;
-                      onChange({...data, polozky: newPolozky});
-                    }}
-                    className={`w-16 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                  />
-                </td>
-                <td className={`px-2 py-2 text-center ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                  <button
-                    onClick={() => {
-                      const newPolozky = data.polozky.filter((_, i) => i !== index);
-                      onChange({...data, polozky: newPolozky});
-                    }}
-                    className={`p-1 hover:text-red-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                    title="Odstrániť riadok"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+                <th className="px-4 py-2 text-left border-r border-white/20 min-w-[200px]">Popis položky</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px] w-32">Kód</th>
+                <th className="px-2 py-2 text-center border-r border-white/20 min-w-[80px] w-24">Množstvo</th>
+                <th className="px-2 py-2 w-8"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.polozky.map((item, index) => (
+                <tr key={item.id} className={`${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                  <td className={`px-4 py-2 border-r relative ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                    <textarea
+                      value={item.nazov}
+                      onChange={(e) => {
+                        const newPolozky = [...data.polozky];
+                        newPolozky[index].nazov = e.target.value;
+                        onChange({...data, polozky: newPolozky});
+                        setActiveRowIndex(index);
+                      }}
+                      onFocus={() => setActiveRowIndex(index)}
+                      onBlur={() => setTimeout(() => setActiveRowIndex(null), 200)}
+                      rows={2}
+                      className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none resize-none`}
+                    />
+                    {activeRowIndex === index && item.nazov.length > 0 && availableProducts.length > 0 && (
+                        <div className={`absolute z-50 left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
+                            {availableProducts
+                              .filter(p => p.name.toLowerCase().includes(item.nazov.toLowerCase()))
+                              .map((p) => (
+                                <div
+                                  key={p.id}
+                                  onClick={() => handleProductSelect(index, p)}
+                                  className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-dark-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
+                                >
+                                  <div className="flex justify-between">
+                                      <span className="font-semibold">{p.name}</span>
+                                      {p.kod && <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{p.kod}</span>}
+                                  </div>
+                                  <span className={`block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>({p.supplier})</span>
+                                </div>
+                              ))
+                            }
+                        </div>
+                    )}
+                  </td>
+                  <td className={`px-2 py-2 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                    <input
+                      type="text"
+                      value={item.kod || ''}
+                      onChange={(e) => {
+                        const newPolozky = [...data.polozky];
+                        newPolozky[index].kod = e.target.value;
+                        onChange({...data, polozky: newPolozky});
+                      }}
+                      className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                      placeholder="Kód"
+                    />
+                  </td>
+                  <td className={`px-2 py-2 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                    <input
+                      type="number"
+                      value={item.mnozstvo}
+                      onChange={(e) => {
+                        const newPolozky = [...data.polozky];
+                        newPolozky[index].mnozstvo = parseInt(e.target.value) || 0;
+                        onChange({...data, polozky: newPolozky});
+                      }}
+                      className={`w-16 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                    />
+                  </td>
+                  <td className={`px-2 py-2 text-center ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                    <button
+                      onClick={() => {
+                        const newPolozky = data.polozky.filter((_, i) => i !== index);
+                        onChange({...data, polozky: newPolozky});
+                      }}
+                      className={`p-1 hover:text-red-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                      title="Odstrániť riadok"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
             onClick={() => {

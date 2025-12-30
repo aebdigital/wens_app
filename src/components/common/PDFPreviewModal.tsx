@@ -135,7 +135,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
       />
 
       {/* Modal */}
-      <div className={`relative w-[95vw] h-[95vh] max-w-6xl flex flex-col rounded-xl shadow-2xl overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
+      <div className={`relative w-full h-full md:w-[95vw] md:h-[95vh] md:max-w-6xl flex flex-col md:rounded-xl shadow-2xl overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
         {/* Header */}
         <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-dark-600 bg-dark-700' : 'border-gray-200 bg-gray-50'}`}>
           <div className="flex items-center gap-4">

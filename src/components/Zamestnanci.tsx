@@ -250,137 +250,141 @@ const Zamestnanci: React.FC = () => {
         </table>
       </div>
 
-      {/* Revenue Section */}
-      <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Tržby z uzavretých projektov</h2>
+      {/* Revenue Section - Scrollable on mobile */}
+      <div className="overflow-x-auto pb-4">
+        <div className="min-w-[800px]">
+          <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Tržby z uzavretých projektov</h2>
 
-      {/* Revenue Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkové tržby ({selectedYear})</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {revenueData.yearlyRevenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Uzavretých projektov (celkovo)</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{revenueData.totalClosedProjects}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-          style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkové tržby (všetky roky)</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {revenueData.totalRevenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-[#e11b28]/10 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-[#e11b28]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Revenue Chart */}
-      <div
-        className={`rounded-lg p-6 mb-6 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-        style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Mesačné tržby
-          </h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSelectedYear(selectedYear - 1)}
-              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+          {/* Revenue Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div
+              className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+              style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className={`text-lg font-semibold min-w-[60px] text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {selectedYear}
-            </span>
-            <button
-              onClick={() => setSelectedYear(selectedYear + 1)}
-              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Bar Chart */}
-        <div className="h-64 flex items-end justify-between gap-2">
-          {revenueData.monthlyRevenue.map((revenue, index) => {
-            const heightPercent = revenueData.maxMonthlyRevenue > 0
-              ? (revenue / revenueData.maxMonthlyRevenue) * 100
-              : 0;
-            const isCurrentMonth = new Date().getMonth() === index && new Date().getFullYear() === selectedYear;
-
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                <div className="relative w-full h-48 flex items-end justify-center group">
-                  {/* Tooltip */}
-                  <div className={`absolute bottom-full mb-2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isDark ? 'bg-dark-600 text-white' : 'bg-gray-800 text-white'}`}>
-                    {FULL_MONTH_NAMES[index]}: {revenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                  </div>
-                  {/* Bar */}
-                  <div
-                    className={`w-full max-w-[40px] rounded-t transition-all duration-300 ${isCurrentMonth ? 'bg-[#e11b28]' : (isDark ? 'bg-emerald-500' : 'bg-emerald-400')} ${revenue > 0 ? 'min-h-[4px]' : ''}`}
-                    style={{ height: `${Math.max(heightPercent, revenue > 0 ? 2 : 0)}%` }}
-                  />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkové tržby ({selectedYear})</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {revenueData.yearlyRevenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </p>
                 </div>
-                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} ${isCurrentMonth ? 'font-bold text-[#e11b28]' : ''}`}>
-                  {MONTH_NAMES[index]}
-                </span>
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-200 dark:border-dark-500">
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded ${isDark ? 'bg-emerald-500' : 'bg-emerald-400'}`}></div>
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Tržby</span>
+            <div
+              className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+              style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Uzavretých projektov (celkovo)</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{revenueData.totalClosedProjects}</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`rounded-lg p-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+              style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Celkové tržby (všetky roky)</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {revenueData.totalRevenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-[#e11b28]/10 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[#e11b28]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-[#e11b28]"></div>
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Aktuálny mesiac</span>
+
+          {/* Monthly Revenue Chart */}
+          <div
+            className={`rounded-lg p-6 mb-6 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Mesačné tržby
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedYear(selectedYear - 1)}
+                  className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className={`text-lg font-semibold min-w-[60px] text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {selectedYear}
+                </span>
+                <button
+                  onClick={() => setSelectedYear(selectedYear + 1)}
+                  className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Bar Chart */}
+            <div className="h-64 flex items-end justify-between gap-2">
+              {revenueData.monthlyRevenue.map((revenue, index) => {
+                const heightPercent = revenueData.maxMonthlyRevenue > 0
+                  ? (revenue / revenueData.maxMonthlyRevenue) * 100
+                  : 0;
+                const isCurrentMonth = new Date().getMonth() === index && new Date().getFullYear() === selectedYear;
+
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                    <div className="relative w-full h-48 flex items-end justify-center group">
+                      {/* Tooltip */}
+                      <div className={`absolute bottom-full mb-2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isDark ? 'bg-dark-600 text-white' : 'bg-gray-800 text-white'}`}>
+                        {FULL_MONTH_NAMES[index]}: {revenue.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </div>
+                      {/* Bar */}
+                      <div
+                        className={`w-full max-w-[40px] rounded-t transition-all duration-300 ${isCurrentMonth ? 'bg-[#e11b28]' : (isDark ? 'bg-emerald-500' : 'bg-emerald-400')} ${revenue > 0 ? 'min-h-[4px]' : ''}`}
+                        style={{ height: `${Math.max(heightPercent, revenue > 0 ? 2 : 0)}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} ${isCurrentMonth ? 'font-bold text-[#e11b28]' : ''}`}>
+                      {MONTH_NAMES[index]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-200 dark:border-dark-500">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded ${isDark ? 'bg-emerald-500' : 'bg-emerald-400'}`}></div>
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Tržby</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-[#e11b28]"></div>
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Aktuálny mesiac</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

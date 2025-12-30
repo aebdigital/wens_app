@@ -65,7 +65,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
-    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov' },
+    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[200px]' },
     { 
       key: 'ks' as keyof typeof data.priplatky[0], 
       label: 'ks', 
@@ -463,21 +463,21 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
       {/* Výrobky Table */}
       <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
-        <div className="overflow-x-visible">
+        <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
                 <th className="px-2 py-2 text-left border-r border-white/20 w-8"></th>
-                <th className="px-2 py-2 text-left border-r border-white/20">miestnosť</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">položka</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">typ / rozmer</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">P / Ľ</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">zámok</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">sklo</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">povrch</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">poznámka</th>
-                <th className="px-2 py-2 text-right border-r border-white/20">ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20">cena / ks</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[100px]">miestnosť</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[100px]">položka</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">typ / rozmer</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[60px]">P / Ľ</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[60px]">zámok</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[80px]">sklo</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[80px]">povrch</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">poznámka</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 min-w-[60px]">ks</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 min-w-[80px]">cena / ks</th>
                 <th className="px-2 py-2 text-right border-r border-white/20 whitespace-nowrap min-w-[90px]">cena celkom</th>
                 <th className="px-2 py-2 text-center w-8"></th>
               </tr>

@@ -65,7 +65,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
-    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov' },
+    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[200px]' },
     {
       key: 'ks' as keyof typeof data.priplatky[0],
       label: 'ks',
@@ -139,18 +139,18 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
         <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
         </div>
-        <div className="overflow-x-visible mr-8">
+        <div className="overflow-x-auto mr-0 md:mr-8">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
                 <th className="px-2 py-2 text-left border-r border-white/20 w-8"></th>
-                <th className="px-2 py-2 text-left border-r border-white/20">názov</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">rozmer</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">materiál</th>
-                <th className="px-2 py-2 text-left border-r border-white/20">poznámka</th>
-                <th className="px-2 py-2 text-center border-r border-white/20 w-16">ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20 w-24">cena / ks</th>
-                <th className="px-2 py-2 text-right w-24">cena celkom</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">názov</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px]">rozmer</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px]">materiál</th>
+                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">poznámka</th>
+                <th className="px-2 py-2 text-center border-r border-white/20 w-16 min-w-[60px]">ks</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 w-24 min-w-[80px]">cena / ks</th>
+                <th className="px-2 py-2 text-right w-24 min-w-[90px]">cena celkom</th>
               </tr>
             </thead>
             <tbody>
