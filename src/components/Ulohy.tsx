@@ -88,7 +88,7 @@ const Ulohy = () => {
       </div>
 
       {/* Filters */}
-      <div className={`flex gap-2 p-1 rounded-lg self-start ${isDark ? 'bg-dark-800' : 'bg-gray-200'} mb-6`}>
+      <div className={`inline-flex gap-2 p-1 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-200'} mb-6`}>
         <button
           onClick={() => setFilter('assigned')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
