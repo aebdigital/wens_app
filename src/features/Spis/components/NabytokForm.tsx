@@ -65,7 +65,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
-    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[200px]' },
+    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[280px]' },
     { 
       key: 'ks' as keyof typeof data.priplatky[0], 
       label: 'ks', 
@@ -123,15 +123,17 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         totals={totals}
     >
       {/* Product description */}
-      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} flex items-center gap-4`}>
-        <h3 className={`text-sm font-semibold whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
-        <input
-          type="text"
-          value={data.popisVyrobkov}
-          onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
-          placeholder="Popis zakázky"
-          className={`flex-1 px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
-        />
+      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+        <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
+        <div className="mt-1">
+            <input
+              type="text"
+              value={data.popisVyrobkov}
+              onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
+              placeholder="Popis zakázky"
+              className={`w-full px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+            />
+        </div>
       </div>
 
       {/* Výrobky section */}

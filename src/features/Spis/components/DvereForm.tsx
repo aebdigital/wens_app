@@ -65,7 +65,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
-    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[200px]' },
+    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[280px]' },
     { 
       key: 'ks' as keyof typeof data.priplatky[0], 
       label: 'ks', 
