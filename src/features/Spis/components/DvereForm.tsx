@@ -292,8 +292,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 .filter(spec => spec.type === 'dvere');
               if (dvereSpecs.length === 0) return null;
               return (
-                <div className="flex gap-2">
-                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Dvere:</span>
+                <div className="flex flex-col md:flex-row gap-1 md:gap-2">
+                  <span className={`md:w-20 text-xs text-left md:text-right md:pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Dvere:</span>
                   <div className="flex-1 space-y-1">
                     {dvereSpecs.map((spec) => (
                       <div key={spec.id} className="flex items-center gap-2">
@@ -324,8 +324,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 .filter(spec => spec.type === 'zarubna');
               if (zarubnaSpecs.length === 0) return null;
               return (
-                <div className="flex gap-2">
-                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zárubňa:</span>
+                <div className="flex flex-col md:flex-row gap-1 md:gap-2">
+                  <span className={`md:w-20 text-xs text-left md:text-right md:pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zárubňa:</span>
                   <div className="flex-1 space-y-1">
                     {zarubnaSpecs.map((spec) => (
                       <div key={spec.id} className="flex items-center gap-2">
@@ -356,8 +356,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 .filter(spec => spec.type === 'obklad');
               if (obkladSpecs.length === 0) return null;
               return (
-                <div className="flex gap-2">
-                  <span className={`w-20 text-xs text-right pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Obklad:</span>
+                <div className="flex flex-col md:flex-row gap-1 md:gap-2">
+                  <span className={`md:w-20 text-xs text-left md:text-right md:pt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Obklad:</span>
                   <div className="flex-1 space-y-1">
                     {obkladSpecs.map((spec) => (
                       <div key={spec.id} className="flex items-center gap-2">
@@ -382,7 +382,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             })()}
 
             {/* Add buttons for types that don't have any entries yet */}
-            <div className="flex gap-2 ml-[88px]">
+            <div className="flex flex-wrap gap-2 md:ml-[88px]">
               {!(data.specifications || []).some(s => s.type === 'dvere') && (
                 <button onClick={() => handleAddSpecification('dvere')} className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>+ Dvere</button>
               )}
