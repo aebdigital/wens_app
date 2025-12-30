@@ -364,7 +364,16 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         fotky: [],
         vyrobneVykresy: [],
         technickeVykresy: [],
-        fullFormData: {}
+        fullFormData: {},
+        // Architect info for PDF generation
+        architektonickyPriezvisko: architectInfo?.priezvisko || '',
+        architektonickeMeno: architectInfo?.meno || '',
+        architektonickyIco: '',
+        architektonickyUlica: architectInfo?.ulica || '',
+        architektonickyMesto: architectInfo?.mesto || '',
+        architektonickyPsc: architectInfo?.psc || '',
+        architektonickyTelefon: architectInfo?.telefon || '',
+        architektonickyEmail: architectInfo?.email || ''
       };
 
       const blobUrl = await generatePDF(tempItem, formData as any, headerInfo);

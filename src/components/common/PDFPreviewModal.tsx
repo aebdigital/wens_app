@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set worker path
@@ -19,81 +19,100 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   filename,
   isDark = false
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.5);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Reset all state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setPdfDoc(null);
+      setCurrentPage(1);
+      setTotalPages(0);
+      setScale(1.5);
+      setError(null);
+      setIsLoading(true);
+    }
+  }, [isOpen]);
+
+  // Load PDF document
   useEffect(() => {
     if (!isOpen || !pdfUrl) return;
 
-    const loadPDF = async () => {
-      setIsLoading(true);
-      setError(null);
+    // Reset state before loading new PDF
+    setPdfDoc(null);
+    setIsLoading(true);
+    setError(null);
+    setCurrentPage(1);
+    setTotalPages(0);
 
+    const loadPdf = async () => {
       try {
+        console.log('Loading PDF from:', pdfUrl);
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
-        pdfDocRef.current = pdf;
+        console.log('PDF loaded, pages:', pdf.numPages);
+        setPdfDoc(pdf);
         setTotalPages(pdf.numPages);
-        setCurrentPage(1);
-        await renderPage(pdf, 1);
+        setIsLoading(false);
       } catch (err) {
         console.error('Error loading PDF:', err);
         setError('Nepodarilo sa načítať PDF');
-      } finally {
         setIsLoading(false);
       }
     };
 
-    loadPDF();
-
-    return () => {
-      if (pdfDocRef.current) {
-        pdfDocRef.current.destroy();
-        pdfDocRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadPdf();
   }, [isOpen, pdfUrl]);
 
+  // Render current page
   useEffect(() => {
-    if (pdfDocRef.current && currentPage > 0) {
-      renderPage(pdfDocRef.current, currentPage);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, scale]);
+    if (!pdfDoc || !canvasRef.current) return;
 
-  const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
-    if (!canvasRef.current) return;
+    const renderPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(currentPage);
 
-    try {
-      const page = await pdf.getPage(pageNum);
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
+        // Get device pixel ratio for sharp rendering
+        const pixelRatio = window.devicePixelRatio || 1;
+        const viewport = page.getViewport({ scale: scale * pixelRatio });
 
-      if (!context) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-      const viewport = page.getViewport({ scale: scale * window.devicePixelRatio });
+        const context = canvas.getContext('2d');
+        if (!context) return;
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
-      canvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+        // Set canvas dimensions at higher resolution
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
+        // Scale down the canvas display size
+        canvas.style.width = `${viewport.width / pixelRatio}px`;
+        canvas.style.height = `${viewport.height / pixelRatio}px`;
 
-      await page.render(renderContext).promise;
-    } catch (err) {
-      console.error('Error rendering page:', err);
-    }
-  };
+        // Clear canvas before rendering
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Render PDF page
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        console.log('Page rendered successfully');
+      } catch (err) {
+        console.error('Error rendering page:', err);
+      }
+    };
+
+    renderPage();
+  }, [pdfDoc, currentPage, scale]);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -124,7 +143,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     setScale(prev => Math.max(prev - 0.25, 0.5));
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !pdfUrl) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -200,25 +219,33 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         </div>
 
         {/* PDF Content */}
-        <div className={`flex-1 overflow-auto flex items-start justify-center p-4 ${isDark ? 'bg-dark-900' : 'bg-gray-100'}`}>
-          {isLoading ? (
+        <div
+          ref={containerRef}
+          className={`flex-1 overflow-auto ${isDark ? 'bg-dark-900' : 'bg-gray-100'}`}
+        >
+          {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e11b28]"></div>
               <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Načítavam PDF...</p>
             </div>
-          ) : error ? (
+          )}
+          {error && (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{error}</p>
             </div>
-          ) : (
-            <canvas
-              ref={canvasRef}
-              className="shadow-lg"
-              style={{ maxWidth: '100%', height: 'auto' }}
-            />
+          )}
+          {!isLoading && !error && (
+            <div className="inline-block p-4 min-w-full">
+              <div className="flex justify-center">
+                <canvas
+                  ref={canvasRef}
+                  className="shadow-lg bg-white"
+                />
+              </div>
+            </div>
           )}
         </div>
 

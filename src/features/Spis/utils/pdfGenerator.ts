@@ -1250,7 +1250,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
-  return doc.output('bloburl').toString();
+  // Create blob URL properly for PDF preview
+  const pdfBlob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  return blobUrl;
 };
 
 // Backward compatible function that saves the PDF
@@ -1496,7 +1499,10 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
-  return doc.output('bloburl').toString();
+  // Create blob URL properly for PDF preview
+  const pdfBlob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  return blobUrl;
 };
 
 // Backward compatible function that saves the Order PDF

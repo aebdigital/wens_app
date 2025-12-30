@@ -250,10 +250,7 @@ const Zamestnanci: React.FC = () => {
         </table>
       </div>
 
-      {/* Revenue Section - Scrollable on mobile */}
-      <div className="overflow-x-auto pb-4">
-        <div className="min-w-[800px]">
-          <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Tržby z uzavretých projektov</h2>
+      <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Tržby z uzavretých projektov</h2>
 
           {/* Revenue Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -313,16 +310,16 @@ const Zamestnanci: React.FC = () => {
             </div>
           </div>
 
-          {/* Monthly Revenue Chart */}
-          <div
-            className={`rounded-lg p-6 mb-6 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
-            style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Mesačné tržby
-              </h3>
-              <div className="flex items-center gap-2">
+                {/* Monthly Revenue Chart */}
+                <div
+                  className={`rounded-lg p-6 mb-6 ${isDark ? 'bg-dark-800' : 'bg-white'} overflow-x-auto`}
+                  style={{ boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015' }}
+                >
+                  <div className="min-w-[800px] pb-4">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Mesačné tržby
+                      </h3>              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedYear(selectedYear - 1)}
                   className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
@@ -387,8 +384,6 @@ const Zamestnanci: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
     </div>
   );
 };
