@@ -40,6 +40,7 @@ export interface SpisFormData {
   zaloha2Datum: string;
   doplatok: string;
   doplatokDatum: string;
+  financieDeposits?: FinancieDeposit[]; // Dynamic deposits from selected price offer
 
   // Konečný zákazník
   zakaznikId?: string;
@@ -96,38 +97,58 @@ export interface SpisFormData {
   fakturaciaAdresa: string;
 
   // Items
-  popisItems: {datum: string, popis: string, pridal: string}[];
+  popisItems: { datum: string, popis: string, pridal: string }[];
   cenovePonukyItems: CenovaPonukaItem[];
-  objednavkyItems: {id?: string, nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string}[];
+  objednavkyItems: { id?: string, nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string }[];
   emailKomu: string;
   emailKomuText: string;
   emailPredmet: string;
   emailText: string;
-  emailItems: {popis: string, nazov: string, datum: string, vyvoj: string, stav: string}[];
-  meranieItems: {datum: string, popis: string, pridat: string, zodpovedny: string}[];
-  vyrobneVykresy: {popis: string, nazov: string, odoslane: string, vytvoril: string}[];
-  fotky: {id: string, name: string, type: string, base64: string, description: string}[];
-  technickeItems: {nazov: string, datum: string, kategoria: string, dodavatel: string}[];
+  emailItems: { popis: string, nazov: string, datum: string, vyvoj: string, stav: string }[];
+  meranieItems: { datum: string, popis: string, pridat: string, zodpovedny: string }[];
+  vyrobneVykresy: { popis: string, nazov: string, odoslane: string, vytvoril: string }[];
+  fotky: { id: string, name: string, type: string, base64: string, description: string }[];
+  technickeItems: { nazov: string, datum: string, kategoria: string, dodavatel: string }[];
 }
 
-export interface CenovaPonukaItem {
+export interface CenovaPonukaItemBase {
   id: string;
   cisloCP: string;
   verzia: string;
   odoslane: string;
   vytvoril: string;
   popis: string;
-  typ: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
   cenaBezDPH: number;
   cenaSDPH: number;
-  data: any; // We can refine this later with DvereData | NabytokData | SchodyData | PuzdraData
   selected?: boolean;
 }
+
+export type CenovaPonukaItem =
+  | (CenovaPonukaItemBase & { typ: 'dvere'; data: DvereData })
+  | (CenovaPonukaItemBase & { typ: 'nabytok'; data: NabytokData })
+  | (CenovaPonukaItemBase & { typ: 'schody'; data: SchodyData })
+  | (CenovaPonukaItemBase & { typ: 'puzdra'; data: PuzdraData });
 
 export interface ProductPhoto {
   id: string;
   base64: string;
   description: string;
+}
+
+// Deposit (záloha) interface for dynamic deposits
+export interface Deposit {
+  id: string;
+  label: string; // e.g. "1. záloha - pri objednávke"
+  percent: number;
+  amount?: number | null;
+}
+
+// Deposit with date for Financie section in Všeobecné
+export interface FinancieDeposit {
+  id: string;
+  label: string;
+  amount: string;
+  datum: string;
 }
 
 export interface DvereData {
@@ -141,6 +162,9 @@ export interface DvereData {
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
+  zlavaEur?: number; // Absolute EUR discount
+  useZlavaPercent?: boolean; // Use percentage discount
+  useZlavaEur?: boolean; // Use EUR discount
   kovanie: any[];
   montaz: any[];
   montazPoznamka: string;
@@ -155,11 +179,18 @@ export interface DvereData {
   platba2Amount?: number | null; // Manual override for payment 2 amount
   platba3Amount?: number | null; // Manual override for payment 3 amount
   manualCenaSDPH?: number | null; // Override for total price
+  // New options
+  prenesenieDP?: boolean; // Prenesenie daňovej povinnosti
+  cenaDohodou?: boolean; // Cena dohodou mode
+  cenaDohodouValue?: number | null; // Manual price when cena dohodou
+  // Dynamic deposits (overrides fixed platba1-3 when present)
+  deposits?: Deposit[];
   // Editable footer fields
   vypracoval?: string;
   kontakt?: string;
   emailVypracoval?: string;
   datum?: string;
+  hiddenColumns?: string[];
 }
 
 export interface NabytokData {
@@ -171,6 +202,9 @@ export interface NabytokData {
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
+  zlavaEur?: number;
+  useZlavaPercent?: boolean;
+  useZlavaEur?: boolean;
   kovanie: any[];
   montaz: any[];
   platnostPonuky: string;
@@ -180,11 +214,14 @@ export interface NabytokData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
-  platba1Amount?: number | null; // Manual override for payment 1 amount
-  platba2Amount?: number | null; // Manual override for payment 2 amount
-  platba3Amount?: number | null; // Manual override for payment 3 amount
-  manualCenaSDPH?: number | null; // Override for total price
-  // Editable footer fields
+  platba1Amount?: number | null;
+  platba2Amount?: number | null;
+  platba3Amount?: number | null;
+  manualCenaSDPH?: number | null;
+  prenesenieDP?: boolean;
+  cenaDohodou?: boolean;
+  cenaDohodouValue?: number | null;
+  deposits?: Deposit[];
   vypracoval?: string;
   kontakt?: string;
   emailVypracoval?: string;
@@ -200,6 +237,9 @@ export interface SchodyData {
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
+  zlavaEur?: number;
+  useZlavaPercent?: boolean;
+  useZlavaEur?: boolean;
   kovanie: any[];
   montaz: any[];
   platnostPonuky: string;
@@ -209,11 +249,14 @@ export interface SchodyData {
   platba1Percent: number;
   platba2Percent: number;
   platba3Percent: number;
-  platba1Amount?: number | null; // Manual override for payment 1 amount
-  platba2Amount?: number | null; // Manual override for payment 2 amount
-  platba3Amount?: number | null; // Manual override for payment 3 amount
-  manualCenaSDPH?: number | null; // Override for total price
-  // Editable footer fields
+  platba1Amount?: number | null;
+  platba2Amount?: number | null;
+  platba3Amount?: number | null;
+  manualCenaSDPH?: number | null;
+  prenesenieDP?: boolean;
+  cenaDohodou?: boolean;
+  cenaDohodouValue?: number | null;
+  deposits?: Deposit[];
   vypracoval?: string;
   kontakt?: string;
   emailVypracoval?: string;

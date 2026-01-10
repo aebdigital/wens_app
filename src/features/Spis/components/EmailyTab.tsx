@@ -30,7 +30,7 @@ export const EmailyTab: React.FC<EmailyTabProps> = ({ isDark, items, onUpdate })
           <div></div>
           <div>
             <label className="block text-xs text-gray-600 mb-1">Predmet</label>
-            <input type="text" defaultValue="CP2025/0365" className="w-full text-xs border border-gray-300 px-2 py-1 rounded" />
+            <input type="text" defaultValue={`CP${new Date().getFullYear()}/0365`} className="w-full text-xs border border-gray-300 px-2 py-1 rounded" />
           </div>
         </div>
       </div>

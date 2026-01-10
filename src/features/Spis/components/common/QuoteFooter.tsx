@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { Deposit } from '../../types';
 
 interface QuoteFooterProps {
   isDark: boolean;
@@ -19,192 +20,100 @@ interface QuoteFooterProps {
 
 export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange, headerInfo, totals }) => {
   // Local state for euro amount inputs to prevent cursor jumping
-  const [localAmount1, setLocalAmount1] = useState<string>('');
-  const [localAmount2, setLocalAmount2] = useState<string>('');
-  const [localAmount3, setLocalAmount3] = useState<string>('');
-  const [editingAmount, setEditingAmount] = useState<1 | 2 | 3 | null>(null);
+  const [localAmounts, setLocalAmounts] = useState<Record<string, string>>({});
+  const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
 
   // Local state for total price input to prevent cursor jumping
   const [localTotal, setLocalTotal] = useState<string>('');
   const [editingTotal, setEditingTotal] = useState<boolean>(false);
+
+  // Local state for cena dohodou
+  const [localCenaDohodou, setLocalCenaDohodou] = useState<string>('');
+  const [editingCenaDohodou, setEditingCenaDohodou] = useState<boolean>(false);
 
   // Helper to round up to nearest 10
   const roundUpToTen = (value: number): number => {
     return Math.ceil(value / 10) * 10;
   };
 
-  // Calculate displayed amounts - use manual amount if set, otherwise calculate from percentage
-  // For default 60/30/10 split: 60% and 30% are rounded up to nearest 10, 10% gets the remainder
-  const getDisplayAmount = (index: 1 | 2 | 3): number => {
-    const total = totals.cenaSDPH;
-
-    // Get fixed amounts (manually set)
-    const fixed1 = data.platba1Amount != null ? data.platba1Amount : null;
-    const fixed2 = data.platba2Amount != null ? data.platba2Amount : null;
-    const fixed3 = data.platba3Amount != null ? data.platba3Amount : null;
-
-    // Check if using default percentages (60/30/10)
-    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
-
-    if (index === 1) {
-      if (fixed1 != null) return fixed1;
-      // If default split and no manual amounts, round up to nearest 10
-      if (isDefaultSplit && fixed2 == null && fixed3 == null) {
-        return roundUpToTen(total * 0.60);
-      }
-      return total * data.platba1Percent / 100;
-    } else if (index === 2) {
-      if (fixed2 != null) return fixed2;
-      // Calculate remaining after fixed amounts
-      const remaining = total - (fixed1 ?? 0) - (fixed3 ?? 0);
-      if (fixed1 != null && fixed3 == null) {
-        // Only payment 1 is fixed, distribute remaining between 2 and 3 by ratio
-        const ratio = data.platba2Percent / (data.platba2Percent + data.platba3Percent);
-        return remaining * ratio;
-      } else if (fixed1 != null && fixed3 != null) {
-        // Both 1 and 3 are fixed, 2 gets the rest
-        return remaining;
-      }
-      // If default split and no manual amounts, round up to nearest 10
-      if (isDefaultSplit && fixed1 == null && fixed3 == null) {
-        return roundUpToTen(total * 0.30);
-      }
-      return total * data.platba2Percent / 100;
-    } else {
-      if (fixed3 != null) return fixed3;
-      // Calculate remaining after fixed amounts
-      const remaining = total - (fixed1 ?? 0) - (fixed2 ?? 0);
-      if (fixed1 != null && fixed2 == null) {
-        // Only payment 1 is fixed, distribute remaining between 2 and 3 by ratio
-        const ratio = data.platba3Percent / (data.platba2Percent + data.platba3Percent);
-        return remaining * ratio;
-      } else if (fixed1 != null && fixed2 != null) {
-        // Both 1 and 2 are fixed, 3 gets the rest
-        return remaining;
-      }
-      // If default split and no manual amounts, payment 3 gets the remainder
-      if (isDefaultSplit && fixed1 == null && fixed2 == null) {
-        const amount1 = roundUpToTen(total * 0.60);
-        const amount2 = roundUpToTen(total * 0.30);
-        return total - amount1 - amount2;
-      }
-      return total * data.platba3Percent / 100;
+  // Get deposits - use dynamic deposits if available, otherwise use legacy fixed deposits
+  const getDeposits = (): Deposit[] => {
+    if (data.deposits && data.deposits.length > 0) {
+      return data.deposits;
     }
+    // Convert legacy fixed deposits to dynamic format
+    return [
+      { id: '1', label: '1. záloha - pri objednávke', percent: data.platba1Percent || 60, amount: data.platba1Amount },
+      { id: '2', label: '2. platba - pred montážou', percent: data.platba2Percent || 30, amount: data.platba2Amount },
+      { id: '3', label: '3. platba - po montáži', percent: data.platba3Percent || 10, amount: data.platba3Amount },
+    ];
   };
 
-  // Calculate display percentage - show nominal percentage for default split, otherwise calculate from amount
-  const getDisplayPercent = (index: 1 | 2 | 3): number => {
-    const total = totals.cenaSDPH;
-    if (total === 0) return index === 1 ? 60 : index === 2 ? 30 : 10;
+  const deposits = getDeposits();
 
-    // Get fixed amounts (manually set)
-    const fixed1 = data.platba1Amount != null ? data.platba1Amount : null;
-    const fixed2 = data.platba2Amount != null ? data.platba2Amount : null;
-    const fixed3 = data.platba3Amount != null ? data.platba3Amount : null;
+  // Calculate displayed amount for a deposit
+  const getDisplayAmount = (deposit: Deposit, index: number): number => {
+    let total = totals.cenaSDPH;
 
-    // Check if using default percentages (60/30/10) with no manual overrides
-    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
-    const hasNoManualAmounts = fixed1 == null && fixed2 == null && fixed3 == null;
-
-    // For default split without manual amounts, show nominal percentages (60/30/10)
-    // even though actual amounts are rounded
-    if (isDefaultSplit && hasNoManualAmounts) {
-      return index === 1 ? 60 : index === 2 ? 30 : 10;
+    // Check priorities for base amount
+    if (data.cenaDohodou && data.cenaDohodouValue) {
+      total = data.cenaDohodouValue;
+    } else if (data.prenesenieDP) {
+      total = totals.cenaBezDPH;
     }
 
-    // Otherwise calculate percentage from the displayed amount
-    const amount = getDisplayAmount(index);
-    return (amount / total) * 100;
+    if (deposit.amount != null) {
+      return deposit.amount;
+    }
+
+    // Calculate from percentage
+    return total * (deposit.percent / 100);
   };
 
-  // Handle amount change - store exact amount, recalculate percent for display
-  const handleAmountChange = (index: 1 | 2 | 3, newAmount: number) => {
-    const total = totals.cenaSDPH;
-    if (total === 0) return;
+  // Handle deposit change
+  const handleDepositChange = (depositId: string, field: 'label' | 'percent' | 'amount', value: any) => {
+    const newDeposits = deposits.map(d => {
+      if (d.id === depositId) {
+        if (field === 'amount') {
+          return { ...d, amount: value };
+        } else if (field === 'percent') {
+          return { ...d, percent: value, amount: null }; // Clear amount when percent changes
+        } else {
+          return { ...d, [field]: value };
+        }
+      }
+      return d;
+    });
 
-    // Store the exact amount the user entered
-    const updates: any = { ...data };
+    onChange({ ...data, deposits: newDeposits });
+  };
 
-    if (index === 1) {
-      updates.platba1Amount = newAmount;
-      // Recalculate percentage for display purposes
-      updates.platba1Percent = parseFloat(((newAmount / total) * 100).toFixed(2));
-    } else if (index === 2) {
-      updates.platba2Amount = newAmount;
-      updates.platba2Percent = parseFloat(((newAmount / total) * 100).toFixed(2));
-    } else {
-      updates.platba3Amount = newAmount;
-      updates.platba3Percent = parseFloat(((newAmount / total) * 100).toFixed(2));
-    }
+  // Add new deposit
+  const handleAddDeposit = () => {
+    const newDeposit: Deposit = {
+      id: Date.now().toString(),
+      label: `${deposits.length + 1}. platba`,
+      percent: 0,
+      amount: null
+    };
+    onChange({ ...data, deposits: [...deposits, newDeposit] });
+  };
 
-    onChange(updates);
+  // Remove deposit
+  const handleRemoveDeposit = (depositId: string) => {
+    const newDeposits = deposits.filter(d => d.id !== depositId);
+    onChange({ ...data, deposits: newDeposits });
   };
 
   const handleTotalChange = (newTotal: number) => {
-    // When total changes, clear manual amounts so they recalculate from percentages
     onChange({
-        ...data,
-        manualCenaSDPH: newTotal,
-        platba1Amount: null,
-        platba2Amount: null,
-        platba3Amount: null
+      ...data,
+      manualCenaSDPH: newTotal,
     });
   };
 
-  // Handle percentage change - clear manual amount, update percentage
-  const handlePercentageChange = (index: 1 | 2 | 3, newPercent: number) => {
-    let p1 = data.platba1Percent;
-    let p2 = data.platba2Percent;
-    let p3 = data.platba3Percent;
-
-    // Clear manual amounts when percentage is changed
-    const updates: any = {
-      platba1Amount: index === 1 ? null : data.platba1Amount,
-      platba2Amount: index === 2 ? null : data.platba2Amount,
-      platba3Amount: index === 3 ? null : data.platba3Amount
-    };
-
-    if (index === 1) {
-      p1 = newPercent;
-      const remaining = 100 - p1;
-      if (p2 + p3 === 0) {
-         p2 = remaining;
-      } else {
-         const ratio = p2 / (p2 + p3);
-         p2 = remaining * ratio;
-         p3 = remaining - p2;
-      }
-      // Clear all amounts when p1 changes since it affects distribution
-      updates.platba2Amount = null;
-      updates.platba3Amount = null;
-    } else if (index === 2) {
-      p2 = newPercent;
-      p3 = 100 - p1 - p2;
-      if (p3 < 0) {
-         p3 = 0;
-         p1 = 100 - p2;
-         updates.platba1Amount = null;
-      }
-      updates.platba3Amount = null;
-    } else if (index === 3) {
-      p3 = newPercent;
-      p2 = 100 - p1 - p3;
-      if (p2 < 0) {
-         p2 = 0;
-         p1 = 100 - p3;
-         updates.platba1Amount = null;
-      }
-      updates.platba2Amount = null;
-    }
-
-    onChange({
-        ...data,
-        ...updates,
-        platba1Percent: parseFloat(p1.toFixed(2)),
-        platba2Percent: parseFloat(p2.toFixed(2)),
-        platba3Percent: parseFloat(p3.toFixed(2))
-    });
-  };
+  // Effective price based on mode
+  const effectivePrice = data.cenaDohodou && data.cenaDohodouValue ? data.cenaDohodouValue : totals.cenaSDPH;
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>
@@ -215,48 +124,58 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <input
             type="text"
             value={data.platnostPonuky}
-            onChange={(e) => onChange({...data, platnostPonuky: e.target.value})}
+            onChange={(e) => onChange({ ...data, platnostPonuky: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex flex-col gap-1">
-            <div className="flex gap-2">
+          <div className="flex gap-2">
             <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Miesto dodávky:</span>
             <input
-                type="text"
-                value={data.miestoDodavky}
-                onChange={(e) => onChange({...data, miestoDodavky: e.target.value})}
-                className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              type="text"
+              value={data.miestoDodavky}
+              onChange={(e) => onChange({ ...data, miestoDodavky: e.target.value })}
+              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
             />
+          </div>
+          {data.miestoDodavky && (
+            <div className="flex justify-end pr-0 mt-2">
+              <div className="p-2 bg-white rounded shadow border border-gray-200">
+                <QRCodeSVG
+                  value={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.miestoDodavky)}`}
+                  size={100}
+                />
+                <div className="text-[10px] text-center mt-1 text-gray-800">Google Maps</div>
+              </div>
             </div>
-            {data.miestoDodavky && (
-                <div className="flex justify-end pr-0 mt-2">
-                    <div className="p-2 bg-white rounded shadow border border-gray-200">
-                        <QRCodeSVG
-                            value={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.miestoDodavky)}`}
-                            size={100}
-                        />
-                        <div className="text-[10px] text-center mt-1 text-gray-800">Google Maps</div>
-                    </div>
-                </div>
-            )}
+          )}
         </div>
         <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zameranie:</span>
           <input
             type="text"
             value={data.zameranie}
-            onChange={(e) => onChange({...data, zameranie: e.target.value})}
+            onChange={(e) => onChange({ ...data, zameranie: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
         <div className="flex gap-2">
-          <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Termín dodania:</span>
-          <input
-            type="text"
+          <span className={`w-32 flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Termín dodania:</span>
+          <textarea
+            ref={(el) => {
+              if (el) {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+              }
+            }}
             value={data.terminDodania}
-            onChange={(e) => onChange({...data, terminDodania: e.target.value})}
-            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+            onChange={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+              onChange({ ...data, terminDodania: e.target.value });
+            }}
+            rows={1}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border resize-none overflow-hidden min-h-[2.5rem]`}
           />
         </div>
         <div className="flex gap-2 mt-4">
@@ -264,7 +183,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <input
             type="text"
             value={data.vypracoval !== undefined ? data.vypracoval : headerInfo.vypracoval}
-            onChange={(e) => onChange({...data, vypracoval: e.target.value})}
+            onChange={(e) => onChange({ ...data, vypracoval: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
@@ -273,7 +192,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <input
             type="text"
             value={data.kontakt !== undefined ? data.kontakt : headerInfo.telefon}
-            onChange={(e) => onChange({...data, kontakt: e.target.value})}
+            onChange={(e) => onChange({ ...data, kontakt: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
@@ -282,7 +201,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <input
             type="text"
             value={data.emailVypracoval !== undefined ? data.emailVypracoval : headerInfo.email}
-            onChange={(e) => onChange({...data, emailVypracoval: e.target.value})}
+            onChange={(e) => onChange({ ...data, emailVypracoval: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
@@ -291,28 +210,60 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           <input
             type="text"
             value={data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK')}
-            onChange={(e) => onChange({...data, datum: e.target.value})}
+            onChange={(e) => onChange({ ...data, datum: e.target.value })}
             className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
           />
         </div>
       </div>
+
       {/* Right side - totals and payment */}
       <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className={isDark ? 'text-gray-300' : 'text-gray-800'}>Cena bez DPH:</span>
-          <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.cenaBezDPH.toFixed(2)} €</span>
+        {/* Cena bez DPH */}
+        <div className={data.prenesenieDP
+          ? `flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'} font-bold`
+          : "flex justify-between text-sm"
+        }>
+          <span className={isDark ? (data.prenesenieDP ? 'text-white' : 'text-gray-300') : 'text-gray-800'}>Cena bez DPH:</span>
+          <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            {totals.cenaBezDPH.toFixed(2)} €
+          </span>
         </div>
+
+        {/* Prenesenie daňovej povinnosti checkbox */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="prenesenieDP"
+            checked={data.prenesenieDP || false}
+            onChange={(e) => onChange({ ...data, prenesenieDP: e.target.checked })}
+            className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+          />
+          <label htmlFor="prenesenieDP" className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Prenesenie daňovej povinnosti
+          </label>
+        </div>
+
+        {/* DPH row - Always visible now */}
         <div className="flex justify-between text-sm">
           <span className={isDark ? 'text-gray-300' : 'text-gray-800'}>DPH 23%:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.dph.toFixed(2)} €</span>
         </div>
-        <div className={`flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'}`}>
-          <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Cena s DPH:</span>
-          <div className="flex items-center gap-1">
-            <input
+
+        {/* Cena s DPH - Styles swap based on prenesenieDP */}
+        <div className={!data.prenesenieDP
+          ? `flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'} ${data.cenaDohodou ? 'opacity-50' : ''}`
+          : "flex justify-between text-sm"
+        }>
+          <span className={!data.prenesenieDP ? `font-bold ${isDark ? 'text-white' : 'text-gray-800'}` : (isDark ? 'text-gray-300' : 'text-gray-800')}>Cena s DPH:</span>
+
+          {/* If Highlighted (!prenesenieDP), show Editable Input. If Normal, show Text */}
+          {!data.prenesenieDP ? (
+            <div className="flex items-center gap-1">
+              <input
                 type="text"
                 inputMode="decimal"
                 value={editingTotal ? localTotal : totals.cenaSDPH.toFixed(2)}
+                disabled={data.cenaDohodou}
                 onFocus={() => {
                   setEditingTotal(true);
                   setLocalTotal(totals.cenaSDPH.toFixed(2));
@@ -331,109 +282,129 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                     (e.target as HTMLInputElement).blur();
                   }
                 }}
-                className={`w-32 px-1 py-0.5 text-right font-bold rounded bg-transparent border-b ${isDark ? 'text-white border-gray-400 focus:border-white' : 'text-gray-800 border-gray-400 focus:border-black'} focus:outline-none`}
-            />
-            <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
-          </div>
+                className={`w-32 px-1 py-0.5 text-right font-bold rounded bg-transparent border-b ${isDark ? 'text-white border-gray-400 focus:border-white' : 'text-gray-800 border-gray-400 focus:border-black'} focus:outline-none ${data.cenaDohodou ? 'cursor-not-allowed' : ''}`}
+              />
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
+            </div>
+          ) : (
+            <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              {totals.cenaSDPH.toFixed(2)} €
+            </span>
+          )}
         </div>
+
+        {/* Cena dohodou checkbox and input */}
+        <div className="flex items-center gap-2 mt-2">
+          <input
+            type="checkbox"
+            id="cenaDohodou"
+            checked={data.cenaDohodou || false}
+            onChange={(e) => onChange({ ...data, cenaDohodou: e.target.checked, cenaDohodouValue: e.target.checked ? (data.cenaDohodouValue || totals.cenaSDPH) : null })}
+            className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+          />
+          <label htmlFor="cenaDohodou" className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Cena dohodou
+          </label>
+        </div>
+
+        {data.cenaDohodou && (
+          <div className={`flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-red-900/30' : 'bg-red-100'}`}>
+            <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Cena dohodou:</span>
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editingCenaDohodou ? localCenaDohodou : (data.cenaDohodouValue || 0).toFixed(2)}
+                onFocus={() => {
+                  setEditingCenaDohodou(true);
+                  setLocalCenaDohodou((data.cenaDohodouValue || 0).toFixed(2));
+                }}
+                onChange={(e) => setLocalCenaDohodou(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseFloat(localCenaDohodou.replace(',', '.')) || 0;
+                  onChange({ ...data, cenaDohodouValue: parsed });
+                  setEditingCenaDohodou(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const parsed = parseFloat(localCenaDohodou.replace(',', '.')) || 0;
+                    onChange({ ...data, cenaDohodouValue: parsed });
+                    setEditingCenaDohodou(false);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className={`w-32 px-1 py-0.5 text-right font-bold rounded bg-transparent border-b ${isDark ? 'text-white border-gray-400 focus:border-white' : 'text-gray-800 border-gray-400 focus:border-black'} focus:outline-none`}
+              />
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Deposits */}
         <div className="mt-4 space-y-2 text-xs">
-          <p className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>Platby:</p>
-
           <div className="flex items-center justify-between">
-            <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>1. záloha - pri objednávke</span>
-            <div className="flex items-center gap-1 w-16 justify-end">
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={getDisplayPercent(1).toFixed(0)}
-                    onChange={(e) => handlePercentageChange(1, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
-                />
-                <span className={`${isDark ? 'text-gray-300' : 'text-gray-800'}`}>%</span>
-            </div>
-            <div className="flex items-center justify-end gap-1 w-32">
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={editingAmount === 1 ? localAmount1 : getDisplayAmount(1).toFixed(2)}
-                    onFocus={() => {
-                      setEditingAmount(1);
-                      setLocalAmount1(getDisplayAmount(1).toFixed(2));
-                    }}
-                    onChange={(e) => setLocalAmount1(e.target.value)}
-                    onBlur={() => {
-                      handleAmountChange(1, parseFloat(localAmount1.replace(',', '.')) || 0);
-                      setEditingAmount(null);
-                    }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
-                />
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
-            </div>
+            <p className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>Platby:</p>
+            <button
+              onClick={handleAddDeposit}
+              className={`p-1 rounded ${isDark ? 'bg-dark-600 hover:bg-dark-500 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+              title="Pridať platbu"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>2. platba - pred montážou</span>
-            <div className="flex items-center gap-1 w-16 justify-end">
+          {deposits.map((deposit, index) => (
+            <div key={deposit.id} className="flex items-center justify-between gap-2">
+              <input
+                type="text"
+                value={deposit.label}
+                onChange={(e) => handleDepositChange(deposit.id, 'label', e.target.value)}
+                className={`flex-1 min-w-0 px-1 py-0.5 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+              />
+              <div className="flex items-center gap-1 shrink-0">
                 <input
-                    type="text"
-                    inputMode="decimal"
-                    value={getDisplayPercent(2).toFixed(0)}
-                    onChange={(e) => handlePercentageChange(2, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                  type="text"
+                  inputMode="decimal"
+                  value={deposit.percent.toFixed(0)}
+                  onChange={(e) => handleDepositChange(deposit.id, 'percent', parseFloat(e.target.value.replace(',', '.')) || 0)}
+                  className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`${isDark ? 'text-gray-300' : 'text-gray-800'}`}>%</span>
-            </div>
-            <div className="flex items-center justify-end gap-1 w-32">
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
                 <input
-                    type="text"
-                    inputMode="decimal"
-                    value={editingAmount === 2 ? localAmount2 : getDisplayAmount(2).toFixed(2)}
-                    onFocus={() => {
-                      setEditingAmount(2);
-                      setLocalAmount2(getDisplayAmount(2).toFixed(2));
-                    }}
-                    onChange={(e) => setLocalAmount2(e.target.value)}
-                    onBlur={() => {
-                      handleAmountChange(2, parseFloat(localAmount2.replace(',', '.')) || 0);
-                      setEditingAmount(null);
-                    }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                  type="text"
+                  inputMode="decimal"
+                  value={editingAmountId === deposit.id ? (localAmounts[deposit.id] || '') : getDisplayAmount(deposit, index).toFixed(2)}
+                  onFocus={() => {
+                    setEditingAmountId(deposit.id);
+                    setLocalAmounts({ ...localAmounts, [deposit.id]: getDisplayAmount(deposit, index).toFixed(2) });
+                  }}
+                  onChange={(e) => setLocalAmounts({ ...localAmounts, [deposit.id]: e.target.value })}
+                  onBlur={() => {
+                    const parsed = parseFloat((localAmounts[deposit.id] || '0').replace(',', '.')) || 0;
+                    handleDepositChange(deposit.id, 'amount', parsed);
+                    setEditingAmountId(null);
+                  }}
+                  className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
+              </div>
+              {deposits.length > 1 && (
+                <button
+                  onClick={() => handleRemoveDeposit(deposit.id)}
+                  className="p-1 text-red-500 hover:text-red-700 shrink-0"
+                  title="Odstrániť platbu"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className={`w-1/3 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>3. platba - po montáži</span>
-            <div className="flex items-center gap-1 w-16 justify-end">
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={getDisplayPercent(3).toFixed(0)}
-                    onChange={(e) => handlePercentageChange(3, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                    className={`w-10 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
-                />
-                <span className={`${isDark ? 'text-gray-300' : 'text-gray-800'}`}>%</span>
-            </div>
-            <div className="flex items-center justify-end gap-1 w-32">
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={editingAmount === 3 ? localAmount3 : getDisplayAmount(3).toFixed(2)}
-                    onFocus={() => {
-                      setEditingAmount(3);
-                      setLocalAmount3(getDisplayAmount(3).toFixed(2));
-                    }}
-                    onChange={(e) => setLocalAmount3(e.target.value)}
-                    onBlur={() => {
-                      handleAmountChange(3, parseFloat(localAmount3.replace(',', '.')) || 0);
-                      setEditingAmount(null);
-                    }}
-                    className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
-                />
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

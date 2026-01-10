@@ -76,3 +76,36 @@ code {
 .date-input-white::placeholder {
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* Remove spinner arrows from number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Text wrapping in table cells */
+.quote-table {
+  table-layout: fixed;
+}
+
+.quote-table td,
+.quote-table th {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 0; /* Forces cell to respect width constraints */
+}
+
+.quote-table input[type="text"],
+.quote-table textarea {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  width: 100%;
+}

@@ -29,6 +29,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
 }) => {
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
   const handlePreviewPDF = async (item: CenovaPonukaItem) => {
     setIsGenerating(item.id);
@@ -60,8 +61,8 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   };
 
   return (
-    <div className="p-2 h-full flex flex-col">
-      <div className="flex-1 overflow-auto">
+    <div className="p-2 flex flex-col">
+      <div className="overflow-x-auto">
         <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
@@ -81,22 +82,24 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             {items.map((item, index) => (
               <tr
                 key={item.id}
-                className={`${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} cursor-pointer`}
+                className={`cursor-pointer ${item.selected
+                    ? (isDark ? 'bg-red-900/30 hover:bg-red-900/40' : 'bg-red-100 hover:bg-red-200')
+                    : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')
+                  }`}
                 onClick={() => onEdit(item)}
               >
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cisloCP}
                 </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item.typ === 'dvere'
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${item.typ === 'dvere'
                       ? 'bg-blue-100 text-blue-800'
                       : item.typ === 'nabytok'
-                      ? 'bg-green-100 text-green-800'
-                      : item.typ === 'schody'
-                      ? 'bg-purple-100 text-purple-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
+                        ? 'bg-green-100 text-green-800'
+                        : item.typ === 'schody'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
                   </span>
                 </td>
@@ -156,7 +159,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!isLocked) onDelete(index);
+                        if (!isLocked) setDeleteConfirmIndex(index);
                       }}
                       disabled={isLocked}
                       className={`p-1.5 text-white bg-red-500 hover:bg-red-600 rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -178,7 +181,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                   <input
                     type="radio"
                     checked={item.selected || false}
-                    onChange={() => {}}
+                    onChange={() => { }}
                     disabled={isLocked}
                     className="cursor-pointer pointer-events-none"
                   />
@@ -195,7 +198,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex justify-start">
+      <div className="mt-2 flex justify-end">
         <button
           onClick={onAddVzor}
           disabled={isLocked}
@@ -214,6 +217,34 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
           filename={pdfPreview.filename}
           isDark={isDark}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmIndex !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Vymazať cenovú ponuku</h3>
+            <p className={`mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Naozaj chcete vymazať túto cenovú ponuku?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirmIndex(null)}
+                className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(deleteConfirmIndex);
+                  setDeleteConfirmIndex(null);
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+              >
+                Vymazať
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

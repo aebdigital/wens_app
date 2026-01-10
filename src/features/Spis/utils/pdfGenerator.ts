@@ -11,7 +11,7 @@ interface UserInfo {
 export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo) => {
   const doc = new jsPDF({ orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.width;
-  
+
   // Helper for text alignment
   const centerText = (text: string, y: number) => {
     const textWidth = doc.getTextWidth(text);
@@ -21,29 +21,29 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   // Font Loading
   let fontName = 'Helvetica'; // Default fallback
   try {
-      const fontBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/';
-      const loadFont = async (filename: string, weight: string) => {
-          const response = await fetch(fontBaseUrl + filename);
-          const buffer = await response.arrayBuffer();
-          let binary = '';
-          const bytes = new Uint8Array(buffer);
-          const len = bytes.byteLength;
-          for (let i = 0; i < len; i++) {
-              binary += String.fromCharCode(bytes[i]);
-          }
-          const base64 = btoa(binary);
-          doc.addFileToVFS(filename, base64);
-          doc.addFont(filename, 'Roboto', weight);
-      };
+    const fontBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/';
+    const loadFont = async (filename: string, weight: string) => {
+      const response = await fetch(fontBaseUrl + filename);
+      const buffer = await response.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      doc.addFileToVFS(filename, base64);
+      doc.addFont(filename, 'Roboto', weight);
+    };
 
-      await Promise.all([
-          loadFont('Roboto-Regular.ttf', 'normal'),
-          loadFont('Roboto-Medium.ttf', 'bold')
-      ]);
-      fontName = 'Roboto';
-      doc.setFont('Roboto');
+    await Promise.all([
+      loadFont('Roboto-Regular.ttf', 'normal'),
+      loadFont('Roboto-Medium.ttf', 'bold')
+    ]);
+    fontName = 'Roboto';
+    doc.setFont('Roboto');
   } catch (e) {
-      console.warn("Failed to load custom fonts, falling back to Helvetica.", e);
+    console.warn("Failed to load custom fonts, falling back to Helvetica.", e);
   }
 
   // Logo
@@ -55,13 +55,13 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       img.onload = () => resolve(img);
       img.onerror = reject;
     });
-    
+
     // Calculate aspect ratio to prevent squashing
     const imgWidth = logoImg.width;
     const imgHeight = logoImg.height;
     const targetWidth = 40;
     const targetHeight = (imgHeight / imgWidth) * targetWidth;
-    
+
     doc.addImage(logoImg, 'PNG', 14, 13, targetWidth, targetHeight);
   } catch (e) {
     doc.setFontSize(18);
@@ -74,7 +74,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   doc.setTextColor(225, 27, 40);
   doc.setFont(fontName, 'bold');
   doc.text('CENOVÁ PONUKA č.: ' + item.cisloCP, pageWidth - 14, 18, { align: 'right' });
-  
+
   doc.setDrawColor(200);
   doc.line(14, 22, pageWidth - 14, 22);
 
@@ -102,8 +102,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   const hasArchitect = formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyIco;
 
   // Check if we should show customer and/or architect info from item data
-  const showCustomerInfo = item.data?.showCustomerInfo !== false;
-  const showArchitectInfo = item.data?.showArchitectInfo === true && hasArchitect;
+  const showCustomerInfo = 'showCustomerInfo' in (item.data || {}) ? (item.data as any).showCustomerInfo !== false : true;
+  const showArchitectInfo = 'showArchitectInfo' in (item.data || {}) ? (item.data as any).showArchitectInfo === true : false && hasArchitect;
 
   // Calculate column positions based on what's shown
   const customerColX = rightColX;
@@ -123,12 +123,12 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     doc.text(`${formData.mesto} ${formData.psc}`, customerColX, customerYPos);
     customerYPos += 4;
     if (formData.telefon) {
-        doc.text(`${formData.telefon}`, customerColX, customerYPos);
-        customerYPos += 4;
+      doc.text(`${formData.telefon}`, customerColX, customerYPos);
+      customerYPos += 4;
     }
     if (formData.email) {
-        doc.text(`${formData.email}`, customerColX, customerYPos);
-        customerYPos += 4;
+      doc.text(`${formData.email}`, customerColX, customerYPos);
+      customerYPos += 4;
     }
   }
 
@@ -138,25 +138,25 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
     if (archName) {
-        doc.text(archName, architectColX, architectYPos);
-        architectYPos += 4;
+      doc.text(archName, architectColX, architectYPos);
+      architectYPos += 4;
     }
     doc.setFont(fontName, 'normal');
     if (formData.architektonickyUlica) {
-        doc.text(formData.architektonickyUlica, architectColX, architectYPos);
-        architectYPos += 4;
+      doc.text(formData.architektonickyUlica, architectColX, architectYPos);
+      architectYPos += 4;
     }
     if (formData.architektonickyMesto || formData.architektonickyPsc) {
-        doc.text(`${formData.architektonickyMesto || ''} ${formData.architektonickyPsc || ''}`.trim(), architectColX, architectYPos);
-        architectYPos += 4;
+      doc.text(`${formData.architektonickyMesto || ''} ${formData.architektonickyPsc || ''}`.trim(), architectColX, architectYPos);
+      architectYPos += 4;
     }
     if (formData.architektonickyTelefon) {
-        doc.text(`${formData.architektonickyTelefon}`, architectColX, architectYPos);
-        architectYPos += 4;
+      doc.text(`${formData.architektonickyTelefon}`, architectColX, architectYPos);
+      architectYPos += 4;
     }
     if (formData.architektonickyEmail) {
-        doc.text(`${formData.architektonickyEmail}`, architectColX, architectYPos);
-        architectYPos += 4;
+      doc.text(`${formData.architektonickyEmail}`, architectColX, architectYPos);
+      architectYPos += 4;
     }
   }
 
@@ -167,22 +167,22 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Tables
     const tableStyles = {
-        fontSize: 8,
-        cellPadding: 1,
-        font: fontName,
-        fontStyle: 'normal' as 'normal',
-        lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1,
-        textColor: [0, 0, 0] as [number, number, number]
+      fontSize: 8,
+      cellPadding: 1,
+      font: fontName,
+      fontStyle: 'normal' as 'normal',
+      lineColor: [0, 0, 0] as [number, number, number],
+      lineWidth: 0.1,
+      textColor: [0, 0, 0] as [number, number, number]
     };
     const headStyles = {
-        fillColor: [225, 27, 40] as [number, number, number],
-        fontStyle: 'bold' as 'bold',
-        halign: 'center' as 'center',
-        font: fontName,
-        lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1,
-        textColor: [255, 255, 255] as [number, number, number]
+      fillColor: [225, 27, 40] as [number, number, number],
+      fontStyle: 'bold' as 'bold',
+      halign: 'center' as 'center',
+      font: fontName,
+      lineColor: [0, 0, 0] as [number, number, number],
+      lineWidth: 0.1,
+      textColor: [255, 255, 255] as [number, number, number]
     };
 
     // Popis zakázky - as a table
@@ -215,41 +215,41 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Specifications rows
     if (data.specifications && data.specifications.length > 0) {
-        const dvereSpecs = data.specifications.filter((s: any) => s.type === 'dvere');
-        const zarubnaSpecs = data.specifications.filter((s: any) => s.type === 'zarubna');
-        const obkladSpecs = data.specifications.filter((s: any) => s.type === 'obklad');
+      const dvereSpecs = data.specifications.filter((s: any) => s.type === 'dvere');
+      const zarubnaSpecs = data.specifications.filter((s: any) => s.type === 'zarubna');
+      const obkladSpecs = data.specifications.filter((s: any) => s.type === 'obklad');
 
-        dvereSpecs.forEach((spec: any, idx: number) => {
-            specRows.push([
-                { content: idx === 0 ? 'Dvere:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
-            ]);
-            specRowCount++;
-        });
+      dvereSpecs.forEach((spec: any, idx: number) => {
+        specRows.push([
+          { content: idx === 0 ? 'Dvere:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
+          { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
+        ]);
+        specRowCount++;
+      });
 
-        zarubnaSpecs.forEach((spec: any, idx: number) => {
-            specRows.push([
-                { content: idx === 0 ? 'Zárubňa:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
-            ]);
-            specRowCount++;
-        });
+      zarubnaSpecs.forEach((spec: any, idx: number) => {
+        specRows.push([
+          { content: idx === 0 ? 'Zárubňa:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
+          { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
+        ]);
+        specRowCount++;
+      });
 
-        obkladSpecs.forEach((spec: any, idx: number) => {
-            specRows.push([
-                { content: idx === 0 ? 'Obklad:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
-                { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
-            ]);
-            specRowCount++;
-        });
+      obkladSpecs.forEach((spec: any, idx: number) => {
+        specRows.push([
+          { content: idx === 0 ? 'Obklad:' : '', styles: { fontStyle: 'bold', halign: 'left', fillColor: [225, 27, 40], textColor: 255 } },
+          { content: spec.value || '', colSpan: 10, styles: { halign: 'left' } }
+        ]);
+        specRowCount++;
+      });
     }
 
     // Add "Výrobky" as first column with rowSpan for all spec rows
     if (specRowCount > 0 && specRows.length > 0) {
-        specRows[0] = [
-            { content: 'Výrobky', rowSpan: specRowCount, styles: { fontStyle: 'bold', halign: 'left', valign: 'middle', fillColor: [225, 27, 40], textColor: 255 } },
-            ...specRows[0]
-        ];
+      specRows[0] = [
+        { content: 'Výrobky', rowSpan: specRowCount, styles: { fontStyle: 'bold', halign: 'left', valign: 'middle', fillColor: [225, 27, 40], textColor: 255 } },
+        ...specRows[0]
+      ];
     }
 
     // 1. Výrobky table with integrated header
@@ -267,100 +267,100 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
         // Dvere part
         if ((v.ks || 0) > 0) {
-            parts.push({
-                polozka: v.polozkaDvere || 'Dvere',
-                typ: v.dvereTypRozmer || '',
-                pl: v.pL || v.pLDvere || '',
-                zamok: v.zamok || v.zamokDvere || '',
-                sklo: v.sklo || '',
-                povrch: v.povrch || '',
-                poznamka: v.poznamkaDvere || '',
-                ks: v.ks,
-                cena: v.cenaDvere,
-                total: (v.ks || 0) * (v.cenaDvere || 0)
-            });
+          parts.push({
+            polozka: v.polozkaDvere || 'Dvere',
+            typ: v.dvereTypRozmer || '',
+            pl: v.pL || v.pLDvere || '',
+            zamok: v.zamok || v.zamokDvere || '',
+            sklo: v.sklo || '',
+            povrch: v.povrch || '',
+            poznamka: v.poznamkaDvere || '',
+            ks: v.ks,
+            cena: v.cenaDvere,
+            total: (v.ks || 0) * (v.cenaDvere || 0)
+          });
         }
         // Zarubna part
         if ((v.ksZarubna || 0) > 0) {
-            parts.push({
-                polozka: v.polozkaZarubna || 'Zárubňa',
-                typ: v.dvereOtvor || '',
-                pl: v.pLZarubna || '',
-                zamok: v.zamokZarubna || '',
-                sklo: v.skloZarubna || '',
-                povrch: v.povrchZarubna || '',
-                poznamka: v.poznamkaZarubna || '',
-                ks: v.ksZarubna,
-                cena: v.cenaZarubna,
-                total: (v.ksZarubna || 0) * (v.cenaZarubna || 0)
-            });
+          parts.push({
+            polozka: v.polozkaZarubna || 'Zárubňa',
+            typ: v.dvereOtvor || '',
+            pl: v.pLZarubna || '',
+            zamok: v.zamokZarubna || '',
+            sklo: v.skloZarubna || '',
+            povrch: v.povrchZarubna || '',
+            poznamka: v.poznamkaZarubna || '',
+            ks: v.ksZarubna,
+            cena: v.cenaZarubna,
+            total: (v.ksZarubna || 0) * (v.cenaZarubna || 0)
+          });
         }
         // Obklad part
         if ((v.ksObklad || 0) > 0) {
-            parts.push({
-                polozka: v.polozkaObklad || 'Obklad',
-                typ: v.typObklad || '',
-                pl: v.pLObklad || '',
-                zamok: v.zamokObklad || '',
-                sklo: v.skloObklad || '',
-                povrch: v.povrchObklad || '',
-                poznamka: v.poznamkaObklad || '',
-                ks: v.ksObklad,
-                cena: v.cenaObklad,
-                total: (v.ksObklad || 0) * (v.cenaObklad || 0)
-            });
+          parts.push({
+            polozka: v.polozkaObklad || 'Obklad',
+            typ: v.typObklad || '',
+            pl: v.pLObklad || '',
+            zamok: v.zamokObklad || '',
+            sklo: v.skloObklad || '',
+            povrch: v.povrchObklad || '',
+            poznamka: v.poznamkaObklad || '',
+            ks: v.ksObklad,
+            cena: v.cenaObklad,
+            total: (v.ksObklad || 0) * (v.cenaObklad || 0)
+          });
         }
         // Prazdne part
         if ((v.ksPrazdne || 0) > 0) {
-            parts.push({
-                polozka: v.polozkaPrazdne || 'Prázdne',
-                typ: v.typPrazdne || '',
-                pl: v.pLPrazdne || '',
-                zamok: v.zamokPrazdne || '',
-                sklo: v.skloPrazdne || '',
-                povrch: v.povrchPrazdne || '',
-                poznamka: v.poznamkaPrazdne || '',
-                ks: v.ksPrazdne,
-                cena: v.cenaPrazdne,
-                total: (v.ksPrazdne || 0) * (v.cenaPrazdne || 0)
-            });
+          parts.push({
+            polozka: v.polozkaPrazdne || 'Prázdne',
+            typ: v.typPrazdne || '',
+            pl: v.pLPrazdne || '',
+            zamok: v.zamokPrazdne || '',
+            sklo: v.skloPrazdne || '',
+            povrch: v.povrchPrazdne || '',
+            poznamka: v.poznamkaPrazdne || '',
+            ks: v.ksPrazdne,
+            cena: v.cenaPrazdne,
+            total: (v.ksPrazdne || 0) * (v.cenaPrazdne || 0)
+          });
         }
 
         // Create separate row for each part
         parts.forEach((part, partIndex) => {
-            if (partIndex === 0) {
-                // First row gets rowSpan for # and Miestnosť
-                vyrobkyRows.push([
-                    { content: itemNumber, rowSpan: parts.length, styles: { valign: 'middle' } },
-                    { content: v.miestnost, rowSpan: parts.length, styles: { valign: 'middle' } },
-                    part.polozka,
-                    part.typ,
-                    part.pl,
-                    part.zamok,
-                    part.sklo,
-                    part.povrch,
-                    part.poznamka,
-                    part.ks,
-                    `${(part.cena || 0).toFixed(2)} €`,
-                    `${(part.total || 0).toFixed(2)} €`
-                ]);
-            } else {
-                // Subsequent rows skip # and Miestnosť columns (handled by rowSpan)
-                vyrobkyRows.push([
-                    part.polozka,
-                    part.typ,
-                    part.pl,
-                    part.zamok,
-                    part.sklo,
-                    part.povrch,
-                    part.poznamka,
-                    part.ks,
-                    `${(part.cena || 0).toFixed(2)} €`,
-                    `${(part.total || 0).toFixed(2)} €`
-                ]);
-            }
+          if (partIndex === 0) {
+            // First row gets rowSpan for # and Miestnosť
+            vyrobkyRows.push([
+              { content: itemNumber, rowSpan: parts.length, styles: { valign: 'middle' } },
+              { content: v.miestnost, rowSpan: parts.length, styles: { valign: 'middle' } },
+              part.polozka,
+              part.typ,
+              part.pl,
+              part.zamok,
+              part.sklo,
+              part.povrch,
+              part.poznamka,
+              part.ks,
+              `${(part.cena || 0).toFixed(2)} €`,
+              `${(part.total || 0).toFixed(2)} €`
+            ]);
+          } else {
+            // Subsequent rows skip # and Miestnosť columns (handled by rowSpan)
+            vyrobkyRows.push([
+              part.polozka,
+              part.typ,
+              part.pl,
+              part.zamok,
+              part.sklo,
+              part.povrch,
+              part.poznamka,
+              part.ks,
+              `${(part.cena || 0).toFixed(2)} €`,
+              `${(part.total || 0).toFixed(2)} €`
+            ]);
+          }
         });
-    });
+      });
 
     // Calculate vyrobky total for summary row
     const vyrobkyTotalCalc = data.vyrobky.reduce((sum: number, v: any) => {
@@ -374,111 +374,155 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // First table: Výrobky header info with "Výrobky" spanning left column
     let specsEndY = yPos;
     if (specRows.length > 0) {
-        autoTable(doc, {
-            startY: yPos,
-            body: specRows,
-            styles: { ...tableStyles, fontSize: 7 }, // Match header font size
-            columnStyles: {
-                0: { cellWidth: 20, halign: 'left' }, // # + Miestnosť width for "Výrobky"
-                1: { cellWidth: 14, halign: 'left' }, // Same width as Položka column for labels (Dvere, Zárubňa, etc.)
-                2: { halign: 'left' } // Rest for value (spans remaining columns)
-            },
-            theme: 'grid',
-            tableWidth: hasPhotos ? specSectionWidth : 'auto'
-        });
-        specsEndY = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        body: specRows,
+        styles: { ...tableStyles, fontSize: 7 }, // Match header font size
+        columnStyles: {
+          0: { cellWidth: 20, halign: 'left' }, // # + Miestnosť width for "Výrobky"
+          1: { cellWidth: 14, halign: 'left' }, // Same width as Položka column for labels (Dvere, Zárubňa, etc.)
+          2: { halign: 'left' } // Rest for value (spans remaining columns)
+        },
+        theme: 'grid',
+        tableWidth: hasPhotos ? specSectionWidth : 'auto'
+      });
+      specsEndY = (doc as any).lastAutoTable.finalY;
     }
 
     // Render product photos on the right side of specifications
     // Note: Photos are already cropped to square at upload time in DvereForm
     let photosEndY = specsStartY;
     if (hasPhotos) {
-        const photoStartX = leftMargin + specSectionWidth + 5; // Start after specs + gap
-        const photoSize = 28; // Size of square photo in mm
-        const photoGapX = 4; // Gap between photos horizontally
-        const photoGapY = 2; // Reduced gap between rows
-        const descHeight = 6; // Space for description
-        const photosPerRow = 2;
+      const photoStartX = leftMargin + specSectionWidth + 5; // Start after specs + gap
+      const photoSize = 28; // Size of square photo in mm
+      const photoGapX = 4; // Gap between photos horizontally
+      const photoGapY = 2; // Reduced gap between rows
+      const descHeight = 6; // Space for description
+      const photosPerRow = 2;
 
-        let currentPhotoY = specsStartY;
+      let currentPhotoY = specsStartY;
 
-        for (let i = 0; i < productPhotos.length; i++) {
-            const photo = productPhotos[i];
-            const colIndex = i % photosPerRow;
-            const rowIndex = Math.floor(i / photosPerRow);
+      for (let i = 0; i < productPhotos.length; i++) {
+        const photo = productPhotos[i];
+        const colIndex = i % photosPerRow;
+        const rowIndex = Math.floor(i / photosPerRow);
 
-            // Calculate position
-            const photoX = photoStartX + colIndex * (photoSize + photoGapX);
-            const photoY = specsStartY + rowIndex * (photoSize + descHeight + photoGapY);
+        // Calculate position
+        const photoX = photoStartX + colIndex * (photoSize + photoGapX);
+        const photoY = specsStartY + rowIndex * (photoSize + descHeight + photoGapY);
 
-            try {
-                // Add the image (already cropped to square at upload)
-                doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoSize, photoSize);
+        try {
+          // Add the image (already cropped to square at upload)
+          doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoSize, photoSize);
 
-                // Add border around photo
-                doc.setDrawColor(200);
-                doc.rect(photoX, photoY, photoSize, photoSize);
+          // Add border around photo
+          doc.setDrawColor(200);
+          doc.rect(photoX, photoY, photoSize, photoSize);
 
-                // Add description below photo if exists
-                if (photo.description) {
-                    doc.setFontSize(6);
-                    doc.setTextColor(0);
-                    doc.setFont(fontName, 'normal');
-                    const descLines = doc.splitTextToSize(photo.description, photoSize);
-                    doc.text(descLines, photoX, photoY + photoSize + 2);
-                }
+          // Add description below photo if exists
+          if (photo.description) {
+            doc.setFontSize(6);
+            doc.setTextColor(0);
+            doc.setFont(fontName, 'normal');
+            const descLines = doc.splitTextToSize(photo.description, photoSize);
+            doc.text(descLines, photoX, photoY + photoSize + 2);
+          }
 
-                // Track the bottom position
-                currentPhotoY = photoY + photoSize + descHeight;
-            } catch (e) {
-                console.warn('Failed to add product photo to PDF:', e);
-            }
+          // Track the bottom position
+          currentPhotoY = photoY + photoSize + descHeight;
+        } catch (e) {
+          console.warn('Failed to add product photo to PDF:', e);
         }
+      }
 
-        photosEndY = currentPhotoY;
+      photosEndY = currentPhotoY;
     }
 
     // Use the maximum Y position between specs and photos
     yPos = Math.max(specsEndY, photosEndY);
 
     // Second part: Column headers and data rows
-    const headerRow = [
-      { content: '#', styles: { halign: 'center' as const } },
-      { content: 'Miestnosť', styles: { halign: 'left' as const } },
-      { content: 'Položka', styles: { halign: 'left' as const } },
-      { content: 'Typ / Rozmer', styles: { halign: 'left' as const } },
-      { content: 'P/Ľ', styles: { halign: 'left' as const } },
-      { content: 'Zámok', styles: { halign: 'left' as const } },
-      { content: 'Sklo', styles: { halign: 'left' as const } },
-      { content: 'Povrch', styles: { halign: 'left' as const } },
-      { content: 'Poznámka', styles: { halign: 'left' as const } },
-      { content: 'Ks', styles: { halign: 'right' as const } },
-      { content: 'Cena/ks', styles: { halign: 'right' as const } },
-      { content: 'Cena celkom', styles: { halign: 'right' as const } }
+    const hiddenColumns = data.hiddenColumns || [];
+    const isColumnVisible = (key: string) => !hiddenColumns.includes(key);
+
+    const fullHeaderRow = [
+      { key: '#', content: '#', styles: { halign: 'center' as const }, width: 6 },
+      { key: 'miestnost', content: 'Miestnosť', styles: { halign: 'left' as const }, width: 14 },
+      { key: 'polozka', content: 'Položka', styles: { halign: 'left' as const }, width: 14 },
+      { key: 'typRozmer', content: 'Typ / Rozmer', styles: { halign: 'left' as const }, width: 18 },
+      { key: 'pl', content: 'P/Ľ', styles: { halign: 'left' as const }, width: 8 },
+      { key: 'zamok', content: 'Zámok', styles: { halign: 'left' as const }, width: 14 },
+      { key: 'sklo', content: 'Sklo', styles: { halign: 'left' as const }, width: 14 },
+      { key: 'povrch', content: 'Povrch', styles: { halign: 'left' as const }, width: 14 },
+      { key: 'poznamka', content: 'Poznámka', styles: { halign: 'left' as const }, width: 'auto' },
+      { key: 'ks', content: 'Ks', styles: { halign: 'right' as const }, width: 10 },
+      { key: 'cenaKs', content: 'Cena/ks', styles: { halign: 'right' as const }, width: 18 },
+      { key: 'cenaCelkom', content: 'Cena celkom', styles: { halign: 'right' as const }, width: 28 }
     ];
+
+    const visibleHeaders = fullHeaderRow.filter(h =>
+      ['#', 'miestnost', 'polozka', 'typRozmer', 'ks', 'cenaKs', 'cenaCelkom'].includes(h.key) || isColumnVisible(h.key)
+    );
+
+    const headerRow = visibleHeaders.map(h => ({ content: h.content, styles: h.styles }));
+
+    // Rebuild vyrobkyRows respecting visibility
+    const filteredVyrobkyRows = vyrobkyRows.map(row => {
+      // Row structure: 0:#, 1:Miestnost, 2:Polozka, 3:Typ, 4:PL, 5:Zamok, 6:Sklo, 7:Povrch, 8:Poznamka, 9:Ks, 10:Price, 11:Total
+      // If row has 12 items (first row of group)
+      if (row.length === 12) {
+        const [idx_col, miestnost_col, polozka, typ, pl, zamok, sklo, povrch, poznamka, ks, price, total] = row;
+        const items = [];
+        items.push(idx_col); // #
+        items.push(miestnost_col); // Miestnost
+        items.push(polozka); // Polozka
+        items.push(typ); // Typ
+        if (isColumnVisible('pl')) items.push(pl);
+        if (isColumnVisible('zamok')) items.push(zamok);
+        if (isColumnVisible('sklo')) items.push(sklo);
+        if (isColumnVisible('povrch')) items.push(povrch);
+        if (isColumnVisible('poznamka')) items.push(poznamka);
+        items.push(ks); // Ks
+        items.push(price); // Price
+        items.push(total); // Total
+        return items;
+      } else {
+        // Subsequent rows (10 items): 0:Polozka, 1:Typ, 2:PL, 3:Zamok, 4:Sklo, 5:Povrch, 6:Poznamka, 7:Ks, 8:Price, 9:Total
+        const [polozka, typ, pl, zamok, sklo, povrch, poznamka, ks, price, total] = row;
+        const items = [];
+        items.push(polozka);
+        items.push(typ);
+        if (isColumnVisible('pl')) items.push(pl);
+        if (isColumnVisible('zamok')) items.push(zamok);
+        if (isColumnVisible('sklo')) items.push(sklo);
+        if (isColumnVisible('povrch')) items.push(povrch);
+        if (isColumnVisible('poznamka')) items.push(poznamka);
+        items.push(ks);
+        items.push(price);
+        items.push(total);
+        return items;
+      }
+    });
+
+    const columnStyles: any = {};
+    visibleHeaders.forEach((h, index) => {
+      if (h.width !== 'auto') {
+        columnStyles[index] = { cellWidth: h.width, halign: h.styles.halign };
+      } else {
+        columnStyles[index] = { halign: h.styles.halign };
+      }
+    });
+
     autoTable(doc, {
       startY: yPos,
       head: specRows.length > 0 ? [headerRow] : [
-        [{ content: 'Výrobky', colSpan: 12, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
+        [{ content: 'Výrobky', colSpan: visibleHeaders.length, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
         headerRow
       ],
-      body: vyrobkyRows,
+      body: filteredVyrobkyRows,
       styles: { ...tableStyles, fontSize: 7 },
       headStyles: { ...headStyles, fontSize: 7 },
-      columnStyles: {
-          0: { cellWidth: 6, halign: 'center' },  // #
-          1: { cellWidth: 14, halign: 'left' },   // Miestnosť
-          2: { cellWidth: 14, halign: 'left' },   // Položka
-          3: { cellWidth: 18, halign: 'left' },   // Typ / Rozmer
-          4: { cellWidth: 8, halign: 'left' },    // P/Ľ
-          5: { cellWidth: 14, halign: 'left' },   // Zámok
-          6: { cellWidth: 14, halign: 'left' },   // Sklo
-          7: { cellWidth: 14, halign: 'left' },   // Povrch
-          8: { halign: 'left' },                  // Poznámka (auto)
-          9: { cellWidth: 10, halign: 'right' },  // Ks
-          10: { cellWidth: 18, halign: 'right' }, // Cena/ks
-          11: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
-      }
+      columnStyles: columnStyles
     });
     yPos = (doc as any).lastAutoTable.finalY;
 
@@ -488,7 +532,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       body: [['Spolu bez DPH:', `${vyrobkyTotalCalc.toFixed(2)} €`]],
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 10 + 18, halign: 'right' }, // Ks + Cena/ks width
+        0: { cellWidth: 10 + 18, halign: 'right' }, // Ks + Cena/ks width (approx)
         1: { cellWidth: 28, halign: 'right' }  // Cena celkom width
       },
       margin: { left: pageWidth - 14 - (10 + 18 + 28) }
@@ -498,53 +542,53 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // 2. Príplatky
     if (data.priplatky.some((p: any) => p.ks > 0)) {
-        const priplatkyRows = data.priplatky
-          .filter((p: any) => p.ks > 0)
-          .map((p: any, i: number) => [
-            i + 1,
-            p.nazov,
-            p.ks,
-            `${p.cenaKs.toFixed(2)} €`,
-            `${p.cenaCelkom.toFixed(2)} €`
-          ]);
+      const priplatkyRows = data.priplatky
+        .filter((p: any) => p.ks > 0)
+        .map((p: any, i: number) => [
+          i + 1,
+          p.nazov,
+          p.ks,
+          `${p.cenaKs.toFixed(2)} €`,
+          `${p.cenaCelkom.toFixed(2)} €`
+        ]);
 
-        // Calculate príplatky total
-        const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+      // Calculate príplatky total
+      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: priplatkyRows,
-          styles: { ...tableStyles, fontSize: 7 },
-          headStyles: { ...headStyles, fontSize: 7 },
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: priplatkyRows,
+        styles: { ...tableStyles, fontSize: 7 },
+        headStyles: { ...headStyles, fontSize: 7 },
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        // Summary row for Príplatky
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${priplatkyTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      // Summary row for Príplatky
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${priplatkyTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     // Calculate totals for summary
@@ -595,109 +639,109 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // 3. Kovanie
     if (data.kovanie.some((k: any) => k.ks > 0)) {
-        const kovanieRows = data.kovanie
-          .filter((k: any) => k.ks > 0)
-          .map((k: any, i: number) => [
-            i + 1,
-            k.nazov,
-            k.ks,
-            `${k.cenaKs.toFixed(2)} €`,
-            `${k.cenaCelkom.toFixed(2)} €`
-          ]);
+      const kovanieRows = data.kovanie
+        .filter((k: any) => k.ks > 0)
+        .map((k: any, i: number) => [
+          i + 1,
+          k.nazov,
+          k.ks,
+          `${k.cenaKs.toFixed(2)} €`,
+          `${k.cenaCelkom.toFixed(2)} €`
+        ]);
 
-        // Calculate kovanie total
-        const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+      // Calculate kovanie total
+      const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: kovanieRows,
-          styles: { ...tableStyles, fontSize: 7 },
-          headStyles: { ...headStyles, fontSize: 7 },
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: kovanieRows,
+        styles: { ...tableStyles, fontSize: 7 },
+        headStyles: { ...headStyles, fontSize: 7 },
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        // Summary row for Kovanie
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${kovanieTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      // Summary row for Kovanie
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${kovanieTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     // 4. Montaz
     if (data.montaz.some((m: any) => m.ks > 0)) {
-        const montazRows = data.montaz
-          .filter((m: any) => m.ks > 0)
-          .map((m: any, i: number) => [
-            i + 1,
-            m.nazov,
-            m.ks,
-            `${m.cenaKs.toFixed(2)} €`,
-            `${m.cenaCelkom.toFixed(2)} €`
-          ]);
+      const montazRows = data.montaz
+        .filter((m: any) => m.ks > 0)
+        .map((m: any, i: number) => [
+          i + 1,
+          m.nazov,
+          m.ks,
+          `${m.cenaKs.toFixed(2)} €`,
+          `${m.cenaCelkom.toFixed(2)} €`
+        ]);
 
-        // Calculate montáž total
-        const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
+      // Calculate montáž total
+      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: montazRows,
-          styles: { ...tableStyles, fontSize: 7 },
-          headStyles: { ...headStyles, fontSize: 7 },
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: montazRows,
+        styles: { ...tableStyles, fontSize: 7 },
+        headStyles: { ...headStyles, fontSize: 7 },
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }  // Cena celkom (wider)
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        // Summary row for Montáž
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${montazTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      // Summary row for Montáž
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${montazTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     if (yPos > doc.internal.pageSize.height - 70) {
-        doc.addPage();
-        yPos = 20;
+      doc.addPage();
+      yPos = 20;
     }
 
     // Totals & Payment Plan Tables (neutral, no header)
@@ -706,43 +750,80 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Helper to round UP to nearest 10 (matches QuoteFooter display)
     const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
 
-    // Check if using default 60/30/10 split
-    const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
-    const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+    // Use dynamic deposits if available
+    let paymentRows: any[][] = [];
 
-    // Use saved amounts if available, otherwise calculate with rounding for default split
-    let platba1Amount: string, platba2Amount: string, platba3Amount: string;
-    if (data.platba1Amount != null) {
-      platba1Amount = data.platba1Amount.toFixed(2);
-    } else if (isDefaultSplit && hasNoManualAmounts) {
-      platba1Amount = roundUpToTen(cenaSDPH * 0.60).toFixed(2);
-    } else {
-      platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+    // Determine the base calculation amount once
+    let paymentBase = cenaSDPH;
+    if (data.cenaDohodou && data.cenaDohodouValue) {
+      paymentBase = data.cenaDohodouValue;
+    } else if (data.prenesenieDP) {
+      const kovanieTotal = data.kovanie?.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0) || 0;
+      const montazTotal = data.montaz?.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0) || 0;
+      const fullNetTotal = (vyrobkyTotalCalc + (data.priplatky?.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0) || 0) + kovanieTotal + montazTotal) - zlavaAmount;
+      paymentBase = fullNetTotal;
     }
 
-    if (data.platba2Amount != null) {
-      platba2Amount = data.platba2Amount.toFixed(2);
-    } else if (isDefaultSplit && hasNoManualAmounts) {
-      platba2Amount = roundUpToTen(cenaSDPH * 0.30).toFixed(2);
+    if (data.deposits && data.deposits.length > 0) {
+      paymentRows = data.deposits.map((d: any) => {
+        let amount = d.amount;
+        // Recalculate if amount is missing and percent exists
+        if (amount == null || amount === undefined) {
+          amount = paymentBase * (d.percent / 100);
+        }
+        return [
+          { content: d.label, styles: { halign: 'right' as const } },
+          `${(d.percent || 0).toFixed(0)} %`,
+          `${(amount || 0).toFixed(2)} €`
+        ];
+      });
     } else {
-      platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+      // Legacy fallback
+      const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
+      const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+
+      let platba1Amount: string, platba2Amount: string, platba3Amount: string;
+      if (data.platba1Amount != null) {
+        platba1Amount = data.platba1Amount.toFixed(2);
+      } else if (isDefaultSplit && hasNoManualAmounts) {
+        platba1Amount = roundUpToTen(paymentBase * 0.60).toFixed(2);
+      } else {
+        platba1Amount = (paymentBase * (data.platba1Percent || 0) / 100).toFixed(2);
+      }
+
+      if (data.platba2Amount != null) {
+        platba2Amount = data.platba2Amount.toFixed(2);
+      } else if (isDefaultSplit && hasNoManualAmounts) {
+        platba2Amount = roundUpToTen(paymentBase * 0.30).toFixed(2);
+      } else {
+        platba2Amount = (paymentBase * (data.platba2Percent || 0) / 100).toFixed(2);
+      }
+
+      if (data.platba3Amount != null) {
+        platba3Amount = data.platba3Amount.toFixed(2);
+      } else if (isDefaultSplit && hasNoManualAmounts) {
+        // Remainder after rounding
+        const p1 = roundUpToTen(paymentBase * 0.60);
+        const p2 = roundUpToTen(paymentBase * 0.30);
+        platba3Amount = (paymentBase - p1 - p2).toFixed(2);
+      } else {
+        platba3Amount = (paymentBase * (data.platba3Percent || 0) / 100).toFixed(2);
+      }
+
+      paymentRows = [
+        [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
+        [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
+        [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
+      ];
     }
 
-    if (data.platba3Amount != null) {
-      platba3Amount = data.platba3Amount.toFixed(2);
-    } else if (isDefaultSplit && hasNoManualAmounts) {
-      // Remainder after rounding
-      const p1 = roundUpToTen(cenaSDPH * 0.60);
-      const p2 = roundUpToTen(cenaSDPH * 0.30);
-      platba3Amount = (cenaSDPH - p1 - p2).toFixed(2);
-    } else {
-      platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
-    }
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
     const tableWidth = 73;
     const tableStartX = pageWidth - 14 - tableWidth;
     const startYForBoth = yPos;
+
+    const isPrenesenieDP = !!data.prenesenieDP;
 
     // Price totals table - rows 1 & 2 (normal size, bold)
     autoTable(doc, {
@@ -754,33 +835,35 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       ],
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 45, halign: 'right' },
-        1: { cellWidth: 28, halign: 'right' }
+        0: { cellWidth: 45, halign: 'right', fontSize: isPrenesenieDP ? 11 : 7 }, // Highlight if prenesenieDP
+        1: { cellWidth: 28, halign: 'right', fontSize: isPrenesenieDP ? 11 : 7 }
       }
     });
 
+    // Add "Prenesenie daňovej povinnosti" if applicable
+    const lastY = (doc as any).lastAutoTable.finalY;
+    if (isPrenesenieDP) {
+      doc.setFontSize(7);
+      doc.setFont(fontName, 'italic');
+      doc.setTextColor(100);
+      doc.text('prenesenie daňovej povinnosti', pageWidth - 14, lastY + 3, { align: 'right' });
+    }
+
     // Price totals table - row 3 (Cena s DPH - larger, bold)
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY,
+      startY: lastY + (isPrenesenieDP ? 5 : 0),
       margin: { left: tableStartX },
       body: [['Cena s DPH:', `${cenaSDPH.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
+      styles: { ...tableStyles, fontSize: isPrenesenieDP ? 7 : 11, fontStyle: 'bold' }, // Normal size if prenesenieDP, else Large
       columnStyles: {
         0: { cellWidth: 45, halign: 'right' },
         1: { cellWidth: 28, halign: 'right' }
       }
     });
 
-    // Payment plan table (with gap)
-    const paymentRows = [
-      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
-      [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
-      [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
-    ];
-
     // Payment table width: 45 + 12 + 28 = 85mm
     const paymentTableWidth = 85;
-    
+
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 5,
       margin: { left: pageWidth - 14 - paymentTableWidth }, // Right-aligned
@@ -832,22 +915,22 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // Tables - adjusted for portrait
     const tableStyles = {
-        fontSize: 7,
-        cellPadding: 1,
-        font: fontName,
-        fontStyle: 'normal' as 'normal',
-        lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1,
-        textColor: [0, 0, 0] as [number, number, number]
+      fontSize: 7,
+      cellPadding: 1,
+      font: fontName,
+      fontStyle: 'normal' as 'normal',
+      lineColor: [0, 0, 0] as [number, number, number],
+      lineWidth: 0.1,
+      textColor: [0, 0, 0] as [number, number, number]
     };
     const headStyles = {
-        fillColor: [225, 27, 40] as [number, number, number],
-        fontStyle: 'bold' as 'bold',
-        halign: 'center' as 'center',
-        font: fontName,
-        lineColor: [0, 0, 0] as [number, number, number],
-        lineWidth: 0.1,
-        textColor: [255, 255, 255] as [number, number, number]
+      fillColor: [225, 27, 40] as [number, number, number],
+      fontStyle: 'bold' as 'bold',
+      halign: 'center' as 'center',
+      font: fontName,
+      lineColor: [0, 0, 0] as [number, number, number],
+      lineWidth: 0.1,
+      textColor: [255, 255, 255] as [number, number, number]
     };
 
     // Popis zakázky - as a table
@@ -885,14 +968,14 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       styles: tableStyles,
       headStyles: headStyles,
       columnStyles: {
-          0: { cellWidth: 6, halign: 'center' },
-          1: { halign: 'left' },
-          2: { cellWidth: 22, halign: 'left' },
-          3: { cellWidth: 22, halign: 'left' },
-          4: { halign: 'left' },
-          5: { cellWidth: 10, halign: 'center' },
-          6: { cellWidth: 18, halign: 'right' },
-          7: { cellWidth: 28, halign: 'right' }
+        0: { cellWidth: 6, halign: 'center' },
+        1: { halign: 'left' },
+        2: { cellWidth: 22, halign: 'left' },
+        3: { cellWidth: 22, halign: 'left' },
+        4: { halign: 'left' },
+        5: { cellWidth: 10, halign: 'center' },
+        6: { cellWidth: 18, halign: 'right' },
+        7: { cellWidth: 28, halign: 'right' }
       }
     });
     yPos = (doc as any).lastAutoTable.finalY;
@@ -913,51 +996,51 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // 2. Príplatky
     if (data.priplatky.some((p: any) => p.ks > 0)) {
-        const priplatkyRows = data.priplatky
-          .filter((p: any) => p.ks > 0)
-          .map((p: any, i: number) => [
-            i + 1,
-            p.nazov,
-            p.ks,
-            `${(p.cenaKs || 0).toFixed(2)} €`,
-            `${(p.cenaCelkom || 0).toFixed(2)} €`
-          ]);
+      const priplatkyRows = data.priplatky
+        .filter((p: any) => p.ks > 0)
+        .map((p: any, i: number) => [
+          i + 1,
+          p.nazov,
+          p.ks,
+          `${(p.cenaKs || 0).toFixed(2)} €`,
+          `${(p.cenaCelkom || 0).toFixed(2)} €`
+        ]);
 
-        const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: priplatkyRows,
-          styles: tableStyles,
-          headStyles: headStyles,
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Príplatky', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: priplatkyRows,
+        styles: tableStyles,
+        headStyles: headStyles,
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${priplatkyTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${priplatkyTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     // Calculate totals for summary
@@ -1009,105 +1092,105 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // 3. Kovanie
     if (data.kovanie.some((k: any) => k.ks > 0)) {
-        const kovanieRows = data.kovanie
-          .filter((k: any) => k.ks > 0)
-          .map((k: any, i: number) => [
-            i + 1,
-            k.nazov,
-            k.ks,
-            `${(k.cenaKs || 0).toFixed(2)} €`,
-            `${(k.cenaCelkom || 0).toFixed(2)} €`
-          ]);
+      const kovanieRows = data.kovanie
+        .filter((k: any) => k.ks > 0)
+        .map((k: any, i: number) => [
+          i + 1,
+          k.nazov,
+          k.ks,
+          `${(k.cenaKs || 0).toFixed(2)} €`,
+          `${(k.cenaCelkom || 0).toFixed(2)} €`
+        ]);
 
-        const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+      const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: kovanieRows,
-          styles: tableStyles,
-          headStyles: headStyles,
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Kovanie', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: kovanieRows,
+        styles: tableStyles,
+        headStyles: headStyles,
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${kovanieTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${kovanieTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     // 4. Montáž
     if (data.montaz.some((m: any) => m.ks > 0)) {
-        const montazRows = data.montaz
-          .filter((m: any) => m.ks > 0)
-          .map((m: any, i: number) => [
-            i + 1,
-            m.nazov,
-            m.ks,
-            `${(m.cenaKs || 0).toFixed(2)} €`,
-            `${(m.cenaCelkom || 0).toFixed(2)} €`
-          ]);
+      const montazRows = data.montaz
+        .filter((m: any) => m.ks > 0)
+        .map((m: any, i: number) => [
+          i + 1,
+          m.nazov,
+          m.ks,
+          `${(m.cenaKs || 0).toFixed(2)} €`,
+          `${(m.cenaCelkom || 0).toFixed(2)} €`
+        ]);
 
-        const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
+      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [[
-            { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
-            { content: 'Ks', styles: { halign: 'right' } },
-            { content: 'Cena/ks', styles: { halign: 'right' } },
-            { content: 'Cena celkom', styles: { halign: 'right' } }
-          ]],
-          body: montazRows,
-          styles: tableStyles,
-          headStyles: headStyles,
-          columnStyles: {
-              0: { cellWidth: 6, halign: 'center' },
-              1: { halign: 'left' },
-              2: { cellWidth: 10, halign: 'right' },
-              3: { cellWidth: 18, halign: 'right' },
-              4: { cellWidth: 28, halign: 'right' }
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
+          { content: 'Ks', styles: { halign: 'right' } },
+          { content: 'Cena/ks', styles: { halign: 'right' } },
+          { content: 'Cena celkom', styles: { halign: 'right' } }
+        ]],
+        body: montazRows,
+        styles: tableStyles,
+        headStyles: headStyles,
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center' },
+          1: { halign: 'left' },
+          2: { cellWidth: 10, halign: 'right' },
+          3: { cellWidth: 18, halign: 'right' },
+          4: { cellWidth: 28, halign: 'right' }
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-        autoTable(doc, {
-          startY: yPos,
-          body: [['Spolu bez DPH:', `${montazTotalCalc.toFixed(2)} €`]],
-          styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 10 + 18, halign: 'right' },
-            1: { cellWidth: 28, halign: 'right' }
-          },
-          margin: { left: pageWidth - 14 - (10 + 18 + 28) }
-        });
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Spolu bez DPH:', `${montazTotalCalc.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10 + 18, halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' }
+        },
+        margin: { left: pageWidth - 14 - (10 + 18 + 28) }
+      });
 
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
     }
 
     if (yPos > doc.internal.pageSize.height - 70) {
-        doc.addPage();
-        yPos = 20;
+      doc.addPage();
+      yPos = 20;
     }
 
     // Totals & Payment Plan Tables - adjusted for portrait
@@ -1115,8 +1198,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const montazTotal = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
     const cenaBezDPH = afterZlava + kovanieTotal + montazTotal;
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
-        ? data.manualCenaSDPH
-        : cenaBezDPH * 1.23;
+      ? data.manualCenaSDPH
+      : cenaBezDPH * 1.23;
 
     // Helper to round UP to nearest 10 (matches QuoteFooter display)
     const roundUpToTen2 = (value: number) => Math.ceil(value / 10) * 10;
@@ -1238,16 +1321,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
 
   } else {
-      doc.text('Detailný náhľad pre tento typ položky nie je implementovaný.', 14, yPos);
+    doc.text('Detailný náhľad pre tento typ položky nie je implementovaný.', 14, yPos);
   }
 
   // Footer (Page numbers)
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(0);
-      centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(0);
+    centerText(`Strana ${i} / ${pageCount}`, doc.internal.pageSize.height - 10);
   }
 
   // Create blob URL properly for PDF preview
@@ -1417,11 +1500,11 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
   // Zakazka Table (Objednávame u Vás)
   if (data.zakazka) {
     autoTable(doc, {
-        startY: yPos,
-        body: [[`Objednávame u Vás: ${data.zakazka}`]],
-        styles: { ...tableStyles, fontSize: 9, halign: 'left', fontStyle: 'bold' },
-        theme: 'grid',
-        tableWidth: 'auto'
+      startY: yPos,
+      body: [[`Objednávame u Vás: ${data.zakazka}`]],
+      styles: { ...tableStyles, fontSize: 9, halign: 'left', fontStyle: 'bold' },
+      theme: 'grid',
+      tableWidth: 'auto'
     });
     yPos = (doc as any).lastAutoTable.finalY + 5;
   }

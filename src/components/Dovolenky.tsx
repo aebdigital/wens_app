@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { CustomDatePicker } from './common/CustomDatePicker';
@@ -120,6 +121,88 @@ interface DayDetailPopupProps {
   isDark: boolean;
 }
 
+interface EmployeeSelectorProps {
+  users: { id: string; name: string }[];
+  selectedUserId: string | null;
+  onSelect: (id: string | null) => void;
+  isDark: boolean;
+  className?: string;
+}
+
+const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ users, selectedUserId, onSelect, isDark, className = '' }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${isDark
+          ? 'bg-dark-800 border-dark-600 text-white hover:bg-dark-700'
+          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+      >
+        <span className="font-medium">
+          {selectedUserId
+            ? users.find(u => u.id === selectedUserId)?.name
+            : 'Všetci zamestnanci'}
+        </span>
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className={`absolute z-20 top-full mt-2 left-0 w-[300px] md:w-[400px] rounded-lg shadow-xl border overflow-hidden ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'
+          }`}>
+          <div className="p-2 overflow-y-auto max-h-[300px]">
+            <button
+              onClick={() => { onSelect(null); setIsOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-md transition-colors mb-2 font-medium ${selectedUserId === null
+                ? 'bg-[#e11b28] text-white'
+                : isDark ? 'text-gray-300 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+            >
+              Prehľad (Všetci funkcionári)
+            </button>
+
+            <div className="grid grid-cols-1 gap-1">
+              {users.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => { onSelect(u.id); setIsOpen(false); }}
+                  className={`text-left px-3 py-2 rounded-md transition-colors truncate ${selectedUserId === u.id
+                    ? 'bg-[#e11b28] text-white'
+                    : isDark ? 'text-gray-300 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  title={u.name}
+                >
+                  {u.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const DayDetailPopup: React.FC<DayDetailPopupProps> = ({ date, vacations, onClose, isDark }) => {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
   const dayName = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'][date.getDay()];
@@ -222,6 +305,16 @@ const Dovolenky: React.FC = () => {
   // Day detail popup state
   const [selectedDay, setSelectedDay] = useState<{ date: Date; vacations: VacationEntry[] } | null>(null);
 
+  // Users state for dropdown
+  const [users, setUsers] = useState<{ id: string, name: string }[]>([]);
+
+  // Independent filters
+  const [calendarSelectedUserId, setCalendarSelectedUserId] = useState<string | null>(null);
+  const [tableSelectedUserId, setTableSelectedUserId] = useState<string | null>(null);
+
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const currentYear = currentDate.getFullYear();
@@ -229,11 +322,52 @@ const Dovolenky: React.FC = () => {
 
   // New Vacation Form State
   const [newVacation, setNewVacation] = useState({
-    name: '',
+    userId: '', // ID of selected user
+    name: '', // Display name (kept for compatibility or easier access)
     startDate: '',
     endDate: '',
     note: ''
   });
+
+  // Load users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, first_name, last_name')
+          .order('first_name');
+
+        if (error) throw error;
+
+        if (data) {
+          const formattedUsers = data.map(u => ({
+            id: u.id,
+            name: `${u.first_name} ${u.last_name}`.trim()
+          }));
+          setUsers(formattedUsers);
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Update form name when user selected
+  // When a user is selected in the "Add" form, update the name too
+  useEffect(() => {
+    if (newVacation.userId) {
+      const u = users.find(user => user.id === newVacation.userId);
+      if (u) {
+        setNewVacation(prev => ({ ...prev, name: u.name }));
+      }
+    }
+  }, [newVacation.userId, users]);
 
   // Get days for current month
   const monthDays = useMemo(() => getMonthDays(currentYear, currentMonth), [currentYear, currentMonth]);
@@ -287,12 +421,12 @@ const Dovolenky: React.FC = () => {
 
   const handleAddVacation = async () => {
     if (!newVacation.name || !newVacation.startDate || !newVacation.endDate) {
-      alert('Prosím vyplňte meno a dátumy.');
+      toast.error('Prosím vyplňte meno a dátumy.');
       return;
     }
 
     if (!user) {
-      alert('Musíte byť prihlásený.');
+      toast.error('Musíte byť prihlásený.');
       return;
     }
 
@@ -311,7 +445,7 @@ const Dovolenky: React.FC = () => {
 
       if (error) {
         console.error('Error adding vacation:', error);
-        alert('Nepodarilo sa pridať dovolenku.');
+        toast.error('Nepodarilo sa pridať dovolenku.');
         return;
       }
 
@@ -326,11 +460,12 @@ const Dovolenky: React.FC = () => {
           createdAt: data.created_at
         };
         setVacations(prev => [newEntry, ...prev]);
-        setNewVacation({ name: '', startDate: '', endDate: '', note: '' });
+        setNewVacation({ userId: '', name: '', startDate: '', endDate: '', note: '' });
+        toast.success('Dovolenka bola úspešne pridaná.');
       }
     } catch (error) {
       console.error('Failed to add vacation:', error);
-      alert('Nepodarilo sa pridať dovolenku.');
+      toast.error('Nepodarilo sa pridať dovolenku.');
     }
   };
 
@@ -341,13 +476,13 @@ const Dovolenky: React.FC = () => {
       // First verify the vacation exists and belongs to current user
       const vacation = vacations.find(v => v.id === id);
       if (!vacation) {
-        alert('Záznam nebol nájdený.');
+        toast.error('Záznam nebol nájdený.');
         return;
       }
 
       // Check if current user is the creator
       if (user && vacation.createdBy !== user.id) {
-        alert('Len tvorca záznamu môže vymazať dovolenku.');
+        toast.error('Len tvorca záznamu môže vymazať dovolenku.');
         return;
       }
 
@@ -358,16 +493,24 @@ const Dovolenky: React.FC = () => {
 
       if (error) {
         console.error('Error deleting vacation:', error);
-        alert('Nepodarilo sa vymazať dovolenku: ' + error.message);
+        toast.error('Nepodarilo sa vymazať dovolenku: ' + error.message);
         return;
       }
 
       setVacations(prev => prev.filter(v => v.id !== id));
+      toast.success('Dovolenka bola vymazaná.');
     } catch (error) {
       console.error('Failed to delete vacation:', error);
-      alert('Nepodarilo sa vymazať dovolenku.');
+      toast.error('Nepodarilo sa vymazať dovolenku.');
     }
   };
+
+  const filteredVacations = useMemo(() => {
+    if (!tableSelectedUserId) return vacations;
+    const selectedUser = users.find(u => u.id === tableSelectedUserId);
+    if (!selectedUser) return vacations;
+    return vacations.filter(v => v.name === selectedUser.name);
+  }, [tableSelectedUserId, users, vacations]);
 
   if (isLoading) {
     return (
@@ -381,220 +524,273 @@ const Dovolenky: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-full p-4 ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
-      {/* Page Title */}
-      <div className="mb-6">
-        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Dovolenky</h1>
-      </div>
+    <div className={`h-full flex ${isDark ? 'bg-dark-900' : 'bg-[#f8faff]'}`}>
+      {/* Sidebar - Employee List */}
 
-      <div className="space-y-6">
 
-            {/* Add New Vacation Form */}
-            <div className={`p-4 rounded-lg shadow-sm ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
-                <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Pridať dovolenku</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Meno</label>
-                        <input
-                            type="text"
-                            className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
-                            value={newVacation.name}
-                            onChange={(e) => setNewVacation({...newVacation, name: e.target.value})}
-                            placeholder="Meno zamestnanca"
-                        />
-                    </div>
-                    <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Od</label>
-                        <CustomDatePicker
-                            value={newVacation.startDate}
-                            onChange={(val) => setNewVacation({...newVacation, startDate: val})}
-                            className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
-                        />
-                    </div>
-                    <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Do</label>
-                        <CustomDatePicker
-                            value={newVacation.endDate}
-                            onChange={(val) => setNewVacation({...newVacation, endDate: val})}
-                            className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
-                        />
-                    </div>
-                     <div>
-                        <button
-                            onClick={handleAddVacation}
-                            className="w-full px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] transition-colors font-medium text-sm"
-                        >
-                            Pridať
-                        </button>
-                    </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="p-6 overflow-y-auto flex-1">
+          <div className="space-y-8 mx-auto w-full">
+
+            {/* 1. Add New Vacation Form (Top) */}
+            <div className={`p-6 rounded-lg shadow-sm ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
+              <h2 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Pridať dovolenku</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Zamestnanec</label>
+                  <select
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all appearance-none ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                    value={newVacation.userId}
+                    onChange={(e) => setNewVacation({ ...newVacation, userId: e.target.value })}
+                  >
+                    <option value="">Vyberte zamestnanca...</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
                 </div>
-                 <div className="mt-3">
-                    <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Poznámka</label>
-                    <input
-                        type="text"
-                        className={`w-full px-3 py-2 text-sm border rounded-md ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-300'}`}
-                        value={newVacation.note}
-                        onChange={(e) => setNewVacation({...newVacation, note: e.target.value})}
-                        placeholder="Voliteľná poznámka..."
-                    />
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Od</label>
+                  <CustomDatePicker
+                    value={newVacation.startDate}
+                    onChange={(val) => setNewVacation({ ...newVacation, startDate: val })}
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-200'}`}
+                  />
                 </div>
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Do</label>
+                  <CustomDatePicker
+                    value={newVacation.endDate}
+                    onChange={(val) => setNewVacation({ ...newVacation, endDate: val })}
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-200'}`}
+                  />
+                </div>
+                <div>
+                  <button
+                    onClick={handleAddVacation}
+                    className="w-full px-6 py-2.5 bg-[#e11b28] text-white rounded-lg hover:bg-[#c71325] transition-colors font-semibold shadow-sm hover:shadow text-sm"
+                  >
+                    Pridať záznam
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Poznámka</label>
+                <input
+                  type="text"
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'border-gray-200'}`}
+                  value={newVacation.note}
+                  onChange={(e) => setNewVacation({ ...newVacation, note: e.target.value })}
+                  placeholder="Voliteľná poznámka..."
+                />
+              </div>
             </div>
 
-            {/* Calendar View */}
-            <div className={`rounded-lg shadow-sm overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
-              {/* Calendar Header - Red with white text */}
-              <div className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={goToPreviousMonth}
-                    className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <h2 className="text-xl font-semibold text-white">
-                    {MONTH_NAMES[currentMonth]} {currentYear}
-                  </h2>
-                  <button
-                    onClick={goToNextMonth}
-                    className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
+            {/* 2. Calendar Section */}
+            <div className="space-y-4">
+              <div className="flex flex-col items-start gap-4">
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Kalendár {calendarSelectedUserId ? ` — ${users.find(u => u.id === calendarSelectedUserId)?.name}` : ''}
+                </h2>
+                <EmployeeSelector
+                  users={users}
+                  selectedUserId={calendarSelectedUserId}
+                  onSelect={setCalendarSelectedUserId}
+                  isDark={isDark}
+                  className="w-full md:w-auto" // Optional styling
+                />
               </div>
 
-              {/* Day Headers - Black and bold */}
-              <div className="grid grid-cols-7 gap-1 px-4 pt-4 pb-2">
-                {DAY_NAMES.map((day, index) => (
-                  <div
-                    key={day}
-                    className={`text-center py-2 text-sm font-bold ${
-                      index >= 5
-                        ? isDark ? 'text-red-400' : 'text-red-600'
-                        : isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1 p-4">
-                {monthDays.map((day, index) => {
-                  if (!day) {
-                    return <div key={`empty-${index}`} className="min-h-[80px]" />;
-                  }
-
-                  const isToday = day.toDateString() === new Date().toDateString();
-                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-
-                  // Find vacations for this day
-                  const dayVacations = vacations.filter(v => isDateInVacation(day, v));
-
-                  // Handle day click
-                  const handleDayClick = () => {
-                    setSelectedDay({ date: day, vacations: dayVacations });
-                  };
-
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      onClick={handleDayClick}
-                      className={`min-h-[80px] p-1 rounded-lg border transition-colors cursor-pointer ${
-                        isToday
-                          ? 'border-[#e11b28] border-2'
-                          : isDark
-                            ? 'border-dark-600 hover:border-dark-500'
-                            : 'border-gray-200 hover:border-gray-300'
-                      } ${isDark ? 'bg-dark-700 hover:bg-dark-600' : 'bg-gray-50 hover:bg-gray-100'}`}
+              <div className={`rounded-xl shadow-sm overflow-hidden border ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'}`}>
+                {/* Calendar Header - Red with white text */}
+                <div className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={goToPreviousMonth}
+                      className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
                     >
-                      {/* Day Number */}
-                      <div className={`text-xs font-medium mb-1 ${
-                        isToday
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <h2 className="text-xl font-bold text-white tracking-wide">
+                      {MONTH_NAMES[currentMonth]} {currentYear}
+                    </h2>
+                    <button
+                      onClick={goToNextMonth}
+                      className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Day Headers */}
+                <div className={`grid grid-cols-7 gap-px border-b ${isDark ? 'bg-dark-700 border-dark-600' : 'bg-gray-50 border-gray-200'}`}>
+                  {DAY_NAMES.map((day, index) => (
+                    <div
+                      key={day}
+                      className={`text-center py-3 text-sm font-bold ${index >= 5
+                        ? 'text-[#e11b28]'
+                        : isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}
+                    >
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Grid */}
+                <div className={`grid grid-cols-7 gap-px ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
+                  {monthDays.map((day, index) => {
+                    if (!day) {
+                      return <div key={`empty-${index}`} className={isDark ? 'bg-dark-800' : 'bg-white'} />;
+                    }
+
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+                    // Filter vacations for this day based on selection context
+                    const relevantVacations = calendarSelectedUserId
+                      ? vacations.filter(v => v.name === users.find(u => u.id === calendarSelectedUserId)?.name)
+                      : vacations;
+
+                    const dayVacations = relevantVacations.filter(v => isDateInVacation(day, v));
+
+                    const handleDayClick = () => {
+                      setSelectedDay({ date: day, vacations: dayVacations });
+                    };
+
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        onClick={handleDayClick}
+                        className={`min-h-[100px] p-2 transition-colors cursor-pointer relative group ${isDark ? 'bg-dark-800 hover:bg-dark-700' : 'bg-white hover:bg-gray-50'
+                          } ${isToday ? 'ring-2 ring-inset ring-[#e11b28]' : ''}`}
+                      >
+                        <div className={`text-sm font-medium mb-1 ${isToday
                           ? 'text-[#e11b28]'
                           : isWeekend
                             ? isDark ? 'text-red-400' : 'text-red-500'
                             : isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        {day.getDate()}
-                      </div>
+                          }`}>
+                          {day.getDate()}
+                        </div>
 
-                      {/* Vacation Bars */}
-                      <div className="space-y-0.5">
-                        {dayVacations.slice(0, 3).map((vac) => {
-                          const color = stringToColor(vac.name);
-                          return (
-                            <div
-                              key={vac.id}
-                              style={{ backgroundColor: color.bg, color: color.text }}
-                              className="text-[9px] px-1 py-0.5 rounded truncate"
-                              title={`${vac.name}${vac.note ? `: ${vac.note}` : ''}`}
-                            >
-                              {vac.name}
+                        <div className="space-y-1">
+                          {dayVacations.slice(0, 3).map((vac) => {
+                            const color = stringToColor(vac.name);
+                            return (
+                              <div
+                                key={vac.id}
+                                style={{ backgroundColor: color.bg, color: color.text }}
+                                className="text-[10px] px-1.5 py-0.5 rounded-md truncate font-medium shadow-sm"
+                                title={`${vac.name}${vac.note ? `: ${vac.note}` : ''}`}
+                              >
+                                {vac.name}
+                              </div>
+                            );
+                          })}
+                          {dayVacations.length > 3 && (
+                            <div className={`text-[10px] font-medium pl-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              +{dayVacations.length - 3} ďalší
                             </div>
-                          );
-                        })}
-                        {dayVacations.length > 3 && (
-                          <div className={`text-[9px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            +{dayVacations.length - 3} ďalší
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Vacations Table */}
-            <div className={`rounded-lg overflow-hidden shadow-sm ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
-                <table className="w-full text-sm text-left">
-                    <thead className="sticky top-0 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
-                        <tr>
-                            <th className="px-4 py-3 text-left font-semibold text-white">Meno</th>
-                            <th className="px-4 py-3 text-left font-semibold text-white">Od</th>
-                            <th className="px-4 py-3 text-left font-semibold text-white">Do</th>
-                            <th className="px-4 py-3 text-left font-semibold text-white">Poznámka</th>
-                            <th className="px-4 py-3 text-left font-semibold text-white">Dátum pridania</th>
-                            <th className="px-4 py-3 text-right font-semibold text-white">Akcie</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {vacations.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                    Žiadne naplánované dovolenky.
-                                </td>
-                            </tr>
-                        ) : (
-                            vacations.map((vac) => (
-                                <tr key={vac.id} className={`border-b ${isDark ? 'border-dark-500 hover:bg-dark-700' : 'border-gray-100 hover:bg-gray-50'}`}>
-                                    <td className={`px-6 py-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{vac.name}</td>
-                                    <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.startDate).toLocaleDateString('sk-SK')}</td>
-                                    <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.endDate).toLocaleDateString('sk-SK')}</td>
-                                    <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{vac.note || '-'}</td>
-                                    <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{new Date(vac.createdAt).toLocaleDateString('sk-SK')}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleDeleteVacation(vac.id)}
-                                            className="text-red-600 hover:text-red-900 font-medium text-xs hover:underline"
-                                        >
-                                            Zmazať
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            {/* 3. Table Section */}
+            <div className="space-y-4">
+              <div className="flex flex-col items-start gap-4">
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Zoznam dovoleniek {tableSelectedUserId ? ` — ${users.find(u => u.id === tableSelectedUserId)?.name}` : ''}
+                </h2>
+                <EmployeeSelector
+                  users={users}
+                  selectedUserId={tableSelectedUserId}
+                  onSelect={setTableSelectedUserId}
+                  isDark={isDark}
+                  className="w-full md:w-auto"
+                />
+              </div>
 
+              <div className={`rounded-lg overflow-hidden shadow-sm border ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'}`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-[#e11b28] text-white">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-semibold">Meno</th>
+                        <th className="px-6 py-4 text-left font-semibold">Termín</th>
+                        <th className="px-6 py-4 text-left font-semibold">Dĺžka</th>
+                        <th className="px-6 py-4 text-left font-semibold">Poznámka</th>
+                        <th className="px-6 py-4 text-right font-semibold">Akcie</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-dark-600">
+                      {filteredVacations.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className={`px-6 py-12 text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            Žiadne naplánované dovolenky.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredVacations.map((vac) => {
+                          const color = stringToColor(vac.name);
+                          const daysCount = Math.ceil((new Date(vac.endDate).getTime() - new Date(vac.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+                          return (
+                            <tr key={vac.id} className={`transition-colors ${isDark ? 'hover:bg-dark-700' : 'hover:bg-gray-50'}`}>
+                              <td className={`px-6 py-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" style={{ backgroundColor: color.bg, color: color.text }}>
+                                    {vac.name.substring(0, 2).toUpperCase()}
+                                  </div>
+                                  {vac.name}
+                                </div>
+                              </td>
+                              <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{new Date(vac.startDate).toLocaleDateString('sk-SK')}</span>
+                                  <span className="text-xs opacity-70">až {new Date(vac.endDate).toLocaleDateString('sk-SK')}</span>
+                                </div>
+                              </td>
+                              <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isDark ? 'bg-dark-600' : 'bg-gray-100'}`}>
+                                  {daysCount} {daysCount === 1 ? 'deň' : (daysCount >= 2 && daysCount <= 4 ? 'dni' : 'dní')}
+                                </span>
+                              </td>
+                              <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{vac.note || '-'}</td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => handleDeleteVacation(vac.id)}
+                                  className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                  title="Zmazať"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
       {/* Day Detail Popup */}
       {selectedDay && (

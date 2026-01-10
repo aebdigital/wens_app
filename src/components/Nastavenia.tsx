@@ -203,7 +203,17 @@ const Nastavenia = () => {
 
       const preferences = {
         user_id: user.id,
-        phone: formData.phone,
+
+        phone: (() => {
+          let p = formData.phone.replace(/[\s-]/g, ''); // Remove spaces and dashes
+          if (!p) return '';
+          if (p.startsWith('09')) {
+            return '+421' + p.substring(1);
+          } else if (p.startsWith('9')) {
+            return '+421' + p;
+          }
+          return p;
+        })(),
         language: formData.language,
       };
 
@@ -283,9 +293,8 @@ const Nastavenia = () => {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      }`}
                   />
                 </div>
                 <div>
@@ -294,9 +303,8 @@ const Nastavenia = () => {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      }`}
                   />
                 </div>
                 <div>
@@ -305,9 +313,8 @@ const Nastavenia = () => {
                     type="email"
                     value={formData.email}
                     disabled
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      isDark ? 'bg-dark-600 border-dark-500 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
-                    } cursor-not-allowed`}
+                    className={`w-full px-3 py-2 border rounded-md ${isDark ? 'bg-dark-600 border-dark-500 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
+                      } cursor-not-allowed`}
                   />
                   <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Email nie je možné zmeniť</p>
                 </div>
@@ -317,9 +324,8 @@ const Nastavenia = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${
-                      isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      }`}
                   />
                 </div>
               </div>
@@ -331,9 +337,8 @@ const Nastavenia = () => {
         <div className={`flex justify-end gap-3 p-6 border-t ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-gray-50 border-gray-200'}`}>
           <button
             type="button"
-            className={`px-4 py-2 border rounded-md transition-colors ${
-              isDark ? 'text-gray-300 bg-dark-600 border-gray-500 hover:bg-gray-500' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 border rounded-md transition-colors ${isDark ? 'text-gray-300 bg-dark-600 border-gray-500 hover:bg-gray-500' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'
+              }`}
           >
             Zrušiť
           </button>
@@ -382,9 +387,8 @@ const Nastavenia = () => {
                   return (
                     <div
                       key={u.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
-                        isDark ? 'bg-dark-700' : 'bg-gray-50'
-                      }`}
+                      className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-gray-50'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-dark-600' : 'bg-gray-200'}`}>
@@ -409,14 +413,12 @@ const Nastavenia = () => {
                           <button
                             onClick={() => toggleZamestnanciPermission(u.id, u.can_view_zamestnanci)}
                             disabled={isSavingPermissions === u.id}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 ${
-                              u.can_view_zamestnanci ? 'bg-[#e11b28]' : isDark ? 'bg-dark-500' : 'bg-gray-200'
-                            } ${isSavingPermissions === u.id ? 'opacity-50 cursor-wait' : ''}`}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 ${u.can_view_zamestnanci ? 'bg-[#e11b28]' : isDark ? 'bg-dark-500' : 'bg-gray-200'
+                              } ${isSavingPermissions === u.id ? 'opacity-50 cursor-wait' : ''}`}
                           >
                             <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                u.can_view_zamestnanci ? 'translate-x-5' : 'translate-x-0'
-                              }`}
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${u.can_view_zamestnanci ? 'translate-x-5' : 'translate-x-0'
+                                }`}
                             />
                           </button>
                         )}

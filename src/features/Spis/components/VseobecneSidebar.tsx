@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SpisFormData } from '../types';
+import { SpisFormData, FinancieDeposit } from '../types';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface VseobecneSidebarProps {
@@ -50,7 +50,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.predmet}
                   onChange={(e) => setFormData(prev => ({...prev, predmet: e.target.value}))}
-                  placeholder="CP2025/xxxx"
+                  placeholder={`CP${new Date().getFullYear()}/xxxx`}
                   disabled={isLocked}
                   className={getInputClass()}
                 />
@@ -201,15 +201,10 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 >
                   <option value=""></option>
                   <option value="Dvere">Dvere</option>
+                  <option value="Nábytok">Nábytok</option>
                   <option value="Schody">Schody</option>
                   <option value="Kovanie">Kovanie</option>
-                  <option value="Služby">Služby</option>
                   <option value="Ostatné">Ostatné</option>
-                  <option value="Celosklo">Celosklo</option>
-                  <option value="Parkety">Parkety</option>
-                  <option value="Eclipse">Eclipse</option>
-                  <option value="Obklady">Obklady</option>
-                  <option value="Nábytok">Nábytok</option>
                 </select>
               </div>
             </div>
@@ -267,66 +262,101 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 </div>
               </div>
             </div>
-            <div className="px-1 py-1">
-              <div className="flex items-center gap-2">
-                <label className={`${labelClass} w-20`}>Záloha 1</label>
-                <input
-                  type="text"
-                  value={formData.zaloha1}
-                  onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
-                  disabled={true}
-                  className={getInputClass('w-24')}
-                />
-                <div className="flex-1">
-                  <CustomDatePicker
-                    value={formData.zaloha1Datum}
-                    onChange={(val) => setFormData(prev => ({...prev, zaloha1Datum: val}))}
-                    disabled={isLocked}
-                    className={getInputClass('w-full')}
-                  />
+
+            {/* Dynamic deposits from selected price offer */}
+            {formData.financieDeposits && formData.financieDeposits.length > 0 ? (
+              formData.financieDeposits.map((deposit, index) => (
+                <div key={deposit.id} className="px-1 py-1">
+                  <div className="flex items-center gap-2">
+                    <label className={`${labelClass} w-20 truncate`} title={deposit.label}>
+                      {deposit.label.length > 10 ? deposit.label.substring(0, 10) + '...' : deposit.label}
+                    </label>
+                    <input
+                      type="text"
+                      value={deposit.amount}
+                      disabled={true}
+                      className={getInputClass('w-24')}
+                    />
+                    <div className="flex-1">
+                      <CustomDatePicker
+                        value={deposit.datum}
+                        onChange={(val) => {
+                          const newDeposits = [...(formData.financieDeposits || [])];
+                          newDeposits[index] = { ...newDeposits[index], datum: val };
+                          setFormData(prev => ({...prev, financieDeposits: newDeposits}));
+                        }}
+                        disabled={isLocked}
+                        className={getInputClass('w-full')}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="px-1 py-1">
-              <div className="flex items-center gap-2">
-                <label className={`${labelClass} w-20`}>Záloha 2</label>
-                <input
-                  type="text"
-                  value={formData.zaloha2}
-                  onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
-                  disabled={true}
-                  className={getInputClass('w-24')}
-                />
-                <div className="flex-1">
-                  <CustomDatePicker
-                    value={formData.zaloha2Datum}
-                    onChange={(val) => setFormData(prev => ({...prev, zaloha2Datum: val}))}
-                    disabled={isLocked}
-                    className={getInputClass('w-full')}
-                  />
+              ))
+            ) : (
+              // Fallback to legacy fixed deposits if no dynamic deposits
+              <>
+                <div className="px-1 py-1">
+                  <div className="flex items-center gap-2">
+                    <label className={`${labelClass} w-20`}>Záloha 1</label>
+                    <input
+                      type="text"
+                      value={formData.zaloha1}
+                      onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
+                      disabled={true}
+                      className={getInputClass('w-24')}
+                    />
+                    <div className="flex-1">
+                      <CustomDatePicker
+                        value={formData.zaloha1Datum}
+                        onChange={(val) => setFormData(prev => ({...prev, zaloha1Datum: val}))}
+                        disabled={isLocked}
+                        className={getInputClass('w-full')}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="px-1 py-1">
-              <div className="flex items-center gap-2">
-                <label className={`${labelClass} w-20`}>Doplatok</label>
-                <input
-                  type="text"
-                  value={formData.doplatok}
-                  onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
-                  disabled={true}
-                  className={getInputClass('w-24')}
-                />
-                <div className="flex-1">
-                  <CustomDatePicker
-                    value={formData.doplatokDatum}
-                    onChange={(val) => setFormData(prev => ({...prev, doplatokDatum: val}))}
-                    disabled={isLocked}
-                    className={getInputClass('w-full')}
-                  />
+                <div className="px-1 py-1">
+                  <div className="flex items-center gap-2">
+                    <label className={`${labelClass} w-20`}>Záloha 2</label>
+                    <input
+                      type="text"
+                      value={formData.zaloha2}
+                      onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
+                      disabled={true}
+                      className={getInputClass('w-24')}
+                    />
+                    <div className="flex-1">
+                      <CustomDatePicker
+                        value={formData.zaloha2Datum}
+                        onChange={(val) => setFormData(prev => ({...prev, zaloha2Datum: val}))}
+                        disabled={isLocked}
+                        className={getInputClass('w-full')}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+                <div className="px-1 py-1">
+                  <div className="flex items-center gap-2">
+                    <label className={`${labelClass} w-20`}>Doplatok</label>
+                    <input
+                      type="text"
+                      value={formData.doplatok}
+                      onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
+                      disabled={true}
+                      className={getInputClass('w-24')}
+                    />
+                    <div className="flex-1">
+                      <CustomDatePicker
+                        value={formData.doplatokDatum}
+                        onChange={(val) => setFormData(prev => ({...prev, doplatokDatum: val}))}
+                        disabled={isLocked}
+                        className={getInputClass('w-full')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ interface GenericItemsTableProps<T extends { id: string | number }> {
   title?: string;
   footerContent?: React.ReactNode;
   mergeFirstTwoHeaders?: boolean; // If true, merge first two column headers into title
+  extraButtons?: React.ReactNode; // Optional extra buttons next to the add button
 }
 
 export const GenericItemsTable = <T extends { id: string | number }>({
@@ -27,7 +28,8 @@ export const GenericItemsTable = <T extends { id: string | number }>({
   isDark,
   title,
   footerContent,
-  mergeFirstTwoHeaders = false
+  mergeFirstTwoHeaders = false,
+  extraButtons
 }: GenericItemsTableProps<T>) => {
   return (
     <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
@@ -122,7 +124,7 @@ export const GenericItemsTable = <T extends { id: string | number }>({
           )}
         </table>
       </div>
-      <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
+      <div className={`flex justify-center gap-2 p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
         <button
           onClick={onAddItem}
           className={`p-1 rounded-full ${isDark ? 'bg-dark-800 hover:bg-dark-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-800'} transition-colors shadow-sm`}
@@ -132,6 +134,7 @@ export const GenericItemsTable = <T extends { id: string | number }>({
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
         </button>
+        {extraButtons}
       </div>
     </div>
   );

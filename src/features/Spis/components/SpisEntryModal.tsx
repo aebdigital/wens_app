@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useDocumentLock } from '../../../contexts/DocumentLockContext';
-import { SpisEntry, CenovaPonukaItem } from '../types';
+import { SpisEntry, CenovaPonukaItem, FinancieDeposit, Deposit } from '../types';
 import { VseobecneSidebar } from './VseobecneSidebar';
 import { VseobecneForm } from './VseobecneForm';
 import { generatePDF } from '../utils/pdfGenerator';
@@ -16,6 +16,7 @@ const MeranieTab = lazy(() => import('./MeranieTab').then(m => ({ default: m.Mer
 const FotkyTab = lazy(() => import('./FotkyTab').then(m => ({ default: m.FotkyTab })));
 const VyrobneVykresyTab = lazy(() => import('./VyrobneVykresyTab').then(m => ({ default: m.VyrobneVykresyTab })));
 const TechnickeVykresyTab = lazy(() => import('./TechnickeVykresyTab').then(m => ({ default: m.TechnickeVykresyTab })));
+const PreberaciProtokolTab = lazy(() => import('./PreberaciProtokolTab').then(m => ({ default: m.PreberaciProtokolTab })));
 const AddTemplateModal = lazy(() => import('./AddTemplateModal').then(m => ({ default: m.AddTemplateModal })));
 const AddOrderModal = lazy(() => import('./AddOrderModal').then(m => ({ default: m.AddOrderModal })));
 const ContactChangesModal = lazy(() => import('./ContactChangesModal').then(m => ({ default: m.ContactChangesModal })));
@@ -186,6 +187,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     setUploadedPhotos,
     showVzorModal,
     setShowVzorModal,
+    editingOfferId,
     setEditingOfferId,
     editingOfferData,
     setEditingOfferData,
@@ -198,6 +200,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     handleAddOrderSave,
     handleEditOffer,
     handleEditOrderAction,
+    handleSaveAsNew,
     internalId,
     lastSavedJson,
     nextVariantCP,
@@ -341,82 +344,126 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     // Calculate total Quantity (KS) from the selected item's data
     let totalQuantity = 0;
     if (!isCurrentlySelected) { // Only calculate if we are selecting it
-        if (selectedItem.typ === 'dvere' && selectedItem.data.vyrobky) {
-            // For dvere, sum 'ks' (doors) AND 'ksZarubna' (frames)
-            totalQuantity = selectedItem.data.vyrobky.reduce((sum: number, p: any) => {
-                return sum + (Number(p.ks) || 0) + (Number(p.ksZarubna) || 0);
-            }, 0);
-        } else if ((selectedItem.typ === 'nabytok' || selectedItem.typ === 'schody') && selectedItem.data.vyrobky) {
-             // For furniture and stairs, quantity logic uses 'ks' field
-             totalQuantity = selectedItem.data.vyrobky.reduce((sum: number, p: any) => sum + (Number(p.ks) || 0), 0);
-        }
-        // Puzdra typically don't have this specific KS mapping request mentioned, but if so:
-        // else if (selectedItem.typ === 'puzdra' && selectedItem.data.polozky) { ... }
+      if (selectedItem.typ === 'dvere' && 'vyrobky' in selectedItem.data) {
+        // For dvere, sum only 'ks' (doors), NOT 'ksZarubna' (frames)
+        totalQuantity = (selectedItem.data.vyrobky as any[]).reduce((sum: number, p: any) => {
+          return sum + (Number(p.ks) || 0);
+        }, 0);
+      } else if ((selectedItem.typ === 'nabytok' || selectedItem.typ === 'schody') && 'vyrobky' in selectedItem.data) {
+        // For furniture and stairs, quantity logic uses 'ks' field
+        totalQuantity = (selectedItem.data.vyrobky as any[]).reduce((sum: number, p: any) => sum + (Number(p.ks) || 0), 0);
+      }
     }
 
     // Calculate finance updates when selecting (not unselecting)
-    let financeUpdates: { cena?: string; zaloha1?: string; zaloha2?: string; doplatok?: string } = {};
+    let financeUpdates: { cena?: string; zaloha1?: string; zaloha2?: string; doplatok?: string; financieDeposits?: FinancieDeposit[] } = {};
     if (!isCurrentlySelected && selectedItem.data) {
-        const data = selectedItem.data;
+      if (selectedItem.typ !== 'puzdra') {
+        const data = selectedItem.data as import('../types').DvereData | import('../types').NabytokData | import('../types').SchodyData;
         const cenaSDPH = selectedItem.cenaSDPH || 0;
 
         // Helper function to round UP to nearest 10 (matches QuoteFooter display)
         const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
 
-        // Check if using default 60/30/10 split
-        const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
-        const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
+        // Check if we have dynamic deposits
+        if (data.deposits && data.deposits.length > 0) {
+          // Use dynamic deposits
+          const effectivePrice = data.cenaDohodou && data.cenaDohodouValue
+            ? data.cenaDohodouValue
+            : cenaSDPH;
 
-        // Use saved amounts if available, otherwise calculate with rounding
-        let platba1, platba2, platba3;
-        if (data.platba1Amount != null) {
-          platba1 = data.platba1Amount;
-        } else if (isDefaultSplit && hasNoManualAmounts) {
-          platba1 = roundUpToTen(cenaSDPH * 0.60);
+          const financieDeposits: FinancieDeposit[] = data.deposits.map((deposit: Deposit) => {
+            const amount = deposit.amount != null
+              ? deposit.amount
+              : effectivePrice * (deposit.percent / 100);
+            return {
+              id: deposit.id,
+              label: deposit.label,
+              amount: amount.toFixed(2),
+              datum: '' // Date will be set by user in Financie section
+            };
+          });
+
+          financeUpdates = {
+            cena: effectivePrice.toFixed(2),
+            financieDeposits,
+            // Clear legacy fields when using dynamic deposits
+            zaloha1: '0',
+            zaloha2: '0',
+            doplatok: '0'
+          };
         } else {
-          platba1 = cenaSDPH * (data.platba1Percent || 60) / 100;
-        }
+          // Use legacy fixed deposits
+          // Check if using default 60/30/10 split
+          const platba1Percent = data.platba1Percent || 60;
+          const platba2Percent = data.platba2Percent || 30;
+          const platba3Percent = data.platba3Percent || 10;
 
-        if (data.platba2Amount != null) {
-          platba2 = data.platba2Amount;
-        } else if (isDefaultSplit && hasNoManualAmounts) {
-          platba2 = roundUpToTen(cenaSDPH * 0.30);
-        } else {
-          platba2 = cenaSDPH * (data.platba2Percent || 30) / 100;
-        }
+          const isDefaultSplit = platba1Percent === 60 && platba2Percent === 30 && platba3Percent === 10;
+          const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
 
-        if (data.platba3Amount != null) {
-          platba3 = data.platba3Amount;
-        } else if (isDefaultSplit && hasNoManualAmounts) {
-          platba3 = cenaSDPH - platba1 - platba2; // Remainder
-        } else {
-          platba3 = cenaSDPH * (data.platba3Percent || 10) / 100;
-        }
+          // Use saved amounts if available, otherwise calculate with rounding
+          let platba1, platba2, platba3;
+          if (data.platba1Amount != null) {
+            platba1 = data.platba1Amount;
+          } else if (isDefaultSplit && hasNoManualAmounts) {
+            platba1 = roundUpToTen(cenaSDPH * 0.60);
+          } else {
+            platba1 = cenaSDPH * platba1Percent / 100;
+          }
 
+          if (data.platba2Amount != null) {
+            platba2 = data.platba2Amount;
+          } else if (isDefaultSplit && hasNoManualAmounts) {
+            platba2 = roundUpToTen(cenaSDPH * 0.30);
+          } else {
+            platba2 = cenaSDPH * platba2Percent / 100;
+          }
+
+          if (data.platba3Amount != null) {
+            platba3 = data.platba3Amount;
+          } else if (isDefaultSplit && hasNoManualAmounts) {
+            platba3 = cenaSDPH - platba1 - platba2; // Remainder
+          } else {
+            platba3 = cenaSDPH * platba3Percent / 100;
+          }
+
+          financeUpdates = {
+            cena: cenaSDPH.toFixed(2),
+            zaloha1: platba1.toFixed(2),
+            zaloha2: platba2.toFixed(2),
+            doplatok: platba3.toFixed(2),
+            financieDeposits: undefined // Clear dynamic deposits when using legacy
+          };
+        }
+      } else {
+        // Logic for Puzdra (no detailed finance settings)
         financeUpdates = {
-          cena: cenaSDPH.toFixed(2),
-          zaloha1: platba1.toFixed(2),
-          zaloha2: platba2.toFixed(2),
-          doplatok: platba3.toFixed(2)
+          cena: (selectedItem.cenaSDPH || 0).toFixed(2),
+          financieDeposits: undefined,
+          zaloha1: '0',
+          zaloha2: '0',
+          doplatok: '0'
         };
+      }
     }
 
     setFormData(prev => {
-        const newItems = prev.cenovePonukyItems.map(item => ({
-            ...item,
-            selected: item.id === selectedItem.id ? !isCurrentlySelected : false
-        }));
+      const newItems = prev.cenovePonukyItems.map(item => ({
+        ...item,
+        selected: item.id === selectedItem.id ? !isCurrentlySelected : false
+      }));
 
-        // Update Odsúhlasená KS fields
-        // KS1 = Last digits of cisloCP
-        // KS2 = Quantity (KS)
-        return {
-            ...prev,
-            cenovePonukyItems: newItems,
-            odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? (selectedItem.cisloCP.split('/').pop() || '') : '') : '',
-            odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : '',
-            ...financeUpdates
-        };
+      // Update Odsúhlasená KS fields
+      // KS1 = Last digits of cisloCP
+      // KS2 = Quantity (KS)
+      return {
+        ...prev,
+        cenovePonukyItems: newItems,
+        odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? (selectedItem.cisloCP.split('/').pop() || '') : '') : '',
+        odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : '',
+        ...financeUpdates
+      };
     });
   };
 
@@ -438,6 +485,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                 { id: 'vseobecne', label: 'Všeobecné' },
                 { id: 'cenove-ponuky', label: 'Cenové ponuky' },
                 { id: 'objednavky', label: 'Objednávky' },
+                { id: 'preberaci-protokol', label: 'Preberací protokol' },
                 { id: 'meranie-dokumenty', label: 'Meranie a Dokumenty' },
                 { id: 'fotky', label: 'Fotky' },
                 { id: 'vyrobne-vykresy', label: 'Výrobné výkresy' },
@@ -446,11 +494,10 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 text-white whitespace-nowrap ${
-                    activeTab === tab.id
+                  className={`px-4 py-2 text-sm font-medium border-b-2 text-white whitespace-nowrap ${activeTab === tab.id
                       ? 'border-white bg-white/30 backdrop-blur-md'
                       : 'border-transparent hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -526,7 +573,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     onChange={(e) => {
                                       const newItems = [...formData.popisItems];
                                       newItems[index].popis = e.target.value;
-                                      setFormData(prev => ({...prev, popisItems: newItems}));
+                                      setFormData(prev => ({ ...prev, popisItems: newItems }));
                                     }}
                                     disabled={isEffectivelyLocked}
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
@@ -538,7 +585,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     onChange={(val) => {
                                       const newItems = [...formData.popisItems];
                                       newItems[index].datum = val;
-                                      setFormData(prev => ({...prev, popisItems: newItems}));
+                                      setFormData(prev => ({ ...prev, popisItems: newItems }));
                                     }}
                                     disabled={isEffectivelyLocked}
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
@@ -552,7 +599,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                     onChange={(e) => {
                                       const newItems = [...formData.popisItems];
                                       newItems[index].pridal = e.target.value;
-                                      setFormData(prev => ({...prev, popisItems: newItems}));
+                                      setFormData(prev => ({ ...prev, popisItems: newItems }));
                                     }}
                                     disabled={isEffectivelyLocked}
                                     className={`w-full text-xs border-0 bg-transparent px-1 py-1 ${isDark ? 'text-white' : 'text-gray-900'} ${isEffectivelyLocked ? 'cursor-not-allowed' : ''}`}
@@ -561,18 +608,18 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                                 <td className={`border px-1 py-1 text-center ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                                   {/* Only show delete button if current user is the creator of this note */}
                                   {user && item.pridal === `${user.firstName} ${user.lastName}` && (
-                                  <button
-                                    onClick={() => {
-                                      setNoteToDeleteIndex(index);
-                                      setShowDeleteNoteConfirm(true);
-                                    }}
-                                    disabled={isEffectivelyLocked}
-                                    className={`p-1 rounded bg-red-500 text-white hover:bg-red-600 transition-colors ${isEffectivelyLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
+                                    <button
+                                      onClick={() => {
+                                        setNoteToDeleteIndex(index);
+                                        setShowDeleteNoteConfirm(true);
+                                      }}
+                                      disabled={isEffectivelyLocked}
+                                      className={`p-1 rounded bg-red-500 text-white hover:bg-red-600 transition-colors ${isEffectivelyLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
                                   )}
                                 </td>
                               </tr>
@@ -591,11 +638,10 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                               }));
                             }}
                             disabled={isEffectivelyLocked}
-                            className={`p-1 rounded-full border-2 transition-all duration-200 ${
-                              isLocked
+                            className={`p-1 rounded-full border-2 transition-all duration-200 ${isLocked
                                 ? 'border-gray-300 text-gray-400 cursor-not-allowed'
                                 : 'border-[#e11b28] text-[#e11b28] hover:bg-[#e11b28] hover:text-white hover:scale-110 shadow-sm'
-                            }`}
+                              }`}
                             title="Pridať riadok"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -609,120 +655,131 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
 
                   {activeTab === 'cenove-ponuky' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <CenovePonukyTab
-                        items={formData.cenovePonukyItems}
-                        onDelete={(index) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            cenovePonukyItems: prev.cenovePonukyItems.filter((_, i) => i !== index)
-                          }));
-                        }}
-                        onUpdate={(items) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            cenovePonukyItems: items
-                          }));
-                        }}
-                        onEdit={handleEditOffer}
-                        onGeneratePDF={handleGeneratePDF}
-                        isDark={isDark}
-                        isLocked={isEffectivelyLocked}
-                        onAddVzor={() => {
-                          setVzorModalTabs(['dvere', 'nabytok', 'schody']);
-                          setEditingOfferId(null);
-                          // Pre-fill with data from last quote if one exists
-                          if (formData.cenovePonukyItems.length > 0) {
-                            const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
-                            setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
-                          } else {
-                            setEditingOfferData(undefined);
-                          }
-                          setShowVzorModal(true);
-                        }}
-                        onToggleSelect={handleToggleSelect}
-                        onSave={performSave}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <CenovePonukyTab
+                          items={formData.cenovePonukyItems}
+                          onDelete={(index) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              cenovePonukyItems: prev.cenovePonukyItems.filter((_, i) => i !== index)
+                            }));
+                          }}
+                          onUpdate={(items) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              cenovePonukyItems: items
+                            }));
+                          }}
+                          onEdit={handleEditOffer}
+                          onGeneratePDF={handleGeneratePDF}
+                          isDark={isDark}
+                          isLocked={isEffectivelyLocked}
+                          onAddVzor={() => {
+                            setVzorModalTabs(['dvere', 'nabytok', 'schody']);
+                            setEditingOfferId(null);
+                            // Pre-fill with data from last quote if one exists
+                            if (formData.cenovePonukyItems.length > 0) {
+                              const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
+                              setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
+                            } else {
+                              setEditingOfferData(undefined);
+                            }
+                            setShowVzorModal(true);
+                          }}
+                          onToggleSelect={handleToggleSelect}
+                          onSave={performSave}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
 
                   {activeTab === 'objednavky' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <ObjednavkyTab
-                        items={formData.objednavkyItems}
-                        onUpdate={(items) => setFormData(prev => ({...prev, objednavkyItems: items}))}
-                        isDark={isDark}
-                        user={user}
-                        entries={entries}
-                        selectedOrderIndex={selectedOrderIndex}
-                        isLocked={isEffectivelyLocked}
-                        onAddVzor={() => {
-                          setShowOrderModal(true);
-                        }}
-                        onEdit={handleEditOrderAction}
-                        headerInfo={{
-                          vypracoval: formData.vypracoval,
-                          telefon: userPhone,
-                          email: user?.email || ''
-                        }}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <ObjednavkyTab
+                          items={formData.objednavkyItems}
+                          onUpdate={(items) => setFormData(prev => ({ ...prev, objednavkyItems: items }))}
+                          isDark={isDark}
+                          user={user}
+                          entries={entries}
+                          selectedOrderIndex={selectedOrderIndex}
+                          isLocked={isEffectivelyLocked}
+                          onAddVzor={() => {
+                            setShowOrderModal(true);
+                          }}
+                          onEdit={handleEditOrderAction}
+                          headerInfo={{
+                            vypracoval: formData.vypracoval,
+                            telefon: userPhone,
+                            email: user?.email || ''
+                          }}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
 
                   {activeTab === 'meranie-dokumenty' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <MeranieTab
-                        isDark={isDark}
-                        items={formData.meranieItems}
-                        onUpdate={(items: any) => setFormData(prev => ({...prev, meranieItems: items}))}
-                        isLocked={isEffectivelyLocked}
-                        user={user}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <MeranieTab
+                          isDark={isDark}
+                          items={formData.meranieItems}
+                          onUpdate={(items: any) => setFormData(prev => ({ ...prev, meranieItems: items }))}
+                          isLocked={isEffectivelyLocked}
+                          user={user}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
 
                   {activeTab === 'fotky' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <FotkyTab
-                        uploadedPhotos={uploadedPhotos}
-                        setUploadedPhotos={setUploadedPhotos}
-                        isLocked={isEffectivelyLocked}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <FotkyTab
+                          uploadedPhotos={uploadedPhotos}
+                          setUploadedPhotos={setUploadedPhotos}
+                          isLocked={isEffectivelyLocked}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
 
                   {activeTab === 'vyrobne-vykresy' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <VyrobneVykresyTab
-                        isDark={isDark}
-                        items={formData.vyrobneVykresy}
-                        onUpdate={(items: any) => setFormData(prev => ({...prev, vyrobneVykresy: items}))}
-                        isLocked={isEffectivelyLocked}
-                        user={user}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <VyrobneVykresyTab
+                          isDark={isDark}
+                          items={formData.vyrobneVykresy}
+                          onUpdate={(items: any) => setFormData(prev => ({ ...prev, vyrobneVykresy: items }))}
+                          isLocked={isEffectivelyLocked}
+                          user={user}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
 
                   {activeTab === 'technicke-vykresy' && (
                     <TabErrorBoundary>
-                    <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
-                      <TechnickeVykresyTab
-                        isDark={isDark}
-                        items={formData.technickeItems}
-                        onUpdate={(items: any) => setFormData(prev => ({...prev, technickeItems: items}))}
-                        isLocked={isEffectivelyLocked}
-                        user={user}
-                      />
-                    </Suspense>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <TechnickeVykresyTab
+                          isDark={isDark}
+                          items={formData.technickeItems}
+                          onUpdate={(items: any) => setFormData(prev => ({ ...prev, technickeItems: items }))}
+                          isLocked={isEffectivelyLocked}
+                          user={user}
+                        />
+                      </Suspense>
+                    </TabErrorBoundary>
+                  )}
+
+                  {activeTab === 'preberaci-protokol' && (
+                    <TabErrorBoundary>
+                      <Suspense fallback={<TabLoadingSpinner isDark={isDark} />}>
+                        <PreberaciProtokolTab
+                          isDark={isDark}
+                          cenovePonukyItems={formData.cenovePonukyItems}
+                        />
+                      </Suspense>
                     </TabErrorBoundary>
                   )}
                 </div>
@@ -894,6 +951,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             isOpen={showVzorModal}
             onClose={() => setShowVzorModal(false)}
             onSave={handleAddTemplateSave}
+            onSaveAsNew={handleSaveAsNew}
+            isEditing={!!editingOfferId}
             firma={formData.firma}
             priezvisko={formData.priezvisko}
             meno={formData.meno}
@@ -905,6 +964,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             vypracoval={formData.vypracoval}
             predmet={formData.predmet}
             fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
+            cisloZakazky={formData.cisloZakazky}
+            onCisloZakazkyChange={(value) => setFormData(prev => ({ ...prev, cisloZakazky: value }))}
             creatorPhone={userPhone}
             creatorEmail={user?.email}
             architectInfo={{

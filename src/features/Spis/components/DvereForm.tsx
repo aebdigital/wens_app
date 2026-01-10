@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { DvereData, ProductPhoto } from '../types';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
 import { GenericItemsTable } from './common/GenericItemsTable';
 import { calculateDvereTotals } from '../utils/priceCalculations';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 
 interface DvereFormProps {
   data: DvereData;
@@ -48,6 +49,152 @@ const DEFAULT_PLATBA3 = 10;
 
 export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo }) => {
   const totals = calculateDvereTotals(data);
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  // Hidden columns logic
+  const hiddenColumns = data.hiddenColumns || [];
+  const isColumnVisible = (key: string) => !hiddenColumns.includes(key);
+
+  const visibleColumns = [
+    'miestnost',
+    'polozka',
+    'typRozmer',
+    ...(isColumnVisible('pl') ? ['pl'] : []),
+    ...(isColumnVisible('zamok') ? ['zamok'] : []),
+    ...(isColumnVisible('sklo') ? ['sklo'] : []),
+    ...(isColumnVisible('povrch') ? ['povrch'] : []),
+    ...(isColumnVisible('poznamka') ? ['poznamka'] : []),
+    'ks',
+    'cenaKs',
+    'cenaCelkom'
+  ];
+
+  const { columnWidths, startResizing, setColumnWidths } = useResizableColumns({
+    defaultWidths: {
+      miestnost: 8,
+      polozka: 15,
+      typRozmer: 10,
+      pl: 5,
+      zamok: 15,
+      sklo: 8,
+      povrch: 8,
+      poznamka: 10,
+      ks: 5,
+      cenaKs: 8,
+      cenaCelkom: 8
+    },
+    visibleColumns,
+    tableRef
+  });
+
+  // State for príplatok from výrobky modal
+  const [showPriplatokModal, setShowPriplatokModal] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]); // Format: "roomIndex-itemType" e.g. "0-dvere", "1-zarubna"
+  const [priplatokPercent, setPriplatokPercent] = useState<number>(10);
+  const [priplatokNazov, setPriplatokNazov] = useState<string>('Príplatok z výrobkov');
+  const [showHiddenColumnsMenu, setShowHiddenColumnsMenu] = useState(false);
+
+  const toggleColumnVisibility = (columnKey: string) => {
+    const currentHidden = data.hiddenColumns || [];
+    const isNowHidden = !currentHidden.includes(columnKey);
+
+    if (isNowHidden) {
+      // HIDING LOGIC (Keep existing approach: transfer width to elastic column)
+      setColumnWidths(prev => {
+        const currentWidth = prev[columnKey] || 5;
+        const targetCol = 'typRozmer';
+        const targetWidth = prev[targetCol] || 15;
+        return {
+          ...prev,
+          [targetCol]: targetWidth + currentWidth
+        };
+      });
+    } else {
+      // SHOWING LOGIC: RESET TO DEFAULTS + REDISTRIBUTE HIDDEN
+      // This resets all columns to their original proportional state, correcting any drift/corruption.
+      const defaultState: any = {
+        miestnost: 8,
+        polozka: 15,
+        typRozmer: 10, // Base width
+        pl: 5,
+        zamok: 15,
+        sklo: 8,
+        povrch: 8,
+        poznamka: 10,
+        ks: 5,
+        cenaKs: 8,
+        cenaCelkom: 8
+      };
+
+      // Calculate width of columns that will REMAIN hidden after this operation
+      const remainingHidden = currentHidden.filter(c => c !== columnKey);
+
+      let extraWidthForTypRozmer = 0;
+      remainingHidden.forEach(hiddenKey => {
+        // Accumulate width from defaultState for still-hidden columns
+        extraWidthForTypRozmer += (defaultState[hiddenKey] || 0);
+      });
+
+      // Apply the reset state with compensated width
+      setColumnWidths({
+        ...defaultState,
+        typRozmer: defaultState.typRozmer + extraWidthForTypRozmer
+      });
+    }
+
+    const newHidden = isNowHidden
+      ? [...currentHidden, columnKey]
+      : currentHidden.filter(c => c !== columnKey);
+    onChange({ ...data, hiddenColumns: newHidden });
+  };
+
+  // Generate list of all individual items from výrobky
+
+
+  // Generate list of all individual items from výrobky
+  const getAllItems = () => {
+    const items: { id: string; label: string; price: number; roomIndex: number; type: string }[] = [];
+    data.vyrobky.forEach((vyrobok, roomIndex) => {
+      const roomName = vyrobok.miestnost || `Miestnosť ${roomIndex + 1}`;
+      if (vyrobok.hasDvere && vyrobok.cenaDvere > 0) {
+        items.push({
+          id: `${roomIndex}-dvere`,
+          label: `${roomName} - Dvere`,
+          price: (vyrobok.ks || 0) * (vyrobok.cenaDvere || 0),
+          roomIndex,
+          type: 'dvere'
+        });
+      }
+      if (vyrobok.hasZarubna && vyrobok.cenaZarubna > 0) {
+        items.push({
+          id: `${roomIndex}-zarubna`,
+          label: `${roomName} - Zárubňa`,
+          price: (vyrobok.ksZarubna || 0) * (vyrobok.cenaZarubna || 0),
+          roomIndex,
+          type: 'zarubna'
+        });
+      }
+      if (vyrobok.hasObklad && vyrobok.cenaObklad > 0) {
+        items.push({
+          id: `${roomIndex}-obklad`,
+          label: `${roomName} - Obklad`,
+          price: (vyrobok.ksObklad || 0) * (vyrobok.cenaObklad || 0),
+          roomIndex,
+          type: 'obklad'
+        });
+      }
+      if (vyrobok.hasPrazdne && vyrobok.cenaPrazdne > 0) {
+        items.push({
+          id: `${roomIndex}-prazdne`,
+          label: `${roomName} - Prázdne`,
+          price: (vyrobok.ksPrazdne || 0) * (vyrobok.cenaPrazdne || 0),
+          roomIndex,
+          type: 'prazdne'
+        });
+      }
+    });
+    return items;
+  };
 
   // Helper to reset payment overrides when items change
   const onChangeWithPaymentReset = (newData: DvereData) => {
@@ -66,10 +213,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
     { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[280px]' },
-    { 
-      key: 'ks' as keyof typeof data.priplatky[0], 
-      label: 'ks', 
-      width: 'w-24', 
+    {
+      key: 'ks' as keyof typeof data.priplatky[0],
+      label: 'ks',
+      width: 'w-24',
       align: 'center' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
@@ -83,30 +230,30 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         />
       )
     },
-    { 
-      key: 'cenaKs' as keyof typeof data.priplatky[0], 
-      label: 'cena / ks', 
-      width: 'w-32', 
+    {
+      key: 'cenaKs' as keyof typeof data.priplatky[0],
+      label: 'cena / ks',
+      width: 'w-32',
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
-         <div className="flex items-center justify-end">
-            <input
-              type="number"
-              value={item.cenaKs}
-              onChange={(e) => {
-                const cenaKs = parseFloat(e.target.value) || 0;
-                update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
-              }}
-              className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-            />
-            <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
-         </div>
+        <div className="flex items-center justify-end">
+          <input
+            type="number"
+            value={item.cenaKs}
+            onChange={(e) => {
+              const cenaKs = parseFloat(e.target.value) || 0;
+              update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
+            }}
+            className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+          />
+          <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+        </div>
       )
     },
-    { 
-      key: 'cenaCelkom' as keyof typeof data.priplatky[0], 
-      label: 'cena celkom', 
-      width: 'w-32', 
+    {
+      key: 'cenaCelkom' as keyof typeof data.priplatky[0],
+      label: 'cena celkom',
+      width: 'w-32',
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }
@@ -174,14 +321,14 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       hasObklad: true,
       hasPrazdne: true,
     };
-    onChangeWithPaymentReset({...data, vyrobky: [...data.vyrobky, newVyrobok]});
+    onChangeWithPaymentReset({ ...data, vyrobky: [...data.vyrobky, newVyrobok] });
   };
 
   // Toggle parts of an existing item
   const toggleItemPart = (index: number, part: 'hasDvere' | 'hasZarubna' | 'hasObklad' | 'hasPrazdne') => {
     const newVyrobky = [...data.vyrobky];
     newVyrobky[index][part] = !newVyrobky[index][part];
-    onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+    onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
   };
 
   // Photo upload handling
@@ -257,25 +404,87 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     });
   };
 
+  // Calculate total price for selected items
+  const calculateSelectedItemsTotal = (): number => {
+    const allItems = getAllItems();
+    return selectedItems.reduce((sum, itemId) => {
+      const item = allItems.find(i => i.id === itemId);
+      return sum + (item?.price || 0);
+    }, 0);
+  };
+
+  // Handle opening the príplatok modal
+  const handleOpenPriplatokModal = () => {
+    setSelectedItems([]);
+    setPriplatokPercent(10);
+    setPriplatokNazov('Príplatok z výrobkov');
+    setShowPriplatokModal(true);
+  };
+
+  // Handle adding the príplatok from selected items
+  const handleAddPriplatokFromVyrobky = () => {
+    if (selectedItems.length === 0) {
+      alert('Vyberte aspoň jednu položku');
+      return;
+    }
+
+    const selectedTotal = calculateSelectedItemsTotal();
+    const priplatokValue = selectedTotal * (priplatokPercent / 100);
+
+    const newPriplatok = {
+      id: Date.now(),
+      nazov: priplatokNazov,
+      ks: 1,
+      cenaKs: priplatokValue,
+      cenaCelkom: priplatokValue
+    };
+
+    onChangeWithPaymentReset({
+      ...data,
+      priplatky: [...data.priplatky, newPriplatok]
+    });
+
+    setShowPriplatokModal(false);
+  };
+
+  // Toggle item selection
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems(prev =>
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  // Select/deselect all items
+  const toggleSelectAll = () => {
+    const allItems = getAllItems();
+    if (selectedItems.length === allItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(allItems.map(item => item.id));
+    }
+  };
+
   return (
-    <QuoteLayout 
-        isDark={isDark} 
-        headerInfo={headerInfo} 
-        data={data} 
-        onChange={onChange}
-        totals={totals}
+    <QuoteLayout
+      isDark={isDark}
+      headerInfo={headerInfo}
+      data={data}
+      onChange={onChange}
+      totals={totals}
     >
       {/* Product description */}
       <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
         <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>Popis zakázky:</h3>
         <div className="mt-1">
-            <input
+          <input
             type="text"
             value={data.popisVyrobkov}
-            onChange={(e) => onChange({...data, popisVyrobkov: e.target.value})}
+            onChange={(e) => onChange({ ...data, popisVyrobkov: e.target.value })}
             placeholder="Popis zakázky"
             className={`w-full px-3 py-1.5 text-sm font-normal rounded border ${isDark ? 'bg-dark-800 text-white border-gray-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
-            />
+          />
         </div>
       </div>
 
@@ -464,21 +673,162 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       {/* Výrobky Table */}
       <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table
+            ref={tableRef}
+            className="text-xs quote-table table-fixed bg-white isolate w-full"
+          >
+            <colgroup>
+              <col style={{ width: '32px' }} />
+              <col style={{ width: `${columnWidths.miestnost || 8}%` }} />
+              <col style={{ width: `${columnWidths.polozka || 15}%` }} />
+              <col style={{ width: `${columnWidths.typRozmer || 15}%` }} />
+              {isColumnVisible('pl') && <col style={{ width: `${columnWidths.pl || 5}%` }} />}
+              {isColumnVisible('zamok') && <col style={{ width: `${columnWidths.zamok || 5}%` }} />}
+              {isColumnVisible('sklo') && <col style={{ width: `${columnWidths.sklo || 8}%` }} />}
+              {isColumnVisible('povrch') && <col style={{ width: `${columnWidths.povrch || 8}%` }} />}
+              {isColumnVisible('poznamka') && <col style={{ width: `${columnWidths.poznamka || 15}%` }} />}
+              <col style={{ width: `${columnWidths.ks || 5}%` }} />
+              <col style={{ width: `${columnWidths.cenaKs || 8}%` }} />
+              <col style={{ width: `${columnWidths.cenaCelkom || 8}%` }} />
+              <col style={{ width: '32px' }} />
+            </colgroup>
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
-                <th className="px-2 py-2 text-left border-r border-white/20 w-8"></th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[100px]">miestnosť</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[100px]">položka</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">typ / rozmer</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[60px]">P / Ľ</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[60px]">zámok</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[80px]">sklo</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[80px]">povrch</th>
-                <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">poznámka</th>
-                <th className="px-2 py-2 text-right border-r border-white/20 min-w-[60px]">ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20 min-w-[80px]">cena / ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20 whitespace-nowrap min-w-[90px]">cena celkom</th>
+                <th className="px-2 py-2 text-center border-r border-white/20 w-8 relative group">
+                  {hiddenColumns.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowHiddenColumnsMenu(!showHiddenColumnsMenu)}
+                        className="w-5 h-5 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 text-white text-xs font-bold mx-auto"
+                        title="Zobraziť skryté stĺpce"
+                      >
+                        +
+                      </button>
+                      {showHiddenColumnsMenu && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowHiddenColumnsMenu(false)} />
+                          <div className={`absolute left-0 top-full mt-1 z-20 w-48 rounded shadow-lg border p-1 ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-200'}`}>
+                            {hiddenColumns.map(col => (
+                              <button
+                                key={col}
+                                onClick={() => {
+                                  toggleColumnVisibility(col);
+                                  if (hiddenColumns.length <= 1) setShowHiddenColumnsMenu(false);
+                                }}
+                                className={`w-full text-left px-2 py-1.5 text-xs rounded flex items-center gap-2 ${isDark ? 'text-gray-200 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                              >
+                                <span className="text-green-500">+</span>
+                                {col === 'pl' ? 'P / Ľ' : col.charAt(0).toUpperCase() + col.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </th>
+                <th className="relative px-2 py-2 text-left border-r border-white/20 select-none">
+                  miestnosť
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('miestnost', e)}
+                  />
+                </th>
+                <th className="relative px-2 py-2 text-left border-r border-white/20 select-none">
+                  položka
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('polozka', e)}
+                  />
+                </th>
+                <th className="relative px-2 py-2 text-left border-r border-white/20 select-none">
+                  typ / rozmer
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('typRozmer', e)}
+                  />
+                </th>
+                {isColumnVisible('pl') && (
+                  <th className="relative px-2 py-2 text-left border-r border-white/20 select-none group">
+                    <div className="flex justify-between items-center">
+                      <span>P / Ľ</span>
+                      <button onClick={() => toggleColumnVisibility('pl')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
+                    </div>
+                    <div
+                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
+                      onMouseDown={(e) => startResizing('pl', e)}
+                    />
+                  </th>
+                )}
+                {isColumnVisible('zamok') && (
+                  <th className="relative px-2 py-2 text-left border-r border-white/20 select-none group">
+                    <div className="flex justify-between items-center">
+                      <span>zámok</span>
+                      <button onClick={() => toggleColumnVisibility('zamok')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
+                    </div>
+                    <div
+                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
+                      onMouseDown={(e) => startResizing('zamok', e)}
+                    />
+                  </th>
+                )}
+                {isColumnVisible('sklo') && (
+                  <th className="relative px-2 py-2 text-left border-r border-white/20 select-none group">
+                    <div className="flex justify-between items-center">
+                      <span>sklo</span>
+                      <button onClick={() => toggleColumnVisibility('sklo')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
+                    </div>
+                    <div
+                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
+                      onMouseDown={(e) => startResizing('sklo', e)}
+                    />
+                  </th>
+                )}
+                {isColumnVisible('povrch') && (
+                  <th className="relative px-2 py-2 text-left border-r border-white/20 select-none group">
+                    <div className="flex justify-between items-center">
+                      <span>povrch</span>
+                      <button onClick={() => toggleColumnVisibility('povrch')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
+                    </div>
+                    <div
+                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
+                      onMouseDown={(e) => startResizing('povrch', e)}
+                    />
+                  </th>
+                )}
+                {isColumnVisible('poznamka') && (
+                  <th className="relative px-2 py-2 text-left border-r border-white/20 select-none group">
+                    <div className="flex justify-between items-center">
+                      <span>poznámka</span>
+                      <button onClick={() => toggleColumnVisibility('poznamka')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
+                    </div>
+                    <div
+                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
+                      onMouseDown={(e) => startResizing('poznamka', e)}
+                    />
+                  </th>
+                )}
+                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none">
+                  ks
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('ks', e)}
+                  />
+                </th>
+                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none">
+                  cena / ks
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('cenaKs', e)}
+                  />
+                </th>
+                <th className="relative px-2 py-2 text-right border-r border-white/20 whitespace-nowrap select-none">
+                  cena celkom
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
+                    onMouseDown={(e) => startResizing('cenaCelkom', e)}
+                  />
+                </th>
                 <th className="px-2 py-2 text-center w-8"></th>
               </tr>
             </thead>
@@ -495,522 +845,558 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
                 // Helper to render shared cells (Miestnost)
                 const renderMiestnostCell = (rowIndex: number) => {
-                    if (rowIndex === 0) {
-                        return (
-                            <>
-                                <td rowSpan={rowSpan} className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} font-medium`}>{index + 1}</td>
-                                <td rowSpan={rowSpan} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} align-top`}>
-                                <input
-                                    type="text"
-                                    value={item.miestnost}
-                                    onChange={(e) => {
-                                    const newVyrobky = [...data.vyrobky];
-                                    newVyrobky[index].miestnost = e.target.value;
-                                    onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none focus:bg-gray-100`}
-                                />
-                                {/* Add controls to add sub-items to this room */}
-                                <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity justify-center flex-wrap">
-                                    {!item.hasDvere && <button onClick={() => toggleItemPart(index, 'hasDvere')} title="Pridať Dvere" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Dvere</button>}
-                                    {!item.hasZarubna && <button onClick={() => toggleItemPart(index, 'hasZarubna')} title="Pridať Zárubňu" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Zárubňa</button>}
-                                    {!item.hasObklad && <button onClick={() => toggleItemPart(index, 'hasObklad')} title="Pridať Obklad" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Obklad</button>}
-                                    {!item.hasPrazdne && <button onClick={() => toggleItemPart(index, 'hasPrazdne')} title="Pridať Prázdne" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Prázdne</button>}
-                                </div>
-                                </td>
-                            </>
-                        );
-                    }
-                    return null;
+                  if (rowIndex === 0) {
+                    return (
+                      <>
+                        <td rowSpan={rowSpan} className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} font-medium`}>{index + 1}</td>
+                        <td rowSpan={rowSpan} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'} align-top`}>
+                          <input
+                            type="text"
+                            value={item.miestnost}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].miestnost = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none focus:bg-gray-100`}
+                          />
+                          {/* Add controls to add sub-items to this room */}
+                          <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity justify-center flex-wrap">
+                            {!item.hasDvere && <button onClick={() => toggleItemPart(index, 'hasDvere')} title="Pridať Dvere" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Dvere</button>}
+                            {!item.hasZarubna && <button onClick={() => toggleItemPart(index, 'hasZarubna')} title="Pridať Zárubňu" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Zárubňa</button>}
+                            {!item.hasObklad && <button onClick={() => toggleItemPart(index, 'hasObklad')} title="Pridať Obklad" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Obklad</button>}
+                            {!item.hasPrazdne && <button onClick={() => toggleItemPart(index, 'hasPrazdne')} title="Pridať Prázdne" className={`text-[10px] px-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Prázdne</button>}
+                          </div>
+                        </td>
+                      </>
+                    );
+                  }
+                  return null;
                 };
 
                 const deleteButton = (
-                    <td rowSpan={rowSpan} className={`px-1 py-1 text-center align-middle border-l ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                        <button
-                            onClick={() => {
-                                const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
-                                onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                            }}
-                            className="text-red-500 hover:text-red-700 p-1"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </td>
+                  <td rowSpan={rowSpan} className={`px-1 py-1 text-center align-middle border-l ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                    <button
+                      onClick={() => {
+                        const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
+                        onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                      }}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </td>
                 );
 
                 let currentRow = 0;
 
                 // DVERE ROW
                 if (item.hasDvere) {
-                    rows.push(
-                        <tr key={`${item.id}-dvere`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                            {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
-                                <div className="flex justify-between items-center group/cell">
-                                    <input
-                                        type="text"
-                                        value={item.polozkaDvere ?? 'Dvere'}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].polozkaDvere = e.target.value;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <button onClick={() => toggleItemPart(index, 'hasDvere')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Dvere">×</button>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.dvereTypRozmer}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].dvereTypRozmer = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.pL}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].pL = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.zamok}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].zamok = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.sklo}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].sklo = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.povrch}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].povrch = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.poznamkaDvere}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].poznamkaDvere = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.ks}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].ks = parseInt(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <div className="flex items-center justify-end">
-                                    <input
-                                        type="number"
-                                        value={item.cenaDvere}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].cenaDvere = parseFloat(e.target.value) || 0;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                {((item.ks || 0) * (item.cenaDvere || 0)).toFixed(2)} €
-                            </td>
-                            {currentRow === 0 && deleteButton}
-                        </tr>
-                    );
-                    currentRow++;
+                  rows.push(
+                    <tr key={`${item.id}-dvere`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                      {renderMiestnostCell(currentRow)}
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
+                        <div className="flex justify-between items-center group/cell">
+                          <input
+                            type="text"
+                            value={item.polozkaDvere ?? 'Dvere'}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].polozkaDvere = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <button onClick={() => toggleItemPart(index, 'hasDvere')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Dvere">×</button>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="text"
+                          value={item.dvereTypRozmer}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].dvereTypRozmer = e.target.value;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      {isColumnVisible('pl') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.pL}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].pL = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('zamok') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.zamok}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].zamok = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('sklo') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.sklo}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].sklo = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('povrch') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.povrch}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].povrch = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('poznamka') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.poznamkaDvere}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].poznamkaDvere = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="number"
+                          value={item.ks}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].ks = parseInt(e.target.value) || 0;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.cenaDvere}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].cenaDvere = parseFloat(e.target.value) || 0;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        {((item.ks || 0) * (item.cenaDvere || 0)).toFixed(2)} €
+                      </td>
+                      {currentRow === 0 && deleteButton}
+                    </tr>
+                  );
+                  currentRow++;
                 }
 
                 // ZARUBNA ROW
                 if (item.hasZarubna) {
-                    rows.push(
-                        <tr key={`${item.id}-zarubna`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                            {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
-                                <div className="flex justify-between items-center group/cell">
-                                    <input
-                                        type="text"
-                                        value={item.polozkaZarubna ?? 'Zárubňa'}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].polozkaZarubna = e.target.value;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <button onClick={() => toggleItemPart(index, 'hasZarubna')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Zárubňu">×</button>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.dvereOtvor}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].dvereOtvor = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="otvor"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.povrchZarubna || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].povrchZarubna = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="povrch"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.poznamkaZarubna}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].poznamkaZarubna = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.ksZarubna}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].ksZarubna = parseInt(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <div className="flex items-center justify-end">
-                                    <input
-                                        type="number"
-                                        value={item.cenaZarubna}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].cenaZarubna = parseFloat(e.target.value) || 0;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                {((item.ksZarubna || 0) * (item.cenaZarubna || 0)).toFixed(2)} €
-                            </td>
-                            {currentRow === 0 && deleteButton}
-                        </tr>
-                    );
-                    currentRow++;
+                  const visibleMiddleCols = (isColumnVisible('pl') ? 1 : 0) + (isColumnVisible('zamok') ? 1 : 0) + (isColumnVisible('sklo') ? 1 : 0);
+                  rows.push(
+                    <tr key={`${item.id}-zarubna`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                      {renderMiestnostCell(currentRow)}
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
+                        <div className="flex justify-between items-center group/cell">
+                          <input
+                            type="text"
+                            value={item.polozkaZarubna ?? 'Zárubňa'}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].polozkaZarubna = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <button onClick={() => toggleItemPart(index, 'hasZarubna')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Zárubňu">×</button>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="text"
+                          value={item.dvereOtvor}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].dvereOtvor = e.target.value;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          placeholder="otvor"
+                          className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      {visibleMiddleCols > 0 && <td colSpan={visibleMiddleCols} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>}
+                      {isColumnVisible('povrch') && (
+                        <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.povrchZarubna || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].povrchZarubna = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            placeholder="povrch"
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('poznamka') && (
+                        <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.poznamkaZarubna}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].poznamkaZarubna = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="number"
+                          value={item.ksZarubna}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].ksZarubna = parseInt(e.target.value) || 0;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.cenaZarubna}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].cenaZarubna = parseFloat(e.target.value) || 0;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        {((item.ksZarubna || 0) * (item.cenaZarubna || 0)).toFixed(2)} €
+                      </td>
+                      {currentRow === 0 && deleteButton}
+                    </tr>
+                  );
+                  currentRow++;
                 }
 
                 // OBKLAD ROW
                 if (item.hasObklad) {
-                    rows.push(
-                        <tr key={`${item.id}-obklad`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                            {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
-                                <div className="flex justify-between items-center group/cell">
-                                    <input
-                                        type="text"
-                                        value={item.polozkaObklad ?? 'Obklad'}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].polozkaObklad = e.target.value;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <button onClick={() => toggleItemPart(index, 'hasObklad')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Obklad">×</button>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.typObklad || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].typObklad = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="typ/rozmer"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td colSpan={3} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.povrchObklad || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].povrchObklad = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="povrch"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.poznamkaObklad || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].poznamkaObklad = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.ksObklad}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].ksObklad = parseInt(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <div className="flex items-center justify-end">
-                                    <input
-                                        type="number"
-                                        value={item.cenaObklad}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].cenaObklad = parseFloat(e.target.value) || 0;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                {((item.ksObklad || 0) * (item.cenaObklad || 0)).toFixed(2)} €
-                            </td>
-                            {currentRow === 0 && deleteButton}
-                        </tr>
-                    );
-                    currentRow++;
+                  const visibleMiddleCols = (isColumnVisible('pl') ? 1 : 0) + (isColumnVisible('zamok') ? 1 : 0) + (isColumnVisible('sklo') ? 1 : 0);
+                  rows.push(
+                    <tr key={`${item.id}-obklad`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                      {renderMiestnostCell(currentRow)}
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
+                        <div className="flex justify-between items-center group/cell">
+                          <input
+                            type="text"
+                            value={item.polozkaObklad ?? 'Obklad'}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].polozkaObklad = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <button onClick={() => toggleItemPart(index, 'hasObklad')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Obklad">×</button>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="text"
+                          value={item.typObklad || ''}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].typObklad = e.target.value;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          placeholder="typ/rozmer"
+                          className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      {visibleMiddleCols > 0 && <td colSpan={visibleMiddleCols} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}></td>}
+                      {isColumnVisible('povrch') && (
+                        <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.povrchObklad || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].povrchObklad = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            placeholder="povrch"
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('poznamka') && (
+                        <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.poznamkaObklad || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].poznamkaObklad = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="number"
+                          value={item.ksObklad}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].ksObklad = parseInt(e.target.value) || 0;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.cenaObklad}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].cenaObklad = parseFloat(e.target.value) || 0;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        {((item.ksObklad || 0) * (item.cenaObklad || 0)).toFixed(2)} €
+                      </td>
+                      {currentRow === 0 && deleteButton}
+                    </tr>
+                  );
+                  currentRow++;
                 }
 
                 // PRÁZDNE ROW
                 if (item.hasPrazdne) {
-                    rows.push(
-                        <tr key={`${item.id}-prazdne`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                            {renderMiestnostCell(currentRow)}
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
-                                <div className="flex justify-between items-center group/cell">
-                                    <input
-                                        type="text"
-                                        value={item.polozkaPrazdne ?? 'Prázdne'}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].polozkaPrazdne = e.target.value;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <button onClick={() => toggleItemPart(index, 'hasPrazdne')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Prázdne">×</button>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.typPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].typPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="typ/rozmer"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.pLPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].pLPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.zamokPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].zamokPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.skloPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].skloPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.povrchPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].povrchPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="povrch"
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.poznamkaPrazdne || ''}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].poznamkaPrazdne = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="number"
-                                    value={item.ksPrazdne || 0}
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].ksPrazdne = parseInt(e.target.value) || 0;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                />
-                            </td>
-                            <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <div className="flex items-center justify-end">
-                                    <input
-                                        type="number"
-                                        value={item.cenaPrazdne || 0}
-                                        onChange={(e) => {
-                                            const newVyrobky = [...data.vyrobky];
-                                            newVyrobky[index].cenaPrazdne = parseFloat(e.target.value) || 0;
-                                            onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                        }}
-                                        className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
-                                    />
-                                    <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
-                                </div>
-                            </td>
-                            <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                {((item.ksPrazdne || 0) * (item.cenaPrazdne || 0)).toFixed(2)} €
-                            </td>
-                            {currentRow === 0 && deleteButton}
-                        </tr>
-                    );
-                    currentRow++;
+                  rows.push(
+                    <tr key={`${item.id}-prazdne`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                      {renderMiestnostCell(currentRow)}
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-200 text-gray-800'}`}>
+                        <div className="flex justify-between items-center group/cell">
+                          <input
+                            type="text"
+                            value={item.polozkaPrazdne ?? 'Prázdne'}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].polozkaPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`flex-1 px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <button onClick={() => toggleItemPart(index, 'hasPrazdne')} className="text-red-400 hover:text-red-600 opacity-0 group-hover/cell:opacity-100" title="Odstrániť Prázdne">×</button>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="text"
+                          value={item.typPrazdne || ''}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].typPrazdne = e.target.value;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          placeholder="typ/rozmer"
+                          className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      {isColumnVisible('pl') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.pLPrazdne || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].pLPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('zamok') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.zamokPrazdne || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].zamokPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('sklo') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.skloPrazdne || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].skloPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('povrch') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.povrchPrazdne || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].povrchPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('poznamka') && (
+                        <td className={`px-2 py-1 text-left border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                          <input
+                            type="text"
+                            value={item.poznamkaPrazdne || ''}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].poznamkaPrazdne = e.target.value;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-full px-1 py-0.5 text-xs text-left ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                        </td>
+                      )}
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="number"
+                          value={item.ksPrazdne || 0}
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].ksPrazdne = parseInt(e.target.value) || 0;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                        />
+                      </td>
+                      <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.cenaPrazdne || 0}
+                            onChange={(e) => {
+                              const newVyrobky = [...data.vyrobky];
+                              newVyrobky[index].cenaPrazdne = parseFloat(e.target.value) || 0;
+                              onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                            }}
+                            className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        {((item.ksPrazdne || 0) * (item.cenaPrazdne || 0)).toFixed(2)} €
+                      </td>
+                      {currentRow === 0 && deleteButton}
+                    </tr>
+                  );
+                  currentRow++;
                 }
 
                 // EMPTY ROW (if nothing selected)
                 if (rowSpan === 1 && !item.hasDvere && !item.hasZarubna && !item.hasObklad && !item.hasPrazdne) {
-                     rows.push(
-                        <tr key={`${item.id}-empty`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
-                            {renderMiestnostCell(0)}
-                            <td colSpan={10} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                                <input
-                                    type="text"
-                                    value={item.poznamkaDvere || ''} // Reusing poznamkaDvere as generic text container for empty row
-                                    onChange={(e) => {
-                                        const newVyrobky = [...data.vyrobky];
-                                        newVyrobky[index].poznamkaDvere = e.target.value;
-                                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                                    }}
-                                    placeholder="Vlastný text..."
-                                    className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none italic`}
-                                />
-                            </td>
-                             {deleteButton}
-                        </tr>
-                     );
+                  const visibleOptionalCount = (isColumnVisible('pl') ? 1 : 0) +
+                    (isColumnVisible('zamok') ? 1 : 0) +
+                    (isColumnVisible('sklo') ? 1 : 0) +
+                    (isColumnVisible('povrch') ? 1 : 0) +
+                    (isColumnVisible('poznamka') ? 1 : 0);
+                  const emptyRowColSpan = 5 + visibleOptionalCount;
+
+                  rows.push(
+                    <tr key={`${item.id}-empty`} className={`group ${isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50'} ${index % 2 === 0 ? (isDark ? 'bg-dark-700' : 'bg-white') : (isDark ? 'bg-dark-750' : 'bg-gray-50')}`}>
+                      {renderMiestnostCell(0)}
+                      <td colSpan={emptyRowColSpan} className={`px-2 py-1 border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                        <input
+                          type="text"
+                          value={item.poznamkaDvere || ''} // Reusing poznamkaDvere as generic text container for empty row
+                          onChange={(e) => {
+                            const newVyrobky = [...data.vyrobky];
+                            newVyrobky[index].poznamkaDvere = e.target.value;
+                            onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                          }}
+                          placeholder="Vlastný text..."
+                          className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none italic`}
+                        />
+                      </td>
+                      {deleteButton}
+                    </tr>
+                  );
                 }
 
                 return rows;
@@ -1029,7 +1415,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             </tfoot>
           </table>
         </div>
-        
+
         {/* Add Room Button */}
         <div className={`flex justify-center p-2 transition-all ${isDark ? 'bg-dark-700' : 'bg-gray-200'}`}>
           <button
@@ -1049,10 +1435,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.priplatky}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({...data, priplatky: items})}
+        onChange={(items) => onChangeWithPaymentReset({ ...data, priplatky: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({...data, priplatky: [...data.priplatky, newItem]});
+          onChangeWithPaymentReset({ ...data, priplatky: [...data.priplatky, newItem] });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
@@ -1065,13 +1451,30 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             </td>
           </tr>
         }
+        extraButtons={
+          data.vyrobky.length > 0 && (
+            <button
+              onClick={handleOpenPriplatokModal}
+              className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'} transition-colors shadow-sm`}
+              title="Vypočítať príplatok z výrobkov"
+            >
+              % z výrobkov
+            </button>
+          )
+        }
       />
 
-      <QuoteSummary 
-          isDark={isDark} 
-          totals={totals} 
-          zlavaPercent={data.zlavaPercent}
-          onZlavaChange={(val) => onChange({...data, zlavaPercent: val})}
+      <QuoteSummary
+        isDark={isDark}
+        totals={totals}
+        zlavaPercent={data.zlavaPercent}
+        zlavaEur={data.zlavaEur || 0}
+        useZlavaPercent={data.useZlavaPercent !== false}
+        useZlavaEur={data.useZlavaEur || false}
+        onZlavaChange={(val) => onChange({ ...data, zlavaPercent: val })}
+        onZlavaEurChange={(val) => onChange({ ...data, zlavaEur: val })}
+        onUseZlavaPercentChange={(val) => onChange({ ...data, useZlavaPercent: val })}
+        onUseZlavaEurChange={(val) => onChange({ ...data, useZlavaEur: val })}
       />
 
       <GenericItemsTable
@@ -1079,10 +1482,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.kovanie}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({...data, kovanie: items})}
+        onChange={(items) => onChangeWithPaymentReset({ ...data, kovanie: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({...data, kovanie: [...data.kovanie, newItem]});
+          onChangeWithPaymentReset({ ...data, kovanie: [...data.kovanie, newItem] });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
@@ -1102,10 +1505,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.montaz}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({...data, montaz: items})}
+        onChange={(items) => onChangeWithPaymentReset({ ...data, montaz: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({...data, montaz: [...data.montaz, newItem]});
+          onChangeWithPaymentReset({ ...data, montaz: [...data.montaz, newItem] });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
@@ -1119,6 +1522,121 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </tr>
         }
       />
+
+      {/* Príplatok from výrobky modal */}
+      {showPriplatokModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className={`rounded-lg p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Príplatok z výrobkov
+            </h3>
+
+            {/* Príplatok name input */}
+            <div className="mb-4">
+              <label className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Názov príplatku:</label>
+              <input
+                type="text"
+                value={priplatokNazov}
+                onChange={(e) => setPriplatokNazov(e.target.value)}
+                className={`w-full px-3 py-2 rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'}`}
+              />
+            </div>
+
+            {/* Percentage input */}
+            <div className="mb-4">
+              <label className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Percento z vybraných výrobkov:</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={priplatokPercent}
+                  onChange={(e) => setPriplatokPercent(parseFloat(e.target.value) || 0)}
+                  className={`w-24 px-3 py-2 rounded border text-right ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'}`}
+                />
+                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>%</span>
+              </div>
+            </div>
+
+            {/* Items selection */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Vyberte položky:</label>
+                <button
+                  onClick={toggleSelectAll}
+                  className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-gray-300 hover:bg-dark-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                >
+                  {selectedItems.length === getAllItems().length ? 'Zrušiť všetky' : 'Vybrať všetky'}
+                </button>
+              </div>
+              <div className={`border rounded max-h-64 overflow-y-auto ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
+                {getAllItems().map((item, index) => (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleItemSelection(item.id)}
+                    className={`flex items-center justify-between px-3 py-2 cursor-pointer ${selectedItems.includes(item.id)
+                      ? (isDark ? 'bg-blue-900/50' : 'bg-blue-100')
+                      : (isDark ? 'hover:bg-dark-700' : 'hover:bg-gray-50')
+                      } ${index > 0 ? `border-t ${isDark ? 'border-dark-500' : 'border-gray-200'}` : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(item.id)}
+                        onChange={() => { }}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 pointer-events-none"
+                      />
+                      <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {item.price.toFixed(2)} €
+                    </span>
+                  </div>
+                ))}
+                {getAllItems().length === 0 && (
+                  <div className={`px-3 py-4 text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Žiadne položky s cenou
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className={`mb-6 p-3 rounded ${isDark ? 'bg-dark-700' : 'bg-gray-100'}`}>
+              <div className="flex justify-between text-sm mb-1">
+                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Suma vybraných položiek:</span>
+                <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                  {calculateSelectedItemsTotal().toFixed(2)} €
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Príplatok ({priplatokPercent}%):</span>
+                <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                  {(calculateSelectedItemsTotal() * (priplatokPercent / 100)).toFixed(2)} €
+                </span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowPriplatokModal(false)}
+                className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={handleAddPriplatokFromVyrobky}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                disabled={selectedItems.length === 0}
+              >
+                Pridať príplatok
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </QuoteLayout>
   );
 };

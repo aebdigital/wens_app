@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContactsProvider } from './contexts/ContactsContext';
 import { SpisProvider } from './contexts/SpisContext';
@@ -21,8 +22,8 @@ import Layout from './components/layout/Layout';
 import { TaskPopup } from './components/tasks/TaskPopup';
 
 const TaskListener: React.FC = () => {
-    // This component will just mount the popup that listens to context
-    return <TaskPopup />;
+  // This component will just mount the popup that listens to context
+  return <TaskPopup />;
 };
 
 // Authenticated app with data providers - only mounted after successful login
@@ -85,12 +86,15 @@ const AppContent: React.FC = () => {
   return <AuthenticatedApp />;
 };
 
+
+
 function App() {
   return (
     <ErrorBoundary>
       <Router>
         <ThemeProvider>
           <AuthProvider>
+            <Toaster position="top-right" />
             <AppContent />
           </AuthProvider>
         </ThemeProvider>

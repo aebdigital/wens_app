@@ -13,6 +13,7 @@ interface AddTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any) => void;
+  onSaveAsNew?: (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }) => void;
   initialTab?: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
   // Props for header info
   firma: string;
@@ -26,6 +27,8 @@ interface AddTemplateModalProps {
   vypracoval: string;
   predmet: string;
   fullCisloCP?: string;
+  cisloZakazky?: string;
+  onCisloZakazkyChange?: (value: string) => void;
   creatorPhone?: string;
   creatorEmail?: string;
   architectInfo?: {
@@ -45,12 +48,14 @@ interface AddTemplateModalProps {
   };
   visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'puzdra')[];
   isLocked?: boolean;
+  isEditing?: boolean;
 }
 
 export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onSaveAsNew,
   initialTab = 'dvere',
   firma,
   priezvisko,
@@ -63,12 +68,15 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   vypracoval,
   predmet,
   fullCisloCP,
+  cisloZakazky = '',
+  onCisloZakazkyChange,
   creatorPhone,
   creatorEmail,
   architectInfo,
   editingData,
   visibleTabs = ['dvere', 'nabytok', 'schody', 'puzdra'],
-  isLocked = false
+  isLocked = false,
+  isEditing = false
 }) => {
   const { isDark } = useTheme();
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
@@ -261,6 +269,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     }
   }, [editingData]);
 
+  const [isSavingAsNew, setIsSavingAsNew] = useState(false);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -274,6 +284,32 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       // Don't close the modal after saving
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveAsNewClick = async () => {
+    if (!onSaveAsNew) return;
+    setIsSavingAsNew(true);
+    try {
+      let dataToSave;
+      if (activeTab === 'dvere') dataToSave = dvereData;
+      else if (activeTab === 'nabytok') dataToSave = nabytokData;
+      else if (activeTab === 'schody') dataToSave = schodyData;
+      else dataToSave = puzdraData;
+
+      // Use either onSaveAsNew if it supports options, or just assume it might not and we need to pass it differently.
+      // But based on the interface update, onSaveAsNew (which maps to handleSaveAsNew in useSpisEntryLogic) should support it.
+      // wait, handleSaveAsNew in useSpisEntryLogic wraps handleAddTemplateSave.
+      // let's check the props interface change requirement.
+      // Actually we just updated handleAddTemplateSave signature in the hook.
+      // We need to ensure onSaveAsNew prop passes this option down.
+      // The prop type for onSaveAsNew in AddTemplateModal needs to be updated too?
+      // Yes, see below.
+
+      await onSaveAsNew(activeTab, dataToSave, { forceNewVersion: true });
+      onClose(); // Close modal after creating new offer
+    } finally {
+      setIsSavingAsNew(false);
     }
   };
 
@@ -303,6 +339,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       await onSave(activeTab, dataToPreview);
 
       // Create a temporary CenovaPonukaItem for PDF generation
+      // Create a temporary CenovaPonukaItem for PDF generation
       const tempItem: CenovaPonukaItem = {
         id: 'preview',
         cisloCP: fullCisloCP || predmet || 'PREVIEW',
@@ -314,7 +351,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         vytvoril: vypracoval,
         popis: '',
         data: dataToPreview
-      };
+      } as CenovaPonukaItem;
 
       const headerInfo = {
         customer: {
@@ -432,13 +469,12 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 md:px-6 py-1.5 md:py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${
-                    activeTab === tab
-                      ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow-lg'
-                      : isDark
+                  className={`px-4 md:px-6 py-1.5 md:py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${activeTab === tab
+                    ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow-lg'
+                    : isDark
                       ? 'bg-dark-700 text-gray-300 hover:bg-dark-600'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : tab === 'schody' ? 'Schody' : 'Púzdra'}
                 </button>
@@ -446,9 +482,21 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             </div>
           </div>
           <div className="hidden md:flex items-center gap-4">
-            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>
-              Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>
+                Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Číslo zákazky:</span>
+                <input
+                  type="text"
+                  value={cisloZakazky}
+                  onChange={(e) => onCisloZakazkyChange?.(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                  placeholder="..."
+                  className={`w-24 px-2 py-0.5 text-xs font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
+                />
+              </div>
+            </div>
             <button
               onClick={onClose}
               className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
@@ -463,9 +511,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         {/* Content area */}
         <div className="flex-1 overflow-auto p-6">
           {activeTab === 'dvere' && (
-            <DvereForm 
-              data={dvereData} 
-              onChange={setDvereData} 
+            <DvereForm
+              data={dvereData}
+              onChange={setDvereData}
               isDark={isDark}
               headerInfo={{
                 customer: {
@@ -532,9 +580,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             />
           )}
           {activeTab === 'puzdra' && (
-            <PuzdraForm 
-              data={puzdraData} 
-              onChange={setPuzdraData} 
+            <PuzdraForm
+              data={puzdraData}
+              onChange={setPuzdraData}
               isDark={isDark}
               headerInfo={{
                 vypracoval,
@@ -576,6 +624,21 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
             >
               Zrušiť
             </button>
+            {isEditing && onSaveAsNew && (
+              <button
+                onClick={handleSaveAsNewClick}
+                disabled={isLocked || isSavingAsNew}
+                className={`flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 shadow-lg ${isLocked || isSavingAsNew ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSavingAsNew && (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {isSavingAsNew ? 'Vytvárám...' : 'Nová cenová ponuka'}
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={isLocked || isSaving}
