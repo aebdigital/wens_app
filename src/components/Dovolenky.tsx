@@ -312,9 +312,6 @@ const Dovolenky: React.FC = () => {
   const [calendarSelectedUserId, setCalendarSelectedUserId] = useState<string | null>(null);
   const [tableSelectedUserId, setTableSelectedUserId] = useState<string | null>(null);
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const currentYear = currentDate.getFullYear();

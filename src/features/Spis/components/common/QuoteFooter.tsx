@@ -31,11 +31,6 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
   const [localCenaDohodou, setLocalCenaDohodou] = useState<string>('');
   const [editingCenaDohodou, setEditingCenaDohodou] = useState<boolean>(false);
 
-  // Helper to round up to nearest 10
-  const roundUpToTen = (value: number): number => {
-    return Math.ceil(value / 10) * 10;
-  };
-
   // Get deposits - use dynamic deposits if available, otherwise use legacy fixed deposits
   const getDeposits = (): Deposit[] => {
     if (data.deposits && data.deposits.length > 0) {
@@ -111,9 +106,6 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       manualCenaSDPH: newTotal,
     });
   };
-
-  // Effective price based on mode
-  const effectivePrice = data.cenaDohodou && data.cenaDohodouValue ? data.cenaDohodouValue : totals.cenaSDPH;
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} p-4`}>

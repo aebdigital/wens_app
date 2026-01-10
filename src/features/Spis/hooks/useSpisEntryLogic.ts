@@ -65,7 +65,6 @@ export const useSpisEntryLogic = (
   // 3. Persistence Logic (Save & Contact Changes)
   const {
     showContactChangesModal,
-    setShowContactChangesModal, // Exported in case needed, though mostly internal to persistence
     pendingContactChanges,
     handleApplyContactChanges,
     handleCancelContactChanges,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SpisFormData, FinancieDeposit } from '../types';
+import { SpisFormData } from '../types';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface VseobecneSidebarProps {
@@ -23,7 +23,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
   const getInputClass = (widthClass = 'flex-1') => {
     const base = `text-xs border px-1 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28] ${widthClass}`;
     if (isLocked) {
-        return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+      return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
     }
     return `${base} ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
   };
@@ -34,8 +34,8 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
     <div
       className={`w-full h-full border rounded-lg overflow-y-auto ${isDark ? 'bg-dark-700 border-dark-500' : 'bg-gray-50 border-gray-200'}`}
       style={{
-        boxShadow: isDark 
-          ? 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3)' 
+        boxShadow: isDark
+          ? 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3)'
           : 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
       }}
     >
@@ -49,7 +49,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.predmet}
-                  onChange={(e) => setFormData(prev => ({...prev, predmet: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, predmet: e.target.value }))}
                   placeholder={`CP${new Date().getFullYear()}/xxxx`}
                   disabled={isLocked}
                   className={getInputClass()}
@@ -62,7 +62,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.cisloZakazky}
-                  onChange={(e) => setFormData(prev => ({...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '')}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '') }))}
                   disabled={isLocked}
                   className={getInputClass()}
                 />
@@ -75,7 +75,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   <input
                     type="text"
                     value={formData.odsuhlesenaKS1}
-                    onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS1: e.target.value}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, odsuhlesenaKS1: e.target.value }))}
                     disabled={true}
                     className={getInputClass('w-20')}
                   />
@@ -83,7 +83,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   <input
                     type="text"
                     value={formData.odsuhlesenaKS2}
-                    onChange={(e) => setFormData(prev => ({...prev, odsuhlesenaKS2: e.target.value}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, odsuhlesenaKS2: e.target.value }))}
                     disabled={true}
                     className={getInputClass('w-20')}
                   />
@@ -96,7 +96,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <div className="flex-1">
                   <CustomDatePicker
                     value={formData.ochranaDatum}
-                    onChange={(val) => setFormData(prev => ({...prev, ochranaDatum: val}))}
+                    onChange={(val) => setFormData(prev => ({ ...prev, ochranaDatum: val }))}
                     disabled={isLocked}
                     className={getInputClass('w-full')}
                   />
@@ -112,7 +112,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     value={formData.firma}
                     onChange={(e) => {
                       const value = e.target.value;
-                      setFormData(prev => ({...prev, firma: value}));
+                      setFormData(prev => ({ ...prev, firma: value }));
 
                       // Filter options based on input
                       const filtered = firmaOptions.filter(option =>
@@ -146,7 +146,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                         <div
                           key={option}
                           onClick={() => {
-                            setFormData(prev => ({...prev, firma: option}));
+                            setFormData(prev => ({ ...prev, firma: option }));
                             setShowFirmaDropdown(false);
                           }}
                           className={`px-2 py-1 text-xs cursor-pointer ${isDark ? 'text-gray-200 hover:bg-dark-600' : 'text-gray-800 hover:bg-gray-100'}`}
@@ -165,7 +165,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.vypracoval}
-                  onChange={(e) => setFormData(prev => ({...prev, vypracoval: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, vypracoval: e.target.value }))}
                   disabled={isLocked}
                   className={getInputClass()}
                 />
@@ -176,7 +176,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <label className={labelClass}>Stav</label>
                 <select
                   value={formData.stav}
-                  onChange={(e) => setFormData(prev => ({...prev, stav: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, stav: e.target.value }))}
                   disabled={isLocked}
                   className={getInputClass()}
                 >
@@ -195,7 +195,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <label className={labelClass}>Kategória</label>
                 <select
                   value={formData.kategoria}
-                  onChange={(e) => setFormData(prev => ({...prev, kategoria: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, kategoria: e.target.value }))}
                   disabled={isLocked}
                   className={getInputClass()}
                 >
@@ -214,7 +214,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <div className="flex-1">
                   <CustomDatePicker
                     value={formData.terminDokoncenia || ''}
-                    onChange={(val) => setFormData(prev => ({...prev, terminDokoncenia: val}))}
+                    onChange={(val) => setFormData(prev => ({ ...prev, terminDokoncenia: val }))}
                     disabled={isLocked}
                     className={getInputClass('w-full')}
                   />
@@ -234,7 +234,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.cena}
-                  onChange={(e) => setFormData(prev => ({...prev, cena: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cena: e.target.value }))}
                   disabled={true}
                   className={getInputClass('w-24')}
                 />
@@ -246,7 +246,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.provizia}
-                  onChange={(e) => setFormData(prev => ({...prev, provizia: e.target.value.replace(/[^0-9.,]/g, '')}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, provizia: e.target.value.replace(/[^0-9.,]/g, '') }))}
                   disabled={isLocked}
                   className={getInputClass('w-24')}
                 />
@@ -254,7 +254,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   <input
                     type="checkbox"
                     checked={formData.vybavene}
-                    onChange={(e) => setFormData(prev => ({...prev, vybavene: e.target.checked}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, vybavene: e.target.checked }))}
                     disabled={isLocked}
                     className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
                   />
@@ -283,7 +283,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                         onChange={(val) => {
                           const newDeposits = [...(formData.financieDeposits || [])];
                           newDeposits[index] = { ...newDeposits[index], datum: val };
-                          setFormData(prev => ({...prev, financieDeposits: newDeposits}));
+                          setFormData(prev => ({ ...prev, financieDeposits: newDeposits }));
                         }}
                         disabled={isLocked}
                         className={getInputClass('w-full')}
@@ -301,14 +301,14 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     <input
                       type="text"
                       value={formData.zaloha1}
-                      onChange={(e) => setFormData(prev => ({...prev, zaloha1: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, zaloha1: e.target.value }))}
                       disabled={true}
                       className={getInputClass('w-24')}
                     />
                     <div className="flex-1">
                       <CustomDatePicker
                         value={formData.zaloha1Datum}
-                        onChange={(val) => setFormData(prev => ({...prev, zaloha1Datum: val}))}
+                        onChange={(val) => setFormData(prev => ({ ...prev, zaloha1Datum: val }))}
                         disabled={isLocked}
                         className={getInputClass('w-full')}
                       />
@@ -321,14 +321,14 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     <input
                       type="text"
                       value={formData.zaloha2}
-                      onChange={(e) => setFormData(prev => ({...prev, zaloha2: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, zaloha2: e.target.value }))}
                       disabled={true}
                       className={getInputClass('w-24')}
                     />
                     <div className="flex-1">
                       <CustomDatePicker
                         value={formData.zaloha2Datum}
-                        onChange={(val) => setFormData(prev => ({...prev, zaloha2Datum: val}))}
+                        onChange={(val) => setFormData(prev => ({ ...prev, zaloha2Datum: val }))}
                         disabled={isLocked}
                         className={getInputClass('w-full')}
                       />
@@ -341,14 +341,14 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                     <input
                       type="text"
                       value={formData.doplatok}
-                      onChange={(e) => setFormData(prev => ({...prev, doplatok: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, doplatok: e.target.value }))}
                       disabled={true}
                       className={getInputClass('w-24')}
                     />
                     <div className="flex-1">
                       <CustomDatePicker
                         value={formData.doplatokDatum}
-                        onChange={(val) => setFormData(prev => ({...prev, doplatokDatum: val}))}
+                        onChange={(val) => setFormData(prev => ({ ...prev, doplatokDatum: val }))}
                         disabled={isLocked}
                         className={getInputClass('w-full')}
                       />
