@@ -329,7 +329,6 @@ const Dovolenky: React.FC = () => {
   // Load users
   useEffect(() => {
     const fetchUsers = async () => {
-      setLoadingUsers(true);
       try {
         const { data, error } = await supabase
           .from('users')
@@ -347,8 +346,6 @@ const Dovolenky: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching users:', err);
-      } finally {
-        setLoadingUsers(false);
       }
     };
 
