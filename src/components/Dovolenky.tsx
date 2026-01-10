@@ -178,7 +178,7 @@ const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ users, selectedUser
                 : isDark ? 'text-gray-300 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'
                 }`}
             >
-              Prehľad (Všetci funkcionári)
+              Všetci zamestnanci
             </button>
 
             <div className="grid grid-cols-1 gap-1">
