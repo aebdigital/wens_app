@@ -274,7 +274,6 @@ export const generatePreberaciProtokolPDF = async (
 
     // Add more space if needed to push signatures to bottom or just below
     const pageHeight = doc.internal.pageSize.height;
-    const bottomMargin = 40;
 
     // Ensure we have space
     if (yPos > pageHeight - 60) {

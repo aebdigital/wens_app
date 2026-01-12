@@ -224,8 +224,8 @@ const Dovolenky: React.FC = () => {
   // Day detail popup state
   const [selectedDay, setSelectedDay] = useState<{ date: Date; vacations: VacationEntry[] } | null>(null);
 
-  // Hardcoded employee list
-  const users = [
+  // Hardcoded employee list - Wrapped in useMemo to prevent re-renders
+  const users = useMemo(() => [
     { id: '1', name: 'Andelová Kristína' },
     { id: '2', name: 'Andrejkovičová Andrea, Bc.' },
     { id: '3', name: 'Bartoš Daniel' },
@@ -249,7 +249,7 @@ const Dovolenky: React.FC = () => {
     { id: '21', name: 'Vasko Ľubomír' },
     { id: '22', name: 'Vida Ján' },
     { id: '23', name: 'Vrchovský Peter' },
-  ];
+  ], []);
 
   // Independent filters
   const [calendarSelectedUserId, setCalendarSelectedUserId] = useState<string | null>(null);
