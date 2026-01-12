@@ -150,6 +150,8 @@ export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean
             if (initialEntry.fullFormData) {
                 const loadedData = {
                     ...initialEntry.fullFormData,
+                    // Load cisloCP from the entry into predmet field
+                    predmet: initialEntry.cisloCP || initialEntry.fullFormData.predmet || '',
                     objednavkyItems: initialEntry.fullFormData.objednavkyItems || []
                 };
                 setFormData(loadedData);

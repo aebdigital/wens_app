@@ -34,6 +34,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const renderTaskRef = useRef<any>(null);
+  const isRenderingRef = useRef(false);
 
   // Reset all state when modal closes
   useEffect(() => {
@@ -82,6 +84,23 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     if (!pdfDoc || !canvasRef.current) return;
 
     const renderPage = async () => {
+      // Prevent overlapping renders
+      if (isRenderingRef.current) {
+        return;
+      }
+
+      // Cancel any previous render task
+      if (renderTaskRef.current) {
+        try {
+          renderTaskRef.current.cancel();
+        } catch (e) {
+          // Ignore cancel errors
+        }
+        renderTaskRef.current = null;
+      }
+
+      isRenderingRef.current = true;
+
       try {
         const page = await pdfDoc.getPage(currentPage);
 
@@ -90,10 +109,16 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         const viewport = page.getViewport({ scale: scale * pixelRatio });
 
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) {
+          isRenderingRef.current = false;
+          return;
+        }
 
         const context = canvas.getContext('2d');
-        if (!context) return;
+        if (!context) {
+          isRenderingRef.current = false;
+          return;
+        }
 
         // Set canvas dimensions at higher resolution
         canvas.height = viewport.height;
@@ -107,18 +132,39 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         // Render PDF page
-        await page.render({
+        const renderTask = page.render({
           canvasContext: context,
           viewport: viewport
-        }).promise;
+        });
+        renderTaskRef.current = renderTask;
+
+        await renderTask.promise;
+        renderTaskRef.current = null;
 
         console.log('Page rendered successfully');
-      } catch (err) {
-        console.error('Error rendering page:', err);
+      } catch (err: any) {
+        // Ignore cancellation errors
+        if (err?.name !== 'RenderingCancelledException') {
+          console.error('Error rendering page:', err);
+        }
+      } finally {
+        isRenderingRef.current = false;
       }
     };
 
-    renderPage();
+    // Small delay to ensure canvas is ready
+    const timeoutId = setTimeout(renderPage, 50);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (renderTaskRef.current) {
+        try {
+          renderTaskRef.current.cancel();
+        } catch (e) {
+          // Ignore cancel errors
+        }
+      }
+    };
   }, [pdfDoc, currentPage, scale]);
 
   const handleDownload = () => {

@@ -83,6 +83,14 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Helper to get full cisloCP - prepends predmet if fullCisloCP starts with '-'
+  const getDisplayCisloCP = () => {
+    if (fullCisloCP?.startsWith('-') && predmet) {
+      return predmet + fullCisloCP;
+    }
+    return fullCisloCP || predmet;
+  };
+
   // Ensure initialTab is valid within visibleTabs
   const validInitialTab = visibleTabs.includes(initialTab) ? initialTab : visibleTabs[0];
   const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'schody' | 'puzdra'>(validInitialTab);
@@ -105,7 +113,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       showArchitectInfo: false,
       vyrobky: Array(1).fill(null).map((_, i) => ({
         id: i + 1,
-        miestnost: i === 0 ? 'Izba' : '',
+        miestnost: '',
         dvereTypRozmer: 'Séria C1',
         dvereOtvor: 'otvor 2020x880x150',
         pL: 'P dnu',
@@ -128,13 +136,17 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       })),
       priplatky: [
         { id: 1, nazov: 'dyha dub bielený + 15%', ks: 1, cenaKs: 828, cenaCelkom: 828 },
+        { id: 2, nazov: 'spoj „T"', ks: 1, cenaKs: 1, cenaCelkom: 1 },
       ],
       zlavaPercent: 15,
       kovanie: [
         { id: 1, nazov: 'pánt Tectus 3D (zkrát dvere) + úprava dverí a zárubní na bezfalcové prevedenie', ks: 1, cenaKs: 55, cenaCelkom: 55 },
+        { id: 2, nazov: 'upevňovací segment', ks: 1, cenaKs: 15, cenaCelkom: 15 },
       ],
       montaz: [
         { id: 1, nazov: '1 krídlové bezfalcové dvere', ks: 1, cenaKs: 95, cenaCelkom: 95 },
+        { id: 2, nazov: 'montáž kľučky', ks: 1, cenaKs: 10, cenaCelkom: 10 },
+        { id: 3, nazov: 'vynášanie – doceniť po obhliadke', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montazPoznamka: 'Neumožnená kompletná montáž z dôvodu nepripravenosti stavby, bude spoplatnená dopravou!',
       platnostPonuky: '1 mesiac od vypracovania',
@@ -153,22 +165,22 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     }
     return {
       popisVyrobkov: '',
-      vyrobkyTyp: 'Stupeň',
-      vyrobkyPopis: 'neviditeľný spoj, DTD + dyhy dub prírodný',
+      vyrobkyTyp: 'Skrinka',
+      vyrobkyPopis: 'DTD laminát biela, ABS hrana 2mm',
       showCustomerInfo: true,
       showArchitectInfo: false,
       vyrobky: Array(1).fill(null).map((_, i) => ({
         id: i + 1,
-        nazov: i === 0 ? 'stupeň' : '',
-        rozmer: i === 0 ? '1000x280x40' : '',
-        material: i < 3 ? 'DTD - dyha dub prírodný' : '',
+        nazov: i === 0 ? 'skrinka' : '',
+        rozmer: i === 0 ? '800x600x400' : '',
+        material: i < 3 ? 'DTD laminát biela' : '',
         poznamka: '',
         ks: i < 3 ? 1 : 0,
-        cenaKs: i === 0 ? 89 : 0,
-        cenaCelkom: i === 0 ? 89 : 0,
+        cenaKs: i === 0 ? 150 : 0,
+        cenaCelkom: i === 0 ? 150 : 0,
       })),
       priplatky: [
-        { id: 1, nazov: 'dyha dub prírodný + 5%', ks: 1, cenaKs: 16.35, cenaCelkom: 16.35 },
+        { id: 1, nazov: 'ABS hrana 2mm', ks: 1, cenaKs: 25, cenaCelkom: 25 },
       ],
       zlavaPercent: 5,
       kovanie: [
@@ -342,7 +354,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       // Create a temporary CenovaPonukaItem for PDF generation
       const tempItem: CenovaPonukaItem = {
         id: 'preview',
-        cisloCP: fullCisloCP || predmet || 'PREVIEW',
+        cisloCP: getDisplayCisloCP() || 'PREVIEW',
         typ: activeTab,
         verzia: '1',
         cenaBezDPH: totals.cenaBezDPH,
@@ -416,7 +428,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       const blobUrl = await generatePDF(tempItem, formData as any, headerInfo);
       setPdfPreview({
         url: blobUrl,
-        filename: `CP_${fullCisloCP || predmet || 'PREVIEW'}.pdf`
+        filename: `CP_${getDisplayCisloCP() || 'PREVIEW'}.pdf`
       });
     } catch (error) {
       console.error('Error generating PDF preview:', error);
@@ -483,17 +495,17 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
           </div>
           <div className="hidden md:flex items-center gap-4">
             <div className="flex flex-col items-end gap-1">
-              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>
-                Cenová ponuka č.: <span className="font-semibold">{fullCisloCP || predmet}</span>
+              <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {getDisplayCisloCP()}
               </span>
               <div className="flex items-center gap-2">
-                <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Číslo zákazky:</span>
+                <span className={`text-base font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Číslo zákazky:</span>
                 <input
                   type="text"
                   value={cisloZakazky}
-                  onChange={(e) => onCisloZakazkyChange?.(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                  onChange={(e) => onCisloZakazkyChange?.(e.target.value.replace(/[^a-zA-Z0-9/]/g, ''))}
                   placeholder="..."
-                  className={`w-24 px-2 py-0.5 text-xs font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
+                  className={`w-24 px-2 py-0.5 text-base font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
                 />
               </div>
             </div>

@@ -6,15 +6,30 @@ interface ColumnState {
 
 interface UseResizableColumnsProps {
     defaultWidths: ColumnState;
+    savedWidths?: ColumnState; // Widths loaded from quote data
     visibleColumns: string[]; // Ordered list of visible column keys
     tableRef: React.RefObject<HTMLTableElement>;
+    onWidthsChange?: (widths: ColumnState) => void; // Callback to save widths to quote data
 }
 
-export const useResizableColumns = ({ defaultWidths, visibleColumns, tableRef }: UseResizableColumnsProps) => {
-    // We store explicit pixel widths in state, but logic will ensure they sum to table width
-    // Or we could store percentages. Let's store pixels to avoid rounding errors, 
-    // but on resize we adjust neighbor.
-    const [columnWidths, setColumnWidths] = useState<ColumnState>(defaultWidths);
+export const useResizableColumns = ({ defaultWidths, savedWidths, visibleColumns, tableRef, onWidthsChange }: UseResizableColumnsProps) => {
+    // Initialize with saved widths if available, otherwise use defaults
+    const [columnWidths, setColumnWidths] = useState<ColumnState>(() => ({
+        ...defaultWidths,
+        ...(savedWidths || {})
+    }));
+
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Update widths if savedWidths changes (e.g., when switching quotes)
+    useEffect(() => {
+        if (savedWidths) {
+            setColumnWidths(prev => ({
+                ...defaultWidths,
+                ...savedWidths
+            }));
+        }
+    }, [savedWidths, defaultWidths]);
 
     // We need to track the "start" state of both columns being resized
     const resizingRef = useRef<{
@@ -50,19 +65,22 @@ export const useResizableColumns = ({ defaultWidths, visibleColumns, tableRef }:
         // This ensures the mouse stays synced 1:1 with the border
         const currentPercentWidth = (currentPixelWidth / tableWidth) * 100;
 
-        // Do the same for the neighbor if possible, or fallback to state
-        // Finding the next header sibling isn't trivial via refs, so we can rely on state logic 
-        // OR just calculate the 'next' start width as state to prevent jumps.
-        // Actually best is to just track the current one's delta.
+        // Try to get next sibling width from DOM for consistency
+        // If we mix DOM width for current and State width for next, the sum changes causing jumps
+        const nextHeaderCell = headerCell?.nextElementSibling as HTMLElement;
+        let nextPercentWidth = columnWidths[nextKey] || 10;
 
-        const nextStartWidth = columnWidths[nextKey] || 10;
+        if (nextHeaderCell) {
+            const nextPixelWidth = nextHeaderCell.getBoundingClientRect().width || 0;
+            nextPercentWidth = (nextPixelWidth / tableWidth) * 100;
+        }
 
         resizingRef.current = {
             key,
             nextKey,
             startX: e.clientX,
             startWidth: currentPercentWidth, // Use visual truth
-            nextStartWidth: nextStartWidth,  // Use state for neighbor (it will adjust purely by delta)
+            nextStartWidth: nextPercentWidth,  // Use visual truth for neighbor too
             tableWidth: tableWidth
         };
 
@@ -71,13 +89,23 @@ export const useResizableColumns = ({ defaultWidths, visibleColumns, tableRef }:
     }, [columnWidths, visibleColumns, tableRef]);
 
     const stopResizing = useCallback(() => {
+        if (resizingRef.current && onWidthsChange) {
+            // Save widths after resizing stops (debounced)
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            saveTimeoutRef.current = setTimeout(() => {
+                setColumnWidths(currentWidths => {
+                    onWidthsChange(currentWidths);
+                    return currentWidths;
+                });
+            }, 300); // Debounce for 300ms
+        }
+
         resizingRef.current = null;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
-        // Optional: on stop, we could normalize widths to percentages if we want to be fully responsive
-        // but keeping pixels works if we update them correctly on window resize? 
-        // For now, let's stick to pixel trading which is robust for manual resizing.
-    }, []);
+    }, [onWidthsChange]);
 
     const onMouseMove = useCallback((e: MouseEvent) => {
         if (resizingRef.current) {
@@ -119,6 +147,9 @@ export const useResizableColumns = ({ defaultWidths, visibleColumns, tableRef }:
         return () => {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', stopResizing);
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
         };
     }, [onMouseMove, stopResizing]);
 

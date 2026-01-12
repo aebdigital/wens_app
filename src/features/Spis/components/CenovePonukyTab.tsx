@@ -13,6 +13,7 @@ interface CenovePonukyTabProps {
   onToggleSelect: (item: CenovaPonukaItem) => void;
   onUpdate: (items: CenovaPonukaItem[]) => void;
   onSave?: () => void;
+  predmet?: string;
 }
 
 export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
@@ -25,8 +26,16 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onAddVzor,
   onToggleSelect,
   onUpdate,
-  onSave
+  onSave,
+  predmet = ''
 }) => {
+  // Helper to get full cisloCP - prepends predmet if cisloCP starts with '-'
+  const getFullCisloCP = (cisloCP: string) => {
+    if (cisloCP.startsWith('-') && predmet) {
+      return predmet + cisloCP;
+    }
+    return cisloCP;
+  };
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
@@ -43,7 +52,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
       const blobUrl = await onGeneratePDF(item);
       setPdfPreview({
         url: blobUrl,
-        filename: `CP_${item.cisloCP}.pdf`
+        filename: `CP_${getFullCisloCP(item.cisloCP)}.pdf`
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -89,7 +98,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                 onClick={() => onEdit(item)}
               >
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {item.cisloCP}
+                  {getFullCisloCP(item.cisloCP)}
                 </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${item.typ === 'dvere'

@@ -445,19 +445,20 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const hiddenColumns = data.hiddenColumns || [];
     const isColumnVisible = (key: string) => !hiddenColumns.includes(key);
 
-    const fullHeaderRow = [
-      { key: '#', content: '#', styles: { halign: 'center' as const }, width: 6 },
-      { key: 'miestnost', content: 'Miestnosť', styles: { halign: 'left' as const }, width: 14 },
-      { key: 'polozka', content: 'Položka', styles: { halign: 'left' as const }, width: 14 },
-      { key: 'typRozmer', content: 'Typ / Rozmer', styles: { halign: 'left' as const }, width: 18 },
-      { key: 'pl', content: 'P/Ľ', styles: { halign: 'left' as const }, width: 8 },
-      { key: 'zamok', content: 'Zámok', styles: { halign: 'left' as const }, width: 14 },
-      { key: 'sklo', content: 'Sklo', styles: { halign: 'left' as const }, width: 14 },
-      { key: 'povrch', content: 'Povrch', styles: { halign: 'left' as const }, width: 14 },
-      { key: 'poznamka', content: 'Poznámka', styles: { halign: 'left' as const }, width: 'auto' },
-      { key: 'ks', content: 'Ks', styles: { halign: 'right' as const }, width: 10 },
-      { key: 'cenaKs', content: 'Cena/ks', styles: { halign: 'right' as const }, width: 18 },
-      { key: 'cenaCelkom', content: 'Cena celkom', styles: { halign: 'right' as const }, width: 28 }
+    // Define all columns - use 'auto' for flexible columns, fixed numbers for price columns
+    const fullHeaderRow: Array<{ key: string; content: string; styles: { halign: 'left' | 'center' | 'right' }; width: number | 'auto' }> = [
+      { key: '#', content: '#', styles: { halign: 'center' }, width: 6 },
+      { key: 'miestnost', content: 'Miestnosť', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'polozka', content: 'Položka', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'typRozmer', content: 'Typ / Rozmer', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'pl', content: 'P/Ľ', styles: { halign: 'left' }, width: 8 },
+      { key: 'zamok', content: 'Zámok', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'sklo', content: 'Sklo', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'povrch', content: 'Povrch', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'poznamka', content: 'Poznámka', styles: { halign: 'left' }, width: 'auto' },
+      { key: 'ks', content: 'Ks', styles: { halign: 'right' }, width: 10 },
+      { key: 'cenaKs', content: 'Cena/ks', styles: { halign: 'right' }, width: 18 },
+      { key: 'cenaCelkom', content: 'Cena celkom', styles: { halign: 'right' }, width: 28 }
     ];
 
     const visibleHeaders = fullHeaderRow.filter(h =>
@@ -506,10 +507,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     const columnStyles: any = {};
     visibleHeaders.forEach((h, index) => {
-      if (h.width !== 'auto') {
-        columnStyles[index] = { cellWidth: h.width, halign: h.styles.halign };
-      } else {
+      if (h.width === 'auto') {
         columnStyles[index] = { halign: h.styles.halign };
+      } else {
+        columnStyles[index] = { cellWidth: h.width, halign: h.styles.halign };
       }
     });
 
@@ -594,8 +595,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Calculate totals for summary
     const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
     const subtotal = vyrobkyTotalCalc + priplatkyTotal;
+
+    // Support both percentage and EUR discounts
+    const useZlavaPercent = data.useZlavaPercent !== false; // Default true for backwards compatibility
+    const useZlavaEur = data.useZlavaEur || false;
     const zlavaPercent = data.zlavaPercent || 0;
-    const zlavaAmount = subtotal * zlavaPercent / 100;
+    const zlavaEur = data.zlavaEur || 0;
+
+    const percentDiscount = useZlavaPercent ? subtotal * (zlavaPercent / 100) : 0;
+    const eurDiscount = useZlavaEur ? zlavaEur : 0;
+    const zlavaAmount = percentDiscount + eurDiscount;
     const afterZlava = subtotal - zlavaAmount;
 
     // Summary table row 1 - Cena za výrobky a príplatky spolu
@@ -612,9 +621,25 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = (doc as any).lastAutoTable.finalY;
 
     // Summary table row 2 - Zľava - larger (fontSize 11)
+    // Build the discount display string based on which discounts are active
+    let zlavaDisplayStr = '';
+    if (useZlavaPercent && zlavaPercent > 0) {
+      zlavaDisplayStr = `${zlavaPercent.toFixed(0)} %`;
+    }
+    if (useZlavaEur && zlavaEur > 0) {
+      if (zlavaDisplayStr) {
+        zlavaDisplayStr += ` + ${zlavaEur.toFixed(2)} €`;
+      } else {
+        zlavaDisplayStr = `${zlavaEur.toFixed(2)} €`;
+      }
+    }
+    if (!zlavaDisplayStr) {
+      zlavaDisplayStr = '0 %';
+    }
+
     autoTable(doc, {
       startY: yPos,
-      body: [[`Zľava z ceny výrobkov a príplatkov:`, `${zlavaPercent.toFixed(0)} %`, `${zlavaAmount.toFixed(2)} €`]],
+      body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStr, `${zlavaAmount.toFixed(2)} €`]],
       styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
@@ -764,19 +789,24 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       paymentBase = fullNetTotal;
     }
 
-    if (data.deposits && data.deposits.length > 0) {
-      paymentRows = data.deposits.map((d: any) => {
-        let amount = d.amount;
-        // Recalculate if amount is missing and percent exists
-        if (amount == null || amount === undefined) {
-          amount = paymentBase * (d.percent / 100);
-        }
-        return [
-          { content: d.label, styles: { halign: 'right' as const } },
-          `${(d.percent || 0).toFixed(0)} %`,
-          `${(amount || 0).toFixed(2)} €`
-        ];
-      });
+    // Check if deposits array exists (including empty array which means user explicitly removed all)
+    if (data.deposits !== undefined) {
+      // If deposits array exists but is empty, show no payment rows
+      if (data.deposits.length > 0) {
+        paymentRows = data.deposits.map((d: any) => {
+          let amount = d.amount;
+          // Recalculate if amount is missing and percent exists
+          if (amount == null || amount === undefined) {
+            amount = paymentBase * (d.percent / 100);
+          }
+          return [
+            { content: d.label, styles: { halign: 'right' as const } },
+            `${(d.percent || 0).toFixed(0)} %`,
+            `${(amount || 0).toFixed(2)} €`
+          ];
+        });
+      }
+      // If deposits is empty array, paymentRows remains empty (no payment schedule in PDF)
     } else {
       // Legacy fallback
       const isDefaultSplit = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
@@ -843,18 +873,26 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Add "Prenesenie daňovej povinnosti" if applicable
     const lastY = (doc as any).lastAutoTable.finalY;
     if (isPrenesenieDP) {
-      doc.setFontSize(7);
-      doc.setFont(fontName, 'italic');
-      doc.setTextColor(100);
-      doc.text('prenesenie daňovej povinnosti', pageWidth - 14, lastY + 3, { align: 'right' });
+      doc.setFontSize(9);
+      doc.setFont(fontName, 'bold');
+      doc.setTextColor(220, 38, 38); // Red color for emphasis
+      doc.text('PRENESENIE DAŇOVEJ POVINNOSTI', pageWidth - 14, lastY + 3, { align: 'right' });
+      doc.setTextColor(0); // Reset to black
     }
 
-    // Price totals table - row 3 (Cena s DPH - larger, bold)
+    // Price totals table - row 3 (Final price - larger, bold)
+    // Show negotiated price if cenaDohodou is enabled, otherwise show cenaSDPH
+    const isCenaDohodou = data.cenaDohodou && data.cenaDohodouValue;
+    const finalPriceLabel = isCenaDohodou ? 'Cena dohodou:' : 'Cena s DPH:';
+    const finalPriceValue = isCenaDohodou ? (data.cenaDohodouValue || 0) : cenaSDPH;
+    // If prenesenieDP is enabled, the final row should be smaller; if cenaDohodou, highlight it
+    const finalRowFontSize = isPrenesenieDP ? 7 : 11;
+
     autoTable(doc, {
       startY: lastY + (isPrenesenieDP ? 5 : 0),
       margin: { left: tableStartX },
-      body: [['Cena s DPH:', `${cenaSDPH.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: isPrenesenieDP ? 7 : 11, fontStyle: 'bold' }, // Normal size if prenesenieDP, else Large
+      body: [[finalPriceLabel, `${finalPriceValue.toFixed(2)} €`]],
+      styles: { ...tableStyles, fontSize: finalRowFontSize, fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 45, halign: 'right' },
         1: { cellWidth: 28, halign: 'right' }
@@ -1047,9 +1085,33 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const vyrobkyTotal = data.vyrobky.reduce((sum: number, v: any) => sum + (v.cenaCelkom || 0), 0);
     const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
     const subtotal = vyrobkyTotal + priplatkyTotal;
-    const zlavaPercent = data.zlavaPercent || 0;
-    const zlavaAmount = subtotal * zlavaPercent / 100;
-    const afterZlava = subtotal - zlavaAmount;
+
+    // Support both percentage and EUR discounts
+    const useZlavaPercentNS = data.useZlavaPercent !== false; // Default true for backwards compatibility
+    const useZlavaEurNS = data.useZlavaEur || false;
+    const zlavaPercentNS = data.zlavaPercent || 0;
+    const zlavaEurNS = data.zlavaEur || 0;
+
+    const percentDiscountNS = useZlavaPercentNS ? subtotal * (zlavaPercentNS / 100) : 0;
+    const eurDiscountNS = useZlavaEurNS ? zlavaEurNS : 0;
+    const zlavaAmountNS = percentDiscountNS + eurDiscountNS;
+    const afterZlava = subtotal - zlavaAmountNS;
+
+    // Build the discount display string based on which discounts are active
+    let zlavaDisplayStrNS = '';
+    if (useZlavaPercentNS && zlavaPercentNS > 0) {
+      zlavaDisplayStrNS = `${zlavaPercentNS.toFixed(0)} %`;
+    }
+    if (useZlavaEurNS && zlavaEurNS > 0) {
+      if (zlavaDisplayStrNS) {
+        zlavaDisplayStrNS += ` + ${zlavaEurNS.toFixed(2)} €`;
+      } else {
+        zlavaDisplayStrNS = `${zlavaEurNS.toFixed(2)} €`;
+      }
+    }
+    if (!zlavaDisplayStrNS) {
+      zlavaDisplayStrNS = '0 %';
+    }
 
     // Summary table row 1 - normal size
     autoTable(doc, {
@@ -1067,7 +1129,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Summary table row 2 - Zľava - larger (fontSize 11)
     autoTable(doc, {
       startY: yPos,
-      body: [[`Zľava z ceny výrobkov a príplatkov:`, `${zlavaPercent.toFixed(0)} %`, `${zlavaAmount.toFixed(2)} €`]],
+      body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStrNS, `${zlavaAmountNS.toFixed(2)} €`]],
       styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
@@ -1204,6 +1266,12 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Helper to round UP to nearest 10 (matches QuoteFooter display)
     const roundUpToTen2 = (value: number) => Math.ceil(value / 10) * 10;
 
+    // Determine the base calculation amount (cenaDohodou takes priority)
+    let paymentBase2 = cenaSDPH;
+    if (data.cenaDohodou && data.cenaDohodouValue) {
+      paymentBase2 = data.cenaDohodouValue;
+    }
+
     // Check if using default 60/30/10 split
     const isDefaultSplit2 = data.platba1Percent === 60 && data.platba2Percent === 30 && data.platba3Percent === 10;
     const hasNoManualAmounts2 = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
@@ -1213,28 +1281,28 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     if (data.platba1Amount != null) {
       platba1Amount = data.platba1Amount.toFixed(2);
     } else if (isDefaultSplit2 && hasNoManualAmounts2) {
-      platba1Amount = roundUpToTen2(cenaSDPH * 0.60).toFixed(2);
+      platba1Amount = roundUpToTen2(paymentBase2 * 0.60).toFixed(2);
     } else {
-      platba1Amount = (cenaSDPH * (data.platba1Percent || 0) / 100).toFixed(2);
+      platba1Amount = (paymentBase2 * (data.platba1Percent || 0) / 100).toFixed(2);
     }
 
     if (data.platba2Amount != null) {
       platba2Amount = data.platba2Amount.toFixed(2);
     } else if (isDefaultSplit2 && hasNoManualAmounts2) {
-      platba2Amount = roundUpToTen2(cenaSDPH * 0.30).toFixed(2);
+      platba2Amount = roundUpToTen2(paymentBase2 * 0.30).toFixed(2);
     } else {
-      platba2Amount = (cenaSDPH * (data.platba2Percent || 0) / 100).toFixed(2);
+      platba2Amount = (paymentBase2 * (data.platba2Percent || 0) / 100).toFixed(2);
     }
 
     if (data.platba3Amount != null) {
       platba3Amount = data.platba3Amount.toFixed(2);
     } else if (isDefaultSplit2 && hasNoManualAmounts2) {
       // Remainder after rounding
-      const p1 = roundUpToTen2(cenaSDPH * 0.60);
-      const p2 = roundUpToTen2(cenaSDPH * 0.30);
-      platba3Amount = (cenaSDPH - p1 - p2).toFixed(2);
+      const p1 = roundUpToTen2(paymentBase2 * 0.60);
+      const p2 = roundUpToTen2(paymentBase2 * 0.30);
+      platba3Amount = (paymentBase2 - p1 - p2).toFixed(2);
     } else {
-      platba3Amount = (cenaSDPH * (data.platba3Percent || 0) / 100).toFixed(2);
+      platba3Amount = (paymentBase2 * (data.platba3Percent || 0) / 100).toFixed(2);
     }
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
@@ -1257,11 +1325,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       }
     });
 
-    // Price totals table - row 3 (Cena s DPH - larger, bold)
+    // Price totals table - row 3 (Final price - larger, bold)
+    // Show negotiated price if cenaDohodou is enabled, otherwise show cenaSDPH
+    const isCenaDohodou2 = data.cenaDohodou && data.cenaDohodouValue;
+    const finalPriceLabel2 = isCenaDohodou2 ? 'Cena dohodou:' : 'Cena s DPH:';
+    const finalPriceValue2 = isCenaDohodou2 ? (data.cenaDohodouValue || 0) : cenaSDPH;
+
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY,
       margin: { left: tableStartX },
-      body: [['Cena s DPH:', `${cenaSDPH.toFixed(2)} €`]],
+      body: [[finalPriceLabel2, `${finalPriceValue2.toFixed(2)} €`]],
       styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 45, halign: 'right' },

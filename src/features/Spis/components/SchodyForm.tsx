@@ -69,8 +69,8 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
     {
       key: 'ks' as keyof typeof data.priplatky[0],
       label: 'ks',
-      width: 'w-24',
-      align: 'center' as const,
+      width: 'w-10',
+      align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
           type="number"
@@ -79,14 +79,14 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
             const ks = parseInt(e.target.value) || 0;
             update({ ...item, ks, cenaCelkom: ks * item.cenaKs });
           }}
-          className={`w-full px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
         />
       )
     },
     {
       key: 'cenaKs' as keyof typeof data.priplatky[0],
       label: 'cena / ks',
-      width: 'w-32',
+      width: 'w-14',
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
          <div className="flex items-center justify-end">
@@ -97,7 +97,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                 const cenaKs = parseFloat(e.target.value) || 0;
                 update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
               }}
-              className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+              className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
             />
             <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
          </div>
@@ -106,7 +106,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
     {
       key: 'cenaCelkom' as keyof typeof data.priplatky[0],
       label: 'cena celkom',
-      width: 'w-32',
+      width: 'w-24 min-w-[100px]',
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }
@@ -141,7 +141,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
         <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Výrobky:</h3>
         </div>
-        <div className="overflow-x-auto mr-0 md:mr-8">
+        <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
@@ -150,9 +150,10 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                 <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px]">rozmer</th>
                 <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px]">materiál</th>
                 <th className="px-2 py-2 text-left border-r border-white/20 min-w-[150px]">poznámka</th>
-                <th className="px-2 py-2 text-center border-r border-white/20 w-16 min-w-[60px]">ks</th>
-                <th className="px-2 py-2 text-right border-r border-white/20 w-24 min-w-[80px]">cena / ks</th>
-                <th className="px-2 py-2 text-right w-24 min-w-[90px]">cena celkom</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 w-10">ks</th>
+                <th className="px-2 py-2 text-right border-r border-white/20 w-14">cena / ks</th>
+                <th className="px-2 py-2 text-right w-24 min-w-[100px]">cena celkom</th>
+                <th className="px-2 py-2 text-center w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -207,7 +208,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                       className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
-                  <td className={`px-2 py-1 text-center border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
+                  <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <input
                       type="number"
                       value={item.ks}
@@ -217,7 +218,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                         newVyrobky[index].cenaCelkom = newVyrobky[index].ks * newVyrobky[index].cenaKs;
                         onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
                       }}
-                      className={`w-12 px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                      className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                     />
                   </td>
                   <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -237,19 +238,35 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                   <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                     {item.cenaCelkom.toFixed(2)} €
                   </td>
-                  <td className="w-0 p-0 border-none relative">
-                    <button
-                      onClick={() => {
-                        const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
-                        onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
-                      }}
-                      className={`absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 bg-red-500 text-white rounded hover:bg-red-600 shadow-sm z-10`}
-                      title="Odstrániť riadok"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                  <td className="px-1 py-1 text-center align-middle">
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => {
+                          const newVyrobok = { ...item, id: Date.now() + Math.random() };
+                          const newVyrobky = [...data.vyrobky];
+                          newVyrobky.splice(index + 1, 0, newVyrobok);
+                          onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                        }}
+                        className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'} p-1`}
+                        title="Kopírovať riadok"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
+                          onChangeWithPaymentReset({...data, vyrobky: newVyrobky});
+                        }}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Odstrániť riadok"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -262,6 +279,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                 <td className={`px-2 py-2 text-right font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                   {totals.vyrobkyTotal.toFixed(2)} €
                 </td>
+                <td></td>
               </tr>
             </tfoot>
           </table>

@@ -31,12 +31,13 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
   const [localCenaDohodou, setLocalCenaDohodou] = useState<string>('');
   const [editingCenaDohodou, setEditingCenaDohodou] = useState<boolean>(false);
 
-  // Get deposits - use dynamic deposits if available, otherwise use legacy fixed deposits
+  // Get deposits - use dynamic deposits if set (even if empty), otherwise use legacy fixed deposits
   const getDeposits = (): Deposit[] => {
-    if (data.deposits && data.deposits.length > 0) {
+    // If deposits array exists (even if empty), use it - this allows having no deposits
+    if (data.deposits !== undefined) {
       return data.deposits;
     }
-    // Convert legacy fixed deposits to dynamic format
+    // Convert legacy fixed deposits to dynamic format only if deposits was never set
     return [
       { id: '1', label: '1. záloha - pri objednávke', percent: data.platba1Percent || 60, amount: data.platba1Amount },
       { id: '2', label: '2. platba - pred montážou', percent: data.platba2Percent || 30, amount: data.platba2Amount },
@@ -211,11 +212,12 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       {/* Right side - totals and payment */}
       <div className="space-y-2">
         {/* Cena bez DPH */}
-        <div className={data.prenesenieDP
-          ? `flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'} font-bold`
-          : "flex justify-between text-sm"
-        }>
-          <span className={isDark ? (data.prenesenieDP ? 'text-white' : 'text-gray-300') : 'text-gray-800'}>Cena bez DPH:</span>
+        <div className={`flex justify-between items-center text-lg p-2 rounded font-semibold ${
+          (data.prenesenieDP && !data.cenaDohodou)
+            ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
+            : (isDark ? 'bg-dark-600' : 'bg-gray-100')
+        }`}>
+          <span className={isDark ? 'text-white' : 'text-gray-800'}>Cena bez DPH:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {totals.cenaBezDPH.toFixed(2)} €
           </span>
@@ -230,20 +232,24 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             onChange={(e) => onChange({ ...data, prenesenieDP: e.target.checked })}
             className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
           />
-          <label htmlFor="prenesenieDP" className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <label htmlFor="prenesenieDP" className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>
             Prenesenie daňovej povinnosti
           </label>
         </div>
 
         {/* DPH row - Always visible now */}
-        <div className="flex justify-between text-sm">
-          <span className={isDark ? 'text-gray-300' : 'text-gray-800'}>DPH 23%:</span>
+        <div className={`flex justify-between items-center text-lg p-2 rounded font-semibold ${isDark ? 'bg-dark-600 text-gray-300' : 'bg-gray-100 text-gray-800'}`}>
+          <span>DPH 23%:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totals.dph.toFixed(2)} €</span>
         </div>
 
         {/* Cena s DPH - Styles swap based on prenesenieDP */}
         <div className={!data.prenesenieDP
-          ? `flex justify-between items-center text-lg p-2 rounded ${isDark ? 'bg-dark-600' : 'bg-gray-100'} ${data.cenaDohodou ? 'opacity-50' : ''}`
+          ? `flex justify-between items-center text-lg p-2 rounded ${
+              (!data.prenesenieDP && !data.cenaDohodou)
+                ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
+                : (isDark ? 'bg-dark-600' : 'bg-gray-100')
+            } ${data.cenaDohodou ? 'opacity-50' : ''}`
           : "flex justify-between text-sm"
         }>
           <span className={!data.prenesenieDP ? `font-bold ${isDark ? 'text-white' : 'text-gray-800'}` : (isDark ? 'text-gray-300' : 'text-gray-800')}>Cena s DPH:</span>
@@ -384,17 +390,15 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
               </div>
-              {deposits.length > 1 && (
-                <button
-                  onClick={() => handleRemoveDeposit(deposit.id)}
-                  className="p-1 text-red-500 hover:text-red-700 shrink-0"
-                  title="Odstrániť platbu"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
+              <button
+                onClick={() => handleRemoveDeposit(deposit.id)}
+                className="p-1 text-red-500 hover:text-red-700 shrink-0"
+                title="Odstrániť platbu"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>

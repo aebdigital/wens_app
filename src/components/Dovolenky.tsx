@@ -121,87 +121,6 @@ interface DayDetailPopupProps {
   isDark: boolean;
 }
 
-interface EmployeeSelectorProps {
-  users: { id: string; name: string }[];
-  selectedUserId: string | null;
-  onSelect: (id: string | null) => void;
-  isDark: boolean;
-  className?: string;
-}
-
-const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ users, selectedUserId, onSelect, isDark, className = '' }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${isDark
-          ? 'bg-dark-800 border-dark-600 text-white hover:bg-dark-700'
-          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}
-      >
-        <span className="font-medium">
-          {selectedUserId
-            ? users.find(u => u.id === selectedUserId)?.name
-            : 'Všetci zamestnanci'}
-        </span>
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className={`absolute z-20 top-full mt-2 left-0 w-[300px] md:w-[400px] rounded-lg shadow-xl border overflow-hidden ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'
-          }`}>
-          <div className="p-2 overflow-y-auto max-h-[300px]">
-            <button
-              onClick={() => { onSelect(null); setIsOpen(false); }}
-              className={`w-full text-left px-3 py-2 rounded-md transition-colors mb-2 font-medium ${selectedUserId === null
-                ? 'bg-[#e11b28] text-white'
-                : isDark ? 'text-gray-300 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-              Všetci zamestnanci
-            </button>
-
-            <div className="grid grid-cols-1 gap-1">
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => { onSelect(u.id); setIsOpen(false); }}
-                  className={`text-left px-3 py-2 rounded-md transition-colors truncate ${selectedUserId === u.id
-                    ? 'bg-[#e11b28] text-white'
-                    : isDark ? 'text-gray-300 hover:bg-dark-700' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  title={u.name}
-                >
-                  {u.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const DayDetailPopup: React.FC<DayDetailPopupProps> = ({ date, vacations, onClose, isDark }) => {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -305,8 +224,32 @@ const Dovolenky: React.FC = () => {
   // Day detail popup state
   const [selectedDay, setSelectedDay] = useState<{ date: Date; vacations: VacationEntry[] } | null>(null);
 
-  // Users state for dropdown
-  const [users, setUsers] = useState<{ id: string, name: string }[]>([]);
+  // Hardcoded employee list
+  const users = [
+    { id: '1', name: 'Andelová Kristína' },
+    { id: '2', name: 'Andrejkovičová Andrea, Bc.' },
+    { id: '3', name: 'Bartoš Daniel' },
+    { id: '4', name: 'Belák Peter' },
+    { id: '5', name: 'Belaňová Dália' },
+    { id: '6', name: 'Bugár Ľuboš' },
+    { id: '7', name: 'Butko Štefan' },
+    { id: '8', name: 'Butková Patrícia' },
+    { id: '9', name: 'Čertík Jaroslav' },
+    { id: '10', name: 'Dražo Tibor' },
+    { id: '11', name: 'Gatialová Marcela' },
+    { id: '12', name: 'Glavo Zdenko' },
+    { id: '13', name: 'Kyselicová Lucia' },
+    { id: '14', name: 'Palatínus Boris' },
+    { id: '15', name: 'Palkovič Marek, Ing.' },
+    { id: '16', name: 'Púčik Jozef' },
+    { id: '17', name: 'Repková Martina' },
+    { id: '18', name: 'Richter Karol' },
+    { id: '19', name: 'Richter Roman' },
+    { id: '20', name: 'Rybárik Juraj' },
+    { id: '21', name: 'Vasko Ľubomír' },
+    { id: '22', name: 'Vida Ján' },
+    { id: '23', name: 'Vrchovský Peter' },
+  ];
 
   // Independent filters
   const [calendarSelectedUserId, setCalendarSelectedUserId] = useState<string | null>(null);
@@ -326,31 +269,6 @@ const Dovolenky: React.FC = () => {
     note: ''
   });
 
-  // Load users
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, first_name, last_name')
-          .order('first_name');
-
-        if (error) throw error;
-
-        if (data) {
-          const formattedUsers = data.map(u => ({
-            id: u.id,
-            name: `${u.first_name} ${u.last_name}`.trim()
-          }));
-          setUsers(formattedUsers);
-        }
-      } catch (err) {
-        console.error('Error fetching users:', err);
-      }
-    };
-
-    fetchUsers();
-  }, []);
 
   // Update form name when user selected
   // When a user is selected in the "Add" form, update the name too
@@ -587,13 +505,16 @@ const Dovolenky: React.FC = () => {
                 <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Kalendár {calendarSelectedUserId ? ` — ${users.find(u => u.id === calendarSelectedUserId)?.name}` : ''}
                 </h2>
-                <EmployeeSelector
-                  users={users}
-                  selectedUserId={calendarSelectedUserId}
-                  onSelect={setCalendarSelectedUserId}
-                  isDark={isDark}
-                  className="w-full md:w-auto" // Optional styling
-                />
+                <select
+                  className={`w-full md:w-auto px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all appearance-none ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                  value={calendarSelectedUserId || ''}
+                  onChange={(e) => setCalendarSelectedUserId(e.target.value || null)}
+                >
+                  <option value="">Všetci zamestnanci</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className={`rounded-xl shadow-sm overflow-hidden border ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'}`}>
@@ -707,13 +628,16 @@ const Dovolenky: React.FC = () => {
                 <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Zoznam dovoleniek {tableSelectedUserId ? ` — ${users.find(u => u.id === tableSelectedUserId)?.name}` : ''}
                 </h2>
-                <EmployeeSelector
-                  users={users}
-                  selectedUserId={tableSelectedUserId}
-                  onSelect={setTableSelectedUserId}
-                  isDark={isDark}
-                  className="w-full md:w-auto"
-                />
+                <select
+                  className={`w-full md:w-auto px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-[#e11b28]/20 focus:border-[#e11b28] transition-all appearance-none ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                  value={tableSelectedUserId || ''}
+                  onChange={(e) => setTableSelectedUserId(e.target.value || null)}
+                >
+                  <option value="">Všetci zamestnanci</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className={`rounded-lg overflow-hidden shadow-sm border ${isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'}`}>

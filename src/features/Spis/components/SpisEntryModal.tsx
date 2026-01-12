@@ -365,12 +365,19 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         // Helper function to round UP to nearest 10 (matches QuoteFooter display)
         const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
 
-        // Check if we have dynamic deposits
-        if (data.deposits && data.deposits.length > 0) {
+        // Calculate cenaBezDPH for prenesenieDP case
+        const cenaBezDPH = selectedItem.cenaBezDPH || (cenaSDPH / 1.23);
+
+        // Check if we have dynamic deposits (including empty array which means user explicitly removed all)
+        if (data.deposits !== undefined) {
           // Use dynamic deposits
-          const effectivePrice = data.cenaDohodou && data.cenaDohodouValue
-            ? data.cenaDohodouValue
-            : cenaSDPH;
+          // Priority: 1. cenaDohodou, 2. prenesenieDP (cenaBezDPH), 3. cenaSDPH
+          let effectivePrice = cenaSDPH;
+          if (data.cenaDohodou && data.cenaDohodouValue) {
+            effectivePrice = data.cenaDohodouValue;
+          } else if (data.prenesenieDP) {
+            effectivePrice = cenaBezDPH;
+          }
 
           const financieDeposits: FinancieDeposit[] = data.deposits.map((deposit: Deposit) => {
             const amount = deposit.amount != null
@@ -394,6 +401,14 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
           };
         } else {
           // Use legacy fixed deposits
+          // Priority for legacy: 1. cenaDohodou, 2. prenesenieDP (cenaBezDPH), 3. cenaSDPH
+          let legacyEffectivePrice = cenaSDPH;
+          if (data.cenaDohodou && data.cenaDohodouValue) {
+            legacyEffectivePrice = data.cenaDohodouValue;
+          } else if (data.prenesenieDP) {
+            legacyEffectivePrice = cenaBezDPH;
+          }
+
           // Check if using default 60/30/10 split
           const platba1Percent = data.platba1Percent || 60;
           const platba2Percent = data.platba2Percent || 30;
@@ -407,29 +422,29 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
           if (data.platba1Amount != null) {
             platba1 = data.platba1Amount;
           } else if (isDefaultSplit && hasNoManualAmounts) {
-            platba1 = roundUpToTen(cenaSDPH * 0.60);
+            platba1 = roundUpToTen(legacyEffectivePrice * 0.60);
           } else {
-            platba1 = cenaSDPH * platba1Percent / 100;
+            platba1 = legacyEffectivePrice * platba1Percent / 100;
           }
 
           if (data.platba2Amount != null) {
             platba2 = data.platba2Amount;
           } else if (isDefaultSplit && hasNoManualAmounts) {
-            platba2 = roundUpToTen(cenaSDPH * 0.30);
+            platba2 = roundUpToTen(legacyEffectivePrice * 0.30);
           } else {
-            platba2 = cenaSDPH * platba2Percent / 100;
+            platba2 = legacyEffectivePrice * platba2Percent / 100;
           }
 
           if (data.platba3Amount != null) {
             platba3 = data.platba3Amount;
           } else if (isDefaultSplit && hasNoManualAmounts) {
-            platba3 = cenaSDPH - platba1 - platba2; // Remainder
+            platba3 = legacyEffectivePrice - platba1 - platba2; // Remainder
           } else {
-            platba3 = cenaSDPH * platba3Percent / 100;
+            platba3 = legacyEffectivePrice * platba3Percent / 100;
           }
 
           financeUpdates = {
-            cena: cenaSDPH.toFixed(2),
+            cena: legacyEffectivePrice.toFixed(2),
             zaloha1: platba1.toFixed(2),
             zaloha2: platba2.toFixed(2),
             doplatok: platba3.toFixed(2),
@@ -495,8 +510,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-4 py-2 text-sm font-medium border-b-2 text-white whitespace-nowrap ${activeTab === tab.id
-                      ? 'border-white bg-white/30 backdrop-blur-md'
-                      : 'border-transparent hover:bg-white/10'
+                    ? 'border-white bg-white/30 backdrop-blur-md'
+                    : 'border-transparent hover:bg-white/10'
                     }`}
                 >
                   {tab.label}
@@ -639,8 +654,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             }}
                             disabled={isEffectivelyLocked}
                             className={`p-1 rounded-full border-2 transition-all duration-200 ${isLocked
-                                ? 'border-gray-300 text-gray-400 cursor-not-allowed'
-                                : 'border-[#e11b28] text-[#e11b28] hover:bg-[#e11b28] hover:text-white hover:scale-110 shadow-sm'
+                              ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                              : 'border-[#e11b28] text-[#e11b28] hover:bg-[#e11b28] hover:text-white hover:scale-110 shadow-sm'
                               }`}
                             title="Pridať riadok"
                           >
@@ -677,17 +692,13 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onAddVzor={() => {
                             setVzorModalTabs(['dvere', 'nabytok', 'schody']);
                             setEditingOfferId(null);
-                            // Pre-fill with data from last quote if one exists
-                            if (formData.cenovePonukyItems.length > 0) {
-                              const lastQuote = formData.cenovePonukyItems[formData.cenovePonukyItems.length - 1];
-                              setEditingOfferData({ type: lastQuote.typ, data: lastQuote.data });
-                            } else {
-                              setEditingOfferData(undefined);
-                            }
+                            // Always start with a fresh form when adding new quote
+                            setEditingOfferData(undefined);
                             setShowVzorModal(true);
                           }}
                           onToggleSelect={handleToggleSelect}
                           onSave={performSave}
+                          predmet={formData.predmet}
                         />
                       </Suspense>
                     </TabErrorBoundary>
@@ -778,6 +789,9 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                         <PreberaciProtokolTab
                           isDark={isDark}
                           cenovePonukyItems={formData.cenovePonukyItems}
+                          data={formData.preberaciProtokol}
+                          onChange={(data) => setFormData(prev => ({ ...prev, preberaciProtokol: data }))}
+                          formData={formData} // Pass full form data for defaults
                         />
                       </Suspense>
                     </TabErrorBoundary>

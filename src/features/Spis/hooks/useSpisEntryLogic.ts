@@ -158,8 +158,10 @@ export const useSpisEntryLogic = (
     const newId = isNewEntry ? Date.now().toString() : editingOfferId!;
     const existingItem = (!isNewEntry && editingOfferId) ? formData.cenovePonukyItems.find(i => i.id === editingOfferId) : null;
 
+    // Use the main CP number (predmet), or generate next global CP if predmet is empty
+    const baseCisloCP = formData.predmet || getNextCP();
     const newCisloCP = isNewEntry
-      ? formData.predmet + '-' + (formData.cenovePonukyItems.length + 1).toString().padStart(2, '0')
+      ? baseCisloCP + '-' + (formData.cenovePonukyItems.length + 1).toString().padStart(2, '0')
       : (existingItem?.cisloCP || '');
 
     const isSelected = existingItem?.selected || false;
@@ -196,7 +198,8 @@ export const useSpisEntryLogic = (
 
     let financeUpdates: Partial<typeof formData> = {};
     if (isSelected && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
-      if (dataToSave.deposits && dataToSave.deposits.length > 0) {
+      // Check if deposits array exists (including empty array which means user explicitly removed all)
+      if (dataToSave.deposits !== undefined) {
         let effectivePrice = cenaSDPH;
         if (dataToSave.cenaDohodou && dataToSave.cenaDohodouValue) {
           effectivePrice = dataToSave.cenaDohodouValue;
@@ -345,8 +348,10 @@ export const useSpisEntryLogic = (
 
   const nextVariantCP = useMemo(() => {
     const count = formData.cenovePonukyItems.length;
-    return `${formData.predmet}-${(count + 1).toString().padStart(2, '0')}`;
-  }, [formData.cenovePonukyItems.length, formData.predmet]);
+    // Use the main CP number (predmet), or generate next global CP if predmet is empty
+    const baseCisloCP = formData.predmet || getNextCP();
+    return `${baseCisloCP}-${(count + 1).toString().padStart(2, '0')}`;
+  }, [formData.cenovePonukyItems.length, formData.predmet, getNextCP]);
 
   const nextOrderNumber = useMemo(() => {
     const allGlobalOrders = entries.flatMap(e => e.fullFormData?.objednavkyItems || []);

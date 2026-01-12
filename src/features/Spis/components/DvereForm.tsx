@@ -47,6 +47,20 @@ const DEFAULT_PLATBA1 = 60;
 const DEFAULT_PLATBA2 = 30;
 const DEFAULT_PLATBA3 = 10;
 
+const DEFAULT_WIDTHS = {
+  miestnost: 8,
+  polozka: 10,
+  typRozmer: 9,
+  pl: 5,
+  zamok: 13,
+  sklo: 8,
+  povrch: 8,
+  poznamka: 9,
+  ks: 5,
+  cenaKs: 8,
+  cenaCelkom: 10
+};
+
 export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo }) => {
   const totals = calculateDvereTotals(data);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -63,28 +77,15 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     ...(isColumnVisible('zamok') ? ['zamok'] : []),
     ...(isColumnVisible('sklo') ? ['sklo'] : []),
     ...(isColumnVisible('povrch') ? ['povrch'] : []),
-    ...(isColumnVisible('poznamka') ? ['poznamka'] : []),
-    'ks',
-    'cenaKs',
-    'cenaCelkom'
+    ...(isColumnVisible('poznamka') ? ['poznamka'] : [])
   ];
 
   const { columnWidths, startResizing, setColumnWidths } = useResizableColumns({
-    defaultWidths: {
-      miestnost: 8,
-      polozka: 15,
-      typRozmer: 10,
-      pl: 5,
-      zamok: 15,
-      sklo: 8,
-      povrch: 8,
-      poznamka: 10,
-      ks: 5,
-      cenaKs: 8,
-      cenaCelkom: 8
-    },
+    defaultWidths: DEFAULT_WIDTHS,
     visibleColumns,
-    tableRef
+    tableRef,
+    savedWidths: data.columnWidths,
+    onWidthsChange: (widths) => onChange({ ...data, columnWidths: widths })
   });
 
   // State for príplatok from výrobky modal
@@ -112,19 +113,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     } else {
       // SHOWING LOGIC: RESET TO DEFAULTS + REDISTRIBUTE HIDDEN
       // This resets all columns to their original proportional state, correcting any drift/corruption.
-      const defaultState: any = {
-        miestnost: 8,
-        polozka: 15,
-        typRozmer: 10, // Base width
-        pl: 5,
-        zamok: 15,
-        sklo: 8,
-        povrch: 8,
-        poznamka: 10,
-        ks: 5,
-        cenaKs: 8,
-        cenaCelkom: 8
-      };
+      const defaultState: any = DEFAULT_WIDTHS;
 
       // Calculate width of columns that will REMAIN hidden after this operation
       const remainingHidden = currentHidden.filter(c => c !== columnKey);
@@ -216,8 +205,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     {
       key: 'ks' as keyof typeof data.priplatky[0],
       label: 'ks',
-      width: 'w-24',
-      align: 'center' as const,
+      width: 'w-10',
+      align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <input
           type="number"
@@ -226,14 +215,14 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             const ks = parseInt(e.target.value) || 0;
             update({ ...item, ks, cenaCelkom: ks * item.cenaKs });
           }}
-          className={`w-full px-1 py-0.5 text-xs text-center ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
         />
       )
     },
     {
       key: 'cenaKs' as keyof typeof data.priplatky[0],
       label: 'cena / ks',
-      width: 'w-32',
+      width: 'w-14',
       align: 'right' as const,
       render: (item: any, _idx: number, update: (i: any) => void) => (
         <div className="flex items-center justify-end">
@@ -244,7 +233,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               const cenaKs = parseFloat(e.target.value) || 0;
               update({ ...item, cenaKs, cenaCelkom: item.ks * cenaKs });
             }}
-            className={`w-20 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+            className={`w-16 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
           />
           <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
         </div>
@@ -253,7 +242,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     {
       key: 'cenaCelkom' as keyof typeof data.priplatky[0],
       label: 'cena celkom',
-      width: 'w-32',
+      width: 'w-24 min-w-[100px]',
       align: 'right' as const,
       render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
     }
@@ -288,7 +277,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   const handleAddRoom = () => {
     const newVyrobok = {
       id: Date.now(),
-      miestnost: 'Miestnosť',
+      miestnost: '',
       dvereTypRozmer: '',
       dvereOtvor: '',
       pL: 'P dnu',
@@ -687,10 +676,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               {isColumnVisible('sklo') && <col style={{ width: `${columnWidths.sklo || 8}%` }} />}
               {isColumnVisible('povrch') && <col style={{ width: `${columnWidths.povrch || 8}%` }} />}
               {isColumnVisible('poznamka') && <col style={{ width: `${columnWidths.poznamka || 15}%` }} />}
-              <col style={{ width: `${columnWidths.ks || 5}%` }} />
-              <col style={{ width: `${columnWidths.cenaKs || 8}%` }} />
-              <col style={{ width: `${columnWidths.cenaCelkom || 8}%` }} />
-              <col style={{ width: '32px' }} />
+              <col style={{ width: '40px' }} />
+              <col style={{ width: '75px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '50px' }} />
             </colgroup>
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
@@ -802,34 +791,18 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       <span>poznámka</span>
                       <button onClick={() => toggleColumnVisibility('poznamka')} className="opacity-0 group-hover:opacity-100 text-white/70 hover:text-white p-0.5" title="Skryť stĺpec">×</button>
                     </div>
-                    <div
-                      className="absolute right-0 top-0 h-full w-4 translate-x-1/2 cursor-col-resize hover:bg-white/50 z-10"
-                      onMouseDown={(e) => startResizing('poznamka', e)}
-                    />
                   </th>
                 )}
-                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none">
+                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none w-10">
                   ks
-                  <div
-                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
-                    onMouseDown={(e) => startResizing('ks', e)}
-                  />
                 </th>
-                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none">
+                <th className="relative px-2 py-2 text-right border-r border-white/20 select-none w-14">
                   cena / ks
-                  <div
-                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
-                    onMouseDown={(e) => startResizing('cenaKs', e)}
-                  />
                 </th>
-                <th className="relative px-2 py-2 text-right border-r border-white/20 whitespace-nowrap select-none">
+                <th className="relative px-2 py-2 text-right border-r border-white/20 whitespace-nowrap select-none w-24 min-w-[100px]">
                   cena celkom
-                  <div
-                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-white/50"
-                    onMouseDown={(e) => startResizing('cenaCelkom', e)}
-                  />
                 </th>
-                <th className="px-2 py-2 text-center w-8"></th>
+                <th className="px-2 py-2 text-center w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -853,6 +826,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                           <input
                             type="text"
                             value={item.miestnost}
+                            placeholder="Izba"
                             onChange={(e) => {
                               const newVyrobky = [...data.vyrobky];
                               newVyrobky[index].miestnost = e.target.value;
@@ -874,19 +848,37 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                   return null;
                 };
 
-                const deleteButton = (
+                const actionButtons = (
                   <td rowSpan={rowSpan} className={`px-1 py-1 text-center align-middle border-l ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                    <button
-                      onClick={() => {
-                        const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
-                        onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
-                      }}
-                      className="text-red-500 hover:text-red-700 p-1"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    <div className="flex flex-row items-center justify-center gap-0.5">
+                      <button
+                        onClick={() => {
+                          const itemToDuplicate = data.vyrobky[index];
+                          const newItem = { ...itemToDuplicate, id: Date.now() + Math.random(), miestnost: `${itemToDuplicate.miestnost} (kopia)` };
+                          const newVyrobky = [...data.vyrobky];
+                          newVyrobky.splice(index + 1, 0, newItem);
+                          onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                        }}
+                        className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'} p-1`}
+                        title="Kopírovať miestnosť"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newVyrobky = data.vyrobky.filter((_, i) => i !== index);
+                          onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
+                        }}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Odstrániť"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 );
 
@@ -1003,7 +995,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                             newVyrobky[index].ks = parseInt(e.target.value) || 0;
                             onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
                           }}
-                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                         />
                       </td>
                       <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -1024,7 +1016,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {((item.ks || 0) * (item.cenaDvere || 0)).toFixed(2)} €
                       </td>
-                      {currentRow === 0 && deleteButton}
+                      {currentRow === 0 && actionButtons}
                     </tr>
                   );
                   currentRow++;
@@ -1103,7 +1095,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                             newVyrobky[index].ksZarubna = parseInt(e.target.value) || 0;
                             onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
                           }}
-                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                         />
                       </td>
                       <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -1124,7 +1116,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {((item.ksZarubna || 0) * (item.cenaZarubna || 0)).toFixed(2)} €
                       </td>
-                      {currentRow === 0 && deleteButton}
+                      {currentRow === 0 && actionButtons}
                     </tr>
                   );
                   currentRow++;
@@ -1203,7 +1195,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                             newVyrobky[index].ksObklad = parseInt(e.target.value) || 0;
                             onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
                           }}
-                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                         />
                       </td>
                       <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -1224,7 +1216,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {((item.ksObklad || 0) * (item.cenaObklad || 0)).toFixed(2)} €
                       </td>
-                      {currentRow === 0 && deleteButton}
+                      {currentRow === 0 && actionButtons}
                     </tr>
                   );
                   currentRow++;
@@ -1342,7 +1334,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                             newVyrobky[index].ksPrazdne = parseInt(e.target.value) || 0;
                             onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
                           }}
-                          className={`w-12 px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
+                          className={`w-full px-1 py-0.5 text-xs text-right ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none`}
                         />
                       </td>
                       <td className={`px-2 py-1 text-right border-r ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -1363,7 +1355,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                       <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {((item.ksPrazdne || 0) * (item.cenaPrazdne || 0)).toFixed(2)} €
                       </td>
-                      {currentRow === 0 && deleteButton}
+                      {currentRow === 0 && actionButtons}
                     </tr>
                   );
                   currentRow++;
@@ -1394,7 +1386,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                           className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none italic`}
                         />
                       </td>
-                      {deleteButton}
+                      {actionButtons}
                     </tr>
                   );
                 }
@@ -1404,7 +1396,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             </tbody>
             <tfoot>
               <tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}>
-                <td colSpan={11} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <td colSpan={6 + (isColumnVisible('pl') ? 1 : 0) + (isColumnVisible('zamok') ? 1 : 0) + (isColumnVisible('sklo') ? 1 : 0) + (isColumnVisible('povrch') ? 1 : 0) + (isColumnVisible('poznamka') ? 1 : 0)} className={`px-2 py-2 text-right font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
                   Spolu bez DPH:
                 </td>
                 <td className={`px-2 py-2 text-right font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>

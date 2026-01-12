@@ -109,6 +109,16 @@ export interface SpisFormData {
   vyrobneVykresy: { popis: string, nazov: string, odoslane: string, vytvoril: string }[];
   fotky: { id: string, name: string, type: string, base64: string, description: string }[];
   technickeItems: { nazov: string, datum: string, kategoria: string, dodavatel: string }[];
+  preberaciProtokol?: PreberaciProtokolData;
+}
+
+export interface PreberaciProtokolData {
+  kontaktnaOsoba?: string;
+  mobil?: string;
+  miestoDodavky?: string;
+  predmetDiela?: string;
+  miestoDatum?: string;
+  datum?: string; // For the signature date if different from general
 }
 
 export interface CenovaPonukaItemBase {
@@ -191,6 +201,7 @@ export interface DvereData {
   emailVypracoval?: string;
   datum?: string;
   hiddenColumns?: string[];
+  columnWidths?: { [key: string]: number };
 }
 
 export interface NabytokData {
