@@ -1,10 +1,9 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
-import { CenovaPonukaItem, SpisFormData, PreberaciProtokolData } from '../types';
+import { SpisFormData, PreberaciProtokolData } from '../types';
 
 export const generatePreberaciProtokolPDF = async (
-    item: CenovaPonukaItem,
     formData: SpisFormData,
     protocolData: PreberaciProtokolData
 ) => {
@@ -88,7 +87,8 @@ export const generatePreberaciProtokolPDF = async (
     const zhotovitelData = protocolData.zhotovitelInfo || '';
 
     // Construct Objednávateľ string
-    const customerName = formData.firma ? formData.firma : `${formData.priezvisko} ${formData.meno}`;
+    // User requested Name + Surname explicitly instead of Company
+    const customerName = `${formData.priezvisko} ${formData.meno}`;
     const customerAddress = `${formData.ulica}\n${formData.psc} ${formData.mesto}`;
     const customerContact = [
         formData.ico ? `IČO: ${formData.ico}` : '',
@@ -98,13 +98,15 @@ export const generatePreberaciProtokolPDF = async (
         formData.email ? `Email: ${formData.email}` : ''
     ].filter(Boolean).join('\n');
 
-    const objednavatelData = [
+    const constructedObjednavatelData = [
         'Objednávateľ:',
         customerName,
         customerAddress,
         '',
         customerContact
     ].join('\n');
+
+    const objednavatelData = protocolData.objednavatelInfo || constructedObjednavatelData;
 
     autoTable(doc, {
         startY: yPos,
@@ -141,7 +143,7 @@ export const generatePreberaciProtokolPDF = async (
         body: [
             [
                 { content: bankInfoText, styles: { halign: 'left' } },
-                { content: `IČO: ${formData.ico || ''}\nDIČ: ${formData.dic || ''}`, styles: { halign: 'left', valign: 'middle' } }
+                { content: '', styles: { halign: 'left', valign: 'middle' } }
             ]
         ],
         theme: 'grid',

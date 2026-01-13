@@ -121,6 +121,7 @@ export interface PreberaciProtokolData {
   datum?: string; // For the signature date if different from general
   // New editable fields
   zhotovitelInfo?: string;
+  objednavatelInfo?: string;
   bankInfo?: string;
   agreementText1?: string;
   agreementText2?: string;

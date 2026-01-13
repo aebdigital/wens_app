@@ -58,6 +58,26 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
 
   const effectiveMobil = data.mobil || formData.kontaktnaTelefon;
 
+  const effectiveObjednavatelInfo = data.objednavatelInfo || (() => {
+    const customerName = `${formData.priezvisko} ${formData.meno}`;
+    const customerAddress = `${formData.ulica}\n${formData.psc} ${formData.mesto}`;
+    const customerContact = [
+      formData.ico ? `IČO: ${formData.ico}` : '',
+      formData.icDph ? `IČ DPH: ${formData.icDph}` : '',
+      formData.dic ? `DIČ: ${formData.dic}` : '',
+      formData.telefon ? `Mobil: ${formData.telefon}` : '',
+      formData.email ? `Email: ${formData.email}` : ''
+    ].filter(Boolean).join('\n');
+
+    return [
+      'Objednávateľ:',
+      customerName,
+      customerAddress,
+      '',
+      customerContact
+    ].join('\n');
+  })();
+
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -82,6 +102,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
           selectedOffer.typ === 'nabytok' ? 'Dodávka a montáž nábytku' :
             selectedOffer.typ === 'schody' ? 'Dodávka a montáž schodov' : 'Dodávka tovaru'),
         zhotovitelInfo: data.zhotovitelInfo !== undefined ? data.zhotovitelInfo : DEFAULT_ZHOTOVITEL,
+        objednavatelInfo: data.objednavatelInfo !== undefined ? data.objednavatelInfo : effectiveObjednavatelInfo,
         bankInfo: data.bankInfo !== undefined ? data.bankInfo : DEFAULT_BANK,
         agreementText1: data.agreementText1 !== undefined ? data.agreementText1 : DEFAULT_AGREEMENT_1.replace('[CP]', selectedOffer.cisloCP),
         agreementText2: data.agreementText2 !== undefined ? data.agreementText2 : DEFAULT_AGREEMENT_2,
@@ -89,7 +110,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
         objednavatelSignatureLabel: data.objednavatelSignatureLabel !== undefined ? data.objednavatelSignatureLabel : DEFAULT_SIG_OBJEDNAVATEL
       };
 
-      const blobUrl = await generatePreberaciProtokolPDF(selectedOffer, formData, pdfData);
+      const blobUrl = await generatePreberaciProtokolPDF(formData, pdfData);
       setPdfPreview({
         url: blobUrl,
         filename: `Preberaci_Protokol_${selectedOffer.cisloCP}.pdf`
@@ -123,7 +144,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               <p><strong>Typ:</strong> {selectedOffer.typ === 'dvere' ? 'Dvere' : selectedOffer.typ === 'nabytok' ? 'Nábytok' : selectedOffer.typ === 'schody' ? 'Schody' : 'Púzdra'}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Kontaktná osoba */}
               <div>
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -153,7 +174,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               </div>
 
               {/* Miesto dodávky */}
-              <div className="md:col-span-2">
+              <div>
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Miesto dodávky
                 </label>
@@ -167,7 +188,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               </div>
 
               {/* Predmet diela */}
-              <div className="md:col-span-2">
+              <div>
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Predmet diela
                 </label>
@@ -181,7 +202,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               </div>
 
               {/* Miesto a dátum */}
-              <div className="md:col-span-2">
+              <div className="md:col-span-4">
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Miesto a dátum (na podpis)
                 </label>
@@ -207,8 +228,21 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
                 />
               </div>
 
-              {/* Bank Info */}
+              {/* Objednávateľ Info */}
               <div className="md:col-span-2">
+                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Objednávateľ (údaje klienta)
+                </label>
+                <textarea
+                  rows={6}
+                  value={data.objednavatelInfo !== undefined ? data.objednavatelInfo : effectiveObjednavatelInfo}
+                  onChange={(e) => handleUpdate('objednavatelInfo', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                />
+              </div>
+
+              {/* Bank Info */}
+              <div className="md:col-span-4">
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Bankové spojenie
                 </label>
@@ -221,7 +255,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               </div>
 
               {/* Agreement Text 1 */}
-              <div className="md:col-span-2">
+              <div className="md:col-span-4">
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Text dohody 1 (Cenová ponuka)
                 </label>
@@ -234,7 +268,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
               </div>
 
               {/* Agreement Text 2 */}
-              <div className="md:col-span-2">
+              <div className="md:col-span-4">
                 <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Text dohody 2 (Prebratie)
                 </label>
@@ -246,31 +280,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
                 />
               </div>
 
-              {/* Signature Labels */}
-              <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                <div>
-                  <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Label Podpis Zhotoviteľ
-                  </label>
-                  <input
-                    type="text"
-                    value={data.zhotovitelSignatureLabel !== undefined ? data.zhotovitelSignatureLabel : DEFAULT_SIG_ZHOTOVITEL}
-                    onChange={(e) => handleUpdate('zhotovitelSignatureLabel', e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Label Podpis Objednávateľ
-                  </label>
-                  <input
-                    type="text"
-                    value={data.objednavatelSignatureLabel !== undefined ? data.objednavatelSignatureLabel : DEFAULT_SIG_OBJEDNAVATEL}
-                    onChange={(e) => handleUpdate('objednavatelSignatureLabel', e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
-                  />
-                </div>
-              </div>
+
             </div>
 
             <div className="flex justify-end pt-4">
