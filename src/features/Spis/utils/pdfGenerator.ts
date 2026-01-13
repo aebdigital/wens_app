@@ -957,7 +957,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // However, clean wrapping UNDER the label requires the lines to start at x=14.
 
     // Custom wrapper:
-    const tdValueText = data.terminDodania || '-';
+
 
     // Using a simpler approach: Render "Termín dodania:" bold. 
     // Then render the rest as normal text, but manually positioning the first word(s) to line up?
