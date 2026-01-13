@@ -949,7 +949,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     doc.text(tdLabel, 14, leftYPos);
     doc.setFont(fontName, 'normal');
 
-    const tdValue = data.terminDodania || '-';
     // We want the text to flow after the label on the first line, then wrap to start of line (x=14)
     // To do this simply, we can just print the label, then the text.
     // Ideally, we treat everything as one string "Termín dodania: value" but bolding just the label is tricky in jsPDF without html methods.
@@ -957,47 +956,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // If value is long, we need splitTextToSize.
     // However, clean wrapping UNDER the label requires the lines to start at x=14.
 
-    // Approach: 
-    // 1. Construct full string for width calculation purposes? No, font weight differs.
-    // 2. Just print "Termín dodania: " + value as one paragraph with the colon? But user wants "Termín dodania:" bold.
-    // 3. To maintain normal paragraph flow where next lines go under the label:
-    //    We can treat it as one text block.
-    //    Split text: "Termín dodania: value..."
-    //    But we can't bold just part of it easily in standard `text`.
-    //    Alternative: Render label. Render value starting after label. If value wraps, subsequent lines start at X=14.
-    //    `splitTextToSize` doesn't support "indent first line".
-
-    // Correct approach for wrapping under label:
-    // render "Termín dodania: "
-    // render value. 
-    // BUT we want the text to wrap like:
-    // Termín dodania: bla bla bla bla
-    // bla bla bla...
-
-    // This effectively means treating it as one long string.
-    // Since we want bold label, we can try to treat it as one paragraph where the first part is bold.
-    // JSPS doesn't robustly support mixed styles in one text call without plugins.
-
-    // Compromise that looks good:
-    // Print "Termín dodania:" (bold)
-    // Print value starting on a NEW LINE? No, user wants it inline probably "termin dodania: ...".
-    // Actually, checking standard invoices/docs, usually it IS a column.
-    // But user specifically asked: "not continuing under the termin dodania like I want it to be ... but its showing like indentation"
-    // He wants:
-    // Termín dodania: text text text
-    // text text text text...
-
-    // So X position for subsequent lines should be 14, not 14+labelWidth.
-    // Using `text` with an array of lines:
-    // We can simulate this by calculating the first line's available width manually?
-    // Or simpler: Just render the label, then render the value.
-    // If we use splitTextToSize on the value with width = maxLeftWidth, it wraps to width.
-    // We just need to tell it to print subsequent lines at x=14.
-    // BUT standard `text` command prints array of lines at same X.
-
     // Custom wrapper:
     const tdValueText = data.terminDodania || '-';
-    const tdFullText = tdLabel + tdValueText;
 
     // Using a simpler approach: Render "Termín dodania:" bold. 
     // Then render the rest as normal text, but manually positioning the first word(s) to line up?
@@ -1014,12 +974,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // No, bold label is important.
 
     // Let's try explicit line breaking.
-    const maxTdWidth = maxLeftWidth; // Width available for the whole column
-
-    // First, split value into words
-    const words = (data.terminDodania || '-').split(' ');
-    let currentLine = tdLabel; // Start with label (for width calc only)
-    let linesToPrint: { text: string, x: number, font: 'bold' | 'normal' }[] = [];
 
     // Actually, let's just use doc.splitTextToSize on "Termín dodania: " + value.
     // Then render first line with mixed bold/normal (hard).
