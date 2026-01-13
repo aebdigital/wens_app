@@ -119,6 +119,13 @@ export interface PreberaciProtokolData {
   predmetDiela?: string;
   miestoDatum?: string;
   datum?: string; // For the signature date if different from general
+  // New editable fields
+  zhotovitelInfo?: string;
+  bankInfo?: string;
+  agreementText1?: string;
+  agreementText2?: string;
+  zhotovitelSignatureLabel?: string;
+  objednavatelSignatureLabel?: string;
 }
 
 export interface CenovaPonukaItemBase {
@@ -202,6 +209,7 @@ export interface DvereData {
   datum?: string;
   hiddenColumns?: string[];
   columnWidths?: { [key: string]: number };
+  legalText?: string;
 }
 
 export interface NabytokData {
@@ -237,6 +245,9 @@ export interface NabytokData {
   kontakt?: string;
   emailVypracoval?: string;
   datum?: string;
+  legalText?: string;
+  hiddenColumns?: string[];
+  columnWidths?: { [key: string]: number };
 }
 
 export interface SchodyData {
@@ -272,6 +283,9 @@ export interface SchodyData {
   kontakt?: string;
   emailVypracoval?: string;
   datum?: string;
+  legalText?: string;
+  hiddenColumns?: string[];
+  columnWidths?: { [key: string]: number };
 }
 
 export interface PuzdraPolozka {

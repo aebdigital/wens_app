@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { CenovaPonukaItem, SpisFormData, PuzdraData } from '../types';
+import { NOTES_DVERE, NOTES_NABYTOK, NOTES_SCHODY } from './legalTexts';
 
 interface UserInfo {
   vypracoval: string;
@@ -73,7 +74,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   doc.setFontSize(14);
   doc.setTextColor(225, 27, 40);
   doc.setFont(fontName, 'bold');
-  doc.text('CENOVÁ PONUKA č.: ' + item.cisloCP, pageWidth - 14, 18, { align: 'right' });
+  doc.text(item.cisloCP.replace(/^CP/, 'Cenová ponuka č. '), pageWidth - 14, 18, { align: 'right' });
 
   doc.setDrawColor(200);
   doc.line(14, 22, pageWidth - 14, 22);
@@ -899,16 +900,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       }
     });
 
-    // Payment table width: 45 + 12 + 28 = 85mm
-    const paymentTableWidth = 85;
+    // Payment table width: same as Totals table = 73mm
+    const paymentTableWidth = 73;
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 5,
-      margin: { left: pageWidth - 14 - paymentTableWidth }, // Right-aligned
+      margin: { left: pageWidth - 14 - paymentTableWidth }, // Right-aligned matching totals table
       body: paymentRows,
       styles: { ...tableStyles, fontSize: 7 },
       columnStyles: {
-        0: { cellWidth: 45 },
+        0: { cellWidth: 33 }, // Adjusted to fit 73mm total (33 + 12 + 28 = 73)
         1: { cellWidth: 12, halign: 'right' },
         2: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
       }
@@ -938,13 +939,194 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
-    printLabelValue('Termín dodania:', data.terminDodania || '-');
+    printLabelValue('Zameranie:', data.zameranie || '-');
+
+    // Termín dodania - custom rendering for full paragraph flow
+    doc.setFont(fontName, 'bold');
+    const tdLabel = 'Termín dodania: ';
+    const tdLabelWidth = doc.getTextWidth(tdLabel);
+
+    doc.text(tdLabel, 14, leftYPos);
+    doc.setFont(fontName, 'normal');
+
+    const tdValue = data.terminDodania || '-';
+    // We want the text to flow after the label on the first line, then wrap to start of line (x=14)
+    // To do this simply, we can just print the label, then the text.
+    // Ideally, we treat everything as one string "Termín dodania: value" but bolding just the label is tricky in jsPDF without html methods.
+    // A simple hack usually works: print label, then print value starting at label end.
+    // If value is long, we need splitTextToSize.
+    // However, clean wrapping UNDER the label requires the lines to start at x=14.
+
+    // Approach: 
+    // 1. Construct full string for width calculation purposes? No, font weight differs.
+    // 2. Just print "Termín dodania: " + value as one paragraph with the colon? But user wants "Termín dodania:" bold.
+    // 3. To maintain normal paragraph flow where next lines go under the label:
+    //    We can treat it as one text block.
+    //    Split text: "Termín dodania: value..."
+    //    But we can't bold just part of it easily in standard `text`.
+    //    Alternative: Render label. Render value starting after label. If value wraps, subsequent lines start at X=14.
+    //    `splitTextToSize` doesn't support "indent first line".
+
+    // Correct approach for wrapping under label:
+    // render "Termín dodania: "
+    // render value. 
+    // BUT we want the text to wrap like:
+    // Termín dodania: bla bla bla bla
+    // bla bla bla...
+
+    // This effectively means treating it as one long string.
+    // Since we want bold label, we can try to treat it as one paragraph where the first part is bold.
+    // JSPS doesn't robustly support mixed styles in one text call without plugins.
+
+    // Compromise that looks good:
+    // Print "Termín dodania:" (bold)
+    // Print value starting on a NEW LINE? No, user wants it inline probably "termin dodania: ...".
+    // Actually, checking standard invoices/docs, usually it IS a column.
+    // But user specifically asked: "not continuing under the termin dodania like I want it to be ... but its showing like indentation"
+    // He wants:
+    // Termín dodania: text text text
+    // text text text text...
+
+    // So X position for subsequent lines should be 14, not 14+labelWidth.
+    // Using `text` with an array of lines:
+    // We can simulate this by calculating the first line's available width manually?
+    // Or simpler: Just render the label, then render the value.
+    // If we use splitTextToSize on the value with width = maxLeftWidth, it wraps to width.
+    // We just need to tell it to print subsequent lines at x=14.
+    // BUT standard `text` command prints array of lines at same X.
+
+    // Custom wrapper:
+    const tdValueText = data.terminDodania || '-';
+    const tdFullText = tdLabel + tdValueText;
+
+    // Using a simpler approach: Render "Termín dodania:" bold. 
+    // Then render the rest as normal text, but manually positioning the first word(s) to line up?
+    // Too complex.
+
+    // User probably just wants the text NOT to hang indent.
+    // Simple fix: 
+    // 1. Print label.
+    // 2. Print value.
+    // 3. If value wraps, subsequent lines set X to 14.
+
+    // Let's effectively render it as a single block of text where we just prepend the label to the value string, 
+    // and rely on the fact that PDF consumers won't notice if the whole thing is bold/normal mixed?
+    // No, bold label is important.
+
+    // Let's try explicit line breaking.
+    const maxTdWidth = maxLeftWidth; // Width available for the whole column
+
+    // First, split value into words
+    const words = (data.terminDodania || '-').split(' ');
+    let currentLine = tdLabel; // Start with label (for width calc only)
+    let linesToPrint: { text: string, x: number, font: 'bold' | 'normal' }[] = [];
+
+    // Actually, let's just use doc.splitTextToSize on "Termín dodania: " + value.
+    // Then render first line with mixed bold/normal (hard).
+
+    // Better idea:
+    // Just render "Termín dodania:" bold.
+    // Then render the value text.
+    // If the value text is long, use `splitTextToSize`.
+    // But we need the first line of value to start at `labelWidth`, and subsequent lines at `0`.
+    // JS does NOT support this natively in one call.
+
+    // We will construct the lines manually.
+    // Line 1: "Termín dodania: " + start of value
+    // Line 2+: rest of value
+
+    // Step 1: Split full value text into lines assuming FULL width (starting at x=14)
+    // doc.setFont(fontName, 'normal');
+    // const valueLines = doc.splitTextToSize(" " + tdValue, maxLeftWidth);
+    //
+    // This isn't quite right because the first line has the label taking up space.
+
+    // Revised logic:
+    // 1. Calculate space remaining on line 1: `maxLeftWidth - labelWidth`.
+    // 2. Fit as many words as possible into that space.
+    // 3. Move remaining words to subsequent lines with full `maxLeftWidth`.
+
+    const tdRemainingFirstLine = maxLeftWidth - tdLabelWidth;
+    let tdValueRest = data.terminDodania || '-';
+
+    // Split text into lines compliant with widths [firstLineWidth, otherLineWidths...]
+    // jsPDF doesn't make this easy.
+    // We'll use a crude approximation or simple word wrap loop.
+
+    const tdWords = tdValueRest.split(' ');
+    let line1Value = '';
+    let remainingWords: string[] = [];
+
+    doc.setFont(fontName, 'normal'); // Set font for width calc
+
+    // Fill first line
+    let i = 0;
+    while (i < tdWords.length) {
+      const word = tdWords[i];
+      const testLine = line1Value + (line1Value ? ' ' : '') + word;
+      if (doc.getTextWidth(testLine) < tdRemainingFirstLine) {
+        line1Value = testLine;
+        i++;
+      } else {
+        // First line full
+        break;
+      }
+    }
+    remainingWords = tdWords.slice(i);
+
+    // Print Label
+    doc.setFont(fontName, 'bold');
+    doc.text(tdLabel, 14, leftYPos);
+
+    // Print first line value
+    doc.setFont(fontName, 'normal');
+    doc.text(line1Value, 14 + tdLabelWidth, leftYPos);
+
+    // Prepare remaining lines
+    if (remainingWords.length > 0) {
+      const restText = remainingWords.join(' ');
+      const restLines = doc.splitTextToSize(restText, maxLeftWidth);
+
+      leftYPos += 4; // Move to next line
+      doc.text(restLines, 14, leftYPos);
+      leftYPos += (restLines.length - 1) * 4; // Advance Y pos by number of extra lines
+    }
+
+    leftYPos += 4; // Advance for next item
+
+
     printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : (userInfo?.vypracoval || formData.vypracoval));
     printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (userInfo?.telefon || '-'));
     printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (userInfo?.email || '-'));
     printLabelValue('Dátum:', data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK'));
 
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
+
+    // Legal Text
+    // Legal Text
+    const defaultLegalText = NOTES_DVERE;
+    const legalText = (data as any).legalText ?? defaultLegalText;
+
+    if (legalText) {
+      doc.setFontSize(7);
+      doc.setFont(fontName, 'normal');
+      doc.setTextColor(60);
+
+      // Calculate remaining height to check if page break is needed
+      const pageHeight = doc.internal.pageSize.height;
+      // Start below the tables or left info, whichever is lower
+      let legalYPos = yPos;
+
+      const legalLines = doc.splitTextToSize(legalText, pageWidth - 28);
+      const legalBlockHeight = legalLines.length * 3;
+
+      if (legalYPos + legalBlockHeight > pageHeight - 15) {
+        doc.addPage();
+        legalYPos = 20;
+      }
+
+      doc.text(legalLines, 14, legalYPos);
+    }
 
   } else if ((item.typ === 'nabytok' || item.typ === 'schody') && item.data) {
     // Nabytok and Schody have similar structure
@@ -1120,7 +1302,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
-        1: { cellWidth: 22, halign: 'right' },
+        1: { cellWidth: 28, halign: 'right' },
         2: { cellWidth: 28, halign: 'right' }
       }
     });
@@ -1146,7 +1328,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
-        1: { cellWidth: 22, halign: 'right' },
+        1: { cellWidth: 28, halign: 'right' },
         2: { cellWidth: 28, halign: 'right' }
       }
     });
@@ -1349,16 +1531,16 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
     ];
 
-    // Payment table width: 45 + 12 + 28 = 85mm
-    const paymentTableWidth = 85;
+    // Payment table width: same as Totals table = 73mm
+    const paymentTableWidth = 73;
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 5,
-      margin: { left: pageWidth - 14 - paymentTableWidth }, // Right-aligned
+      margin: { left: pageWidth - 14 - paymentTableWidth }, // Right-aligned matching totals table
       body: paymentRows,
       styles: { ...tableStyles, fontSize: 7 },
       columnStyles: {
-        0: { cellWidth: 45 },
+        0: { cellWidth: 33 }, // Adjusted to fit 73mm total (33 + 12 + 28 = 73)
         1: { cellWidth: 12, halign: 'right' },
         2: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
       }
@@ -1385,13 +1567,78 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
-    printLabelValue('Termín dodania:', data.terminDodania || '-');
+    printLabelValue('Zameranie:', data.zameranie || '-');
+
+    // Termín dodania - custom rendering for full paragraph flow
+    doc.setFont(fontName, 'bold');
+    const tdLabel2 = 'Termín dodania: ';
+    const tdLabelWidth2 = doc.getTextWidth(tdLabel2);
+
+    doc.text(tdLabel2, 14, leftYPos);
+    doc.setFont(fontName, 'normal');
+
+    const tdValue2 = data.terminDodania || '-';
+
+    const tdRemainingFirstLine2 = maxLeftWidth - tdLabelWidth2;
+    const tdWords2 = tdValue2.split(' ');
+    let line1Value2 = '';
+
+    let j = 0;
+    while (j < tdWords2.length) {
+      const word = tdWords2[j];
+      const testLine = line1Value2 + (line1Value2 ? ' ' : '') + word;
+      if (doc.getTextWidth(testLine) < tdRemainingFirstLine2) {
+        line1Value2 = testLine;
+        j++;
+      } else {
+        break;
+      }
+    }
+    const remainingWords2 = tdWords2.slice(j);
+
+    doc.text(line1Value2, 14 + tdLabelWidth2, leftYPos);
+
+    if (remainingWords2.length > 0) {
+      const restText = remainingWords2.join(' ');
+      const restLines = doc.splitTextToSize(restText, maxLeftWidth);
+
+      leftYPos += 4;
+      doc.text(restLines, 14, leftYPos);
+      leftYPos += (restLines.length - 1) * 4;
+    }
+
+    leftYPos += 4;
+
     printLabelValue('Vypracoval:', data.vypracoval !== undefined ? data.vypracoval : (userInfo?.vypracoval || formData.vypracoval));
     printLabelValue('Kontakt:', data.kontakt !== undefined ? data.kontakt : (userInfo?.telefon || '-'));
     printLabelValue('E-mail:', data.emailVypracoval !== undefined ? data.emailVypracoval : (userInfo?.email || '-'));
     printLabelValue('Dátum:', data.datum !== undefined ? data.datum : new Date().toLocaleDateString('sk-SK'));
 
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
+
+    // Legal Text
+    // Legal Text
+    const defaultLegalText = item.typ === 'schody' ? NOTES_SCHODY : NOTES_NABYTOK;
+    const legalText = (data as any).legalText ?? defaultLegalText;
+
+    if (legalText) {
+      doc.setFontSize(7);
+      doc.setFont(fontName, 'normal');
+      doc.setTextColor(60);
+
+      const pageHeight = doc.internal.pageSize.height;
+      let legalYPos = yPos;
+
+      const legalLines = doc.splitTextToSize(legalText, pageWidth - 28);
+      const legalBlockHeight = legalLines.length * 3;
+
+      if (legalYPos + legalBlockHeight > pageHeight - 15) {
+        doc.addPage();
+        legalYPos = 20;
+      }
+
+      doc.text(legalLines, 14, legalYPos);
+    }
 
   } else {
     doc.text('Detailný náhľad pre tento typ položky nie je implementovaný.', 14, yPos);

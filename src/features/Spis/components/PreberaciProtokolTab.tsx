@@ -12,6 +12,29 @@ interface PreberaciProtokolTabProps {
   formData: SpisFormData;
 }
 
+const DEFAULT_ZHOTOVITEL = `Zhotoviteľ:
+WENS door s.r.o.
+Vápenická 12
+971 01 Prievidza
+IČO: 36792942
+IČ DPH: SK2022396904
+zap.v OR SR Trenčín od.Sro, Vl.č. 17931 / R
+tel./fax.:046/542 2057 e-mail.: info@wens.sk`;
+
+const DEFAULT_BANK = `PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100
+IBAN: SK4431000000004520001507,
+BIC (SWIFT): LUBASKBX`;
+
+const DEFAULT_AGREEMENT_1 = `Na základe cenovej ponuky číslo: [CP] zhotoviteľ odovzdáva objednávateľovi a objednávateľ prijíma dohodnutý predmet diela.
+Dňom prebratia začína plynúť záručná doba.`;
+
+const DEFAULT_AGREEMENT_2 = `V čase odovzdania predmetu diela jeho stav je nový a nepoškodený a objednávateľ toto dielo prijíma s nasledovným vyjadrením:
+
+So zhotovením diela je objednávateľ spokojný, nie je si vedomý žiadnych námietok proti zhotovenému dielu a preto s odovzdaním súhlasí a toto dielo preberá.`;
+
+const DEFAULT_SIG_ZHOTOVITEL = 'Podpis - Zhotoviteľ';
+const DEFAULT_SIG_OBJEDNAVATEL = 'Podpis - Objednávateľ';
+
 export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
   isDark,
   cenovePonukyItems,
@@ -58,6 +81,12 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
         predmetDiela: data.predmetDiela || (selectedOffer.typ === 'dvere' ? 'Dodávka a montáž interiérových dverí a zárubní' :
           selectedOffer.typ === 'nabytok' ? 'Dodávka a montáž nábytku' :
             selectedOffer.typ === 'schody' ? 'Dodávka a montáž schodov' : 'Dodávka tovaru'),
+        zhotovitelInfo: data.zhotovitelInfo !== undefined ? data.zhotovitelInfo : DEFAULT_ZHOTOVITEL,
+        bankInfo: data.bankInfo !== undefined ? data.bankInfo : DEFAULT_BANK,
+        agreementText1: data.agreementText1 !== undefined ? data.agreementText1 : DEFAULT_AGREEMENT_1.replace('[CP]', selectedOffer.cisloCP),
+        agreementText2: data.agreementText2 !== undefined ? data.agreementText2 : DEFAULT_AGREEMENT_2,
+        zhotovitelSignatureLabel: data.zhotovitelSignatureLabel !== undefined ? data.zhotovitelSignatureLabel : DEFAULT_SIG_ZHOTOVITEL,
+        objednavatelSignatureLabel: data.objednavatelSignatureLabel !== undefined ? data.objednavatelSignatureLabel : DEFAULT_SIG_OBJEDNAVATEL
       };
 
       const blobUrl = await generatePreberaciProtokolPDF(selectedOffer, formData, pdfData);
@@ -163,6 +192,84 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
                   placeholder="napr. Prievidza, 12.01.2024"
                   className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
                 />
+              </div>
+
+              {/* Zhotoviteľ Info */}
+              <div className="md:col-span-2">
+                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Zhotoviteľ (údaje firmy)
+                </label>
+                <textarea
+                  rows={6}
+                  value={data.zhotovitelInfo !== undefined ? data.zhotovitelInfo : DEFAULT_ZHOTOVITEL}
+                  onChange={(e) => handleUpdate('zhotovitelInfo', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                />
+              </div>
+
+              {/* Bank Info */}
+              <div className="md:col-span-2">
+                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Bankové spojenie
+                </label>
+                <textarea
+                  rows={3}
+                  value={data.bankInfo !== undefined ? data.bankInfo : DEFAULT_BANK}
+                  onChange={(e) => handleUpdate('bankInfo', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                />
+              </div>
+
+              {/* Agreement Text 1 */}
+              <div className="md:col-span-2">
+                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Text dohody 1 (Cenová ponuka)
+                </label>
+                <textarea
+                  rows={3}
+                  value={data.agreementText1 !== undefined ? data.agreementText1 : (selectedOffer ? DEFAULT_AGREEMENT_1.replace('[CP]', selectedOffer.cisloCP) : '')}
+                  onChange={(e) => handleUpdate('agreementText1', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                />
+              </div>
+
+              {/* Agreement Text 2 */}
+              <div className="md:col-span-2">
+                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Text dohody 2 (Prebratie)
+                </label>
+                <textarea
+                  rows={6}
+                  value={data.agreementText2 !== undefined ? data.agreementText2 : DEFAULT_AGREEMENT_2}
+                  onChange={(e) => handleUpdate('agreementText2', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                />
+              </div>
+
+              {/* Signature Labels */}
+              <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                <div>
+                  <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Label Podpis Zhotoviteľ
+                  </label>
+                  <input
+                    type="text"
+                    value={data.zhotovitelSignatureLabel !== undefined ? data.zhotovitelSignatureLabel : DEFAULT_SIG_ZHOTOVITEL}
+                    onChange={(e) => handleUpdate('zhotovitelSignatureLabel', e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Label Podpis Objednávateľ
+                  </label>
+                  <input
+                    type="text"
+                    value={data.objednavatelSignatureLabel !== undefined ? data.objednavatelSignatureLabel : DEFAULT_SIG_OBJEDNAVATEL}
+                    onChange={(e) => handleUpdate('objednavatelSignatureLabel', e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  />
+                </div>
               </div>
             </div>
 

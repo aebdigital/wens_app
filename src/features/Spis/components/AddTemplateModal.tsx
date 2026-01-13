@@ -135,7 +135,6 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         hasObklad: false,
       })),
       priplatky: [
-        { id: 1, nazov: 'dyha dub bielený + 15%', ks: 1, cenaKs: 828, cenaCelkom: 828 },
         { id: 2, nazov: 'spoj „T"', ks: 1, cenaKs: 1, cenaCelkom: 1 },
       ],
       zlavaPercent: 15,

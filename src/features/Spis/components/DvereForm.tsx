@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { DvereData, ProductPhoto } from '../types';
+import { NOTES_DVERE } from '../utils/legalTexts';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
 import { GenericItemsTable } from './common/GenericItemsTable';
@@ -462,6 +463,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       data={data}
       onChange={onChange}
       totals={totals}
+      defaultLegalText={NOTES_DVERE}
     >
       {/* Product description */}
       <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>

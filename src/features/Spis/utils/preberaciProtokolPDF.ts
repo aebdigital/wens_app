@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
 import { CenovaPonukaItem, SpisFormData, PreberaciProtokolData } from '../types';
 
 export const generatePreberaciProtokolPDF = async (
@@ -55,66 +56,36 @@ export const generatePreberaciProtokolPDF = async (
     // Set default text color to black
     doc.setTextColor(0, 0, 0);
 
-    // --- Header Table (Logo + Title) ---
+    // --- Header (Title + Logo) ---
 
-    autoTable(doc, {
-        startY: 15,
-        body: [
-            [
-                { content: '', styles: { minCellHeight: 15, valign: 'middle' } },
-                { content: 'PREBERACÍ PROTOKOL O PREVZATÍ A ODOVZDANÍ DIELA', styles: { fontStyle: 'bold', fontSize: 12, halign: 'center', valign: 'middle', textColor: [0, 0, 0] } }
-            ]
-        ],
-        theme: 'grid',
-        styles: {
-            lineColor: [0, 0, 0],
-            lineWidth: 0,
-            cellPadding: 2,
-            font: fontName,
-            textColor: [0, 0, 0]
-        },
-        columnStyles: {
-            0: { cellWidth: 60 },
-            1: { halign: 'center', valign: 'middle' }
-        },
-        didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index === 0 && logoImg) {
-                const imgWidth = logoImg.width;
-                const imgHeight = logoImg.height;
-                // Fit image in cell maintaining aspect ratio
-                const cellWidth = data.cell.width - 4; // padding
-                const cellHeight = data.cell.height - 4;
+    // 1. Title - Centered at top, "only thing on top"
+    doc.setFontSize(14);
+    doc.setFont(fontName, 'bold');
+    const title = 'PREBERACÍ PROTOKOL O PREVZATÍ A ODOVZDANÍ DIELA';
+    const titleWidth = doc.getTextWidth(title);
+    doc.text(title, (pageWidth - titleWidth) / 2, 20);
 
-                let targetWidth = cellWidth;
-                let targetHeight = (imgHeight / imgWidth) * targetWidth;
+    // 2. Logo - Moved down below title
+    let yPos = 30; // Start logo/content lower
 
-                if (targetHeight > cellHeight) {
-                    targetHeight = cellHeight;
-                    targetWidth = (imgWidth / imgHeight) * targetHeight;
-                }
+    if (logoImg) {
+        const imgWidth = logoImg.width;
+        const imgHeight = logoImg.height;
+        const targetWidth = 40; // Approx width in mm
+        const targetHeight = (imgHeight / imgWidth) * targetWidth;
 
-                const x = data.cell.x + 2 + (cellWidth - targetWidth) / 2;
-                const y = data.cell.y + 2 + (cellHeight - targetHeight) / 2;
+        doc.addImage(logoImg, 'PNG', 14, yPos, targetWidth, targetHeight);
 
-                doc.addImage(logoImg, 'PNG', x, y, targetWidth, targetHeight);
-            }
-        }
-    });
-
-    let yPos = (doc as any).lastAutoTable.finalY;
+        // Push yPos down below logo for next table
+        yPos += targetHeight + 10;
+    } else {
+        // Fallback or just space if no logo
+        yPos += 20;
+    }
 
     // --- Parties Table (Zhotoviteľ vs Objednávateľ) ---
 
-    const zhotovitelData = [
-        'Zhotoviteľ:',
-        'WENS door s.r.o.',
-        'Vápenická 12',
-        '971 01 Prievidza',
-        'IČO: 36792942',
-        'IČ DPH: SK2022396904',
-        'zap.v OR SR Trenčín od.Sro, Vl.č. 17931 / R',
-        'tel./fax.:046/542 2057 e-mail.: info@wens.sk'
-    ].join('\n');
+    const zhotovitelData = protocolData.zhotovitelInfo || '';
 
     // Construct Objednávateľ string
     const customerName = formData.firma ? formData.firma : `${formData.priezvisko} ${formData.meno}`;
@@ -163,11 +134,13 @@ export const generatePreberaciProtokolPDF = async (
     yPos = (doc as any).lastAutoTable.finalY;
 
     // --- Bank Info / IČO DIČ row ---
+    const bankInfoText = protocolData.bankInfo || '';
+
     autoTable(doc, {
         startY: yPos,
         body: [
             [
-                { content: 'PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100\nIBAN: SK4431000000004520001507,\nBIC (SWIFT): LUBASKBX', styles: { halign: 'left' } },
+                { content: bankInfoText, styles: { halign: 'left' } },
                 { content: `IČO: ${formData.ico || ''}\nDIČ: ${formData.dic || ''}`, styles: { halign: 'left', valign: 'middle' } }
             ]
         ],
@@ -188,7 +161,7 @@ export const generatePreberaciProtokolPDF = async (
 
     yPos = (doc as any).lastAutoTable.finalY + 5;
 
-    // --- Details Table (Kontakt, Mobil, Miesto, Predmet) ---
+    // --- Details Table & QR Code ---
 
     const detailsBody = [
         ['Kontaktná osoba:', protocolData.kontaktnaOsoba || ''],
@@ -197,15 +170,32 @@ export const generatePreberaciProtokolPDF = async (
         ['Predmet diela:', protocolData.predmetDiela || '']
     ];
 
+    // Generate QR Code if place exists
+    let qrDataUrl = '';
+    const miesto = protocolData.miestoDodavky || '';
+    if (miesto) {
+        try {
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(miesto)}`;
+            qrDataUrl = await QRCode.toDataURL(mapsUrl, { margin: 0 });
+        } catch (e) {
+            console.error('Failed to generate QR', e);
+        }
+    }
+
+    // Use a narrower width for the table to leave room for QR
+    const availableWidth = pageWidth - 28;
+    const tableWidth = qrDataUrl ? availableWidth * 0.75 : availableWidth;
+
     autoTable(doc, {
         startY: yPos,
         body: detailsBody,
         theme: 'grid',
+        tableWidth: tableWidth,
         styles: {
             lineColor: [0, 0, 0],
             lineWidth: 0,
             fontSize: 10,
-            cellPadding: 3,
+            cellPadding: 1.5,
             font: fontName,
             textColor: [0, 0, 0]
         },
@@ -215,18 +205,34 @@ export const generatePreberaciProtokolPDF = async (
         }
     });
 
+    // Draw QR code on the right if it exists - explicitly after table
+    if (qrDataUrl) {
+        const finalY = (doc as any).lastAutoTable.finalY;
+        const tableHeight = finalY - yPos;
+        const qrSize = 25;
+        const qrX = 14 + tableWidth + 5; // 14 margin + table + 5 gap
+
+        // Center vertically relative to table
+        const qrY = yPos + (tableHeight - qrSize) / 2;
+
+        // Ensure we don't draw off-page (unlikely for this section)
+        doc.addImage(qrDataUrl, 'PNG', qrX, Math.max(yPos, qrY), qrSize, qrSize);
+    }
+
     yPos = (doc as any).lastAutoTable.finalY + 5;
 
     // --- Agreement Text Sections ---
 
     // Section 1
+    const agreement1 = protocolData.agreementText1 || '';
+
     autoTable(doc, {
         startY: yPos,
         body: [
             [
                 { content: '1.', styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', cellWidth: 10 } },
                 {
-                    content: `Na základe cenovej ponuky číslo: ${item.cisloCP} zhotoviteľ odovzdáva objednávateľovi a objednávateľ prijíma dohodnutý predmet diela.\nDňom prebratia začína plynúť záručná doba.`,
+                    content: agreement1,
                     styles: { halign: 'left' }
                 }
             ]
@@ -245,13 +251,15 @@ export const generatePreberaciProtokolPDF = async (
     yPos = (doc as any).lastAutoTable.finalY;
 
     // Section 2
+    const agreement2 = protocolData.agreementText2 || '';
+
     autoTable(doc, {
         startY: yPos,
         body: [
             [
                 { content: '2.', styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', cellWidth: 10 } },
                 {
-                    content: 'V čase odovzdania predmetu diela jeho stav je nový a nepoškodený a objednávateľ toto dielo prijíma s nasledovným vyjadrením:\n\nSo zhotovením diela je objednávateľ spokojný, nie je si vedomý žiadnych námietok proti zhotovenému dielu a preto s odovzdaním súhlasí a toto dielo preberá.',
+                    content: agreement2,
                     styles: { halign: 'left', minCellHeight: 40 }
                 }
             ]
@@ -290,6 +298,9 @@ export const generatePreberaciProtokolPDF = async (
     const signatureDate = protocolData.datum || new Date().toLocaleDateString('sk-SK');
     const signatureDvadsa = `Miesto a dátum: ${signaturePlace}, ${signatureDate}`;
 
+    const zhotovitelLabel = protocolData.zhotovitelSignatureLabel || 'Podpis - Zhotoviteľ';
+    const objednavatelLabel = protocolData.objednavatelSignatureLabel || 'Podpis - Objednávateľ';
+
     autoTable(doc, {
         startY: yPos,
         body: [
@@ -297,8 +308,8 @@ export const generatePreberaciProtokolPDF = async (
                 { content: signatureDvadsa, colSpan: 2, styles: { valign: 'top', minCellHeight: 15 } }
             ],
             [
-                { content: 'Podpis - Zhotoviteľ', styles: { valign: 'bottom', minCellHeight: 25 } },
-                { content: 'Podpis - Objednávateľ', styles: { valign: 'bottom', minCellHeight: 25 } }
+                { content: zhotovitelLabel, styles: { valign: 'bottom', minCellHeight: 25 } },
+                { content: objednavatelLabel, styles: { valign: 'bottom', minCellHeight: 25 } }
             ]
         ],
         theme: 'grid',

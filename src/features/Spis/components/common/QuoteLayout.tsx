@@ -13,6 +13,7 @@ interface QuoteLayoutProps {
     dph: number;
     cenaSDPH: number;
   };
+  defaultLegalText?: string;
 }
 
 export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
@@ -21,20 +22,21 @@ export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
   headerInfo,
   data,
   onChange,
-  totals
+  totals,
+  defaultLegalText
 }) => {
   return (
     <div className="space-y-4">
-      <QuoteHeader 
-        isDark={isDark} 
-        headerInfo={headerInfo} 
+      <QuoteHeader
+        isDark={isDark}
+        headerInfo={headerInfo}
         showCustomerInfo={data.showCustomerInfo}
-        onToggleCustomerInfo={() => onChange({...data, showCustomerInfo: !data.showCustomerInfo})}
+        onToggleCustomerInfo={() => onChange({ ...data, showCustomerInfo: !data.showCustomerInfo })}
         showArchitectInfo={data.showArchitectInfo}
-        onToggleArchitectInfo={() => onChange({...data, showArchitectInfo: !data.showArchitectInfo})}
+        onToggleArchitectInfo={() => onChange({ ...data, showArchitectInfo: !data.showArchitectInfo })}
       />
       {children}
-      <QuoteFooter isDark={isDark} data={data} onChange={onChange} headerInfo={headerInfo} totals={totals} />
+      <QuoteFooter isDark={isDark} data={data} onChange={onChange} headerInfo={headerInfo} totals={totals} defaultLegalText={defaultLegalText} />
     </div>
   );
 };

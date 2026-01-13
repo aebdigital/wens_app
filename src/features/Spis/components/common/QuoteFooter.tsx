@@ -16,9 +16,10 @@ interface QuoteFooterProps {
     dph: number;
     cenaSDPH: number;
   };
+  defaultLegalText?: string;
 }
 
-export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange, headerInfo, totals }) => {
+export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange, headerInfo, totals, defaultLegalText }) => {
   // Local state for euro amount inputs to prevent cursor jumping
   const [localAmounts, setLocalAmounts] = useState<Record<string, string>>({});
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -212,11 +213,10 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
       {/* Right side - totals and payment */}
       <div className="space-y-2">
         {/* Cena bez DPH */}
-        <div className={`flex justify-between items-center text-lg p-2 rounded font-semibold ${
-          (data.prenesenieDP && !data.cenaDohodou)
-            ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
-            : (isDark ? 'bg-dark-600' : 'bg-gray-100')
-        }`}>
+        <div className={`flex justify-between items-center text-lg p-2 rounded font-semibold ${(data.prenesenieDP && !data.cenaDohodou)
+          ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
+          : (isDark ? 'bg-dark-600' : 'bg-gray-100')
+          }`}>
           <span className={isDark ? 'text-white' : 'text-gray-800'}>Cena bez DPH:</span>
           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {totals.cenaBezDPH.toFixed(2)} €
@@ -245,11 +245,10 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
 
         {/* Cena s DPH - Styles swap based on prenesenieDP */}
         <div className={!data.prenesenieDP
-          ? `flex justify-between items-center text-lg p-2 rounded ${
-              (!data.prenesenieDP && !data.cenaDohodou)
-                ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
-                : (isDark ? 'bg-dark-600' : 'bg-gray-100')
-            } ${data.cenaDohodou ? 'opacity-50' : ''}`
+          ? `flex justify-between items-center text-lg p-2 rounded ${(!data.prenesenieDP && !data.cenaDohodou)
+            ? (isDark ? 'bg-red-900/30' : 'bg-red-100')
+            : (isDark ? 'bg-dark-600' : 'bg-gray-100')
+          } ${data.cenaDohodou ? 'opacity-50' : ''}`
           : "flex justify-between text-sm"
         }>
           <span className={!data.prenesenieDP ? `font-bold ${isDark ? 'text-white' : 'text-gray-800'}` : (isDark ? 'text-gray-300' : 'text-gray-800')}>Cena s DPH:</span>
@@ -386,7 +385,7 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                     handleDepositChange(deposit.id, 'amount', parsed);
                     setEditingAmountId(null);
                   }}
-                  className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-300'} border focus:outline-none`}
+                  className={`w-20 px-1 py-0.5 text-right rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border focus:outline-none`}
                 />
                 <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>€</span>
               </div>
@@ -402,6 +401,19 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Legal Text Section - Editable */}
+      <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+        <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+          Text na spodok PDF (editovateľný):
+        </label>
+        <textarea
+          value={data.legalText ?? defaultLegalText ?? "Rozdielna kresba prírodnej dyhy na jednotlivých dverách a zárubniach ani medzi dodaným tovarom a pôvodným už namontovaným, nie je dôvodom na reklamáciu. Povrchové vady sa posudzujú pri bežnom osvetlení pozorované voľným okom z kolmej vzdialenosti 150cm od kontrolovanej plochy. Rovinnosť dverí je v tolerancii +2mm -2mm na 2m dĺžky. Cena diela sa môže meniť vzhľadom k okolnostiam vyplývajúcich z plnenia diela, musí však byť odsúhlasená písomne obidvomi stranami. Tovar až do úplného zaplatenia zostáva majetkom dodávateľa. Zákazník svojim podpisom alebo uhradením zálohy potvrdzuje, že bol s týmito skutočnosťami oboznámený a súhlasí s nimi. Záruka na výrobky je 24 mesiacov. Ako variabilný symbol uvádzajte číslo cenovej ponuky."}
+          onChange={(e) => onChange({ ...data, legalText: e.target.value })}
+          rows={8}
+          className={`w-full px-2 py-1 text-xs rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border resize-y`}
+        />
       </div>
     </div>
   );
