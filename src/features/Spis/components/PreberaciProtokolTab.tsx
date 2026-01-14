@@ -224,7 +224,8 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
                   rows={6}
                   value={data.zhotovitelInfo !== undefined ? data.zhotovitelInfo : DEFAULT_ZHOTOVITEL}
                   onChange={(e) => handleUpdate('zhotovitelInfo', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm notranslate ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  translate="no"
                 />
               </div>
 
@@ -250,7 +251,8 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
                   rows={3}
                   value={data.bankInfo !== undefined ? data.bankInfo : DEFAULT_BANK}
                   onChange={(e) => handleUpdate('bankInfo', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm notranslate ${isDark ? 'bg-dark-600 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:ring-1 focus:ring-[#e11b28] focus:border-[#e11b28]`}
+                  translate="no"
                 />
               </div>
 
