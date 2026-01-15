@@ -21,11 +21,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
   // Extract unique suppliers from available products
   const uniqueSuppliers = Array.from(new Set(availableProducts.map(p => p.supplier).filter(s => s && s.trim().length > 0))).sort();
 
-  // Filter products by selected supplier
-  const filteredProducts = availableProducts.filter(p =>
-    !data.dodavatel?.nazov || p.supplier.toLowerCase().includes(data.dodavatel.nazov.toLowerCase()) ||
-    p.supplier.toLowerCase() === data.dodavatel.nazov.toLowerCase()
-  );
+
 
   // Products specifically for the currently selected supplier (exact match)
   const productsForCurrentSupplier = availableProducts.filter(p =>

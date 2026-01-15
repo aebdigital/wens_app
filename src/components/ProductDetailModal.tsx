@@ -67,7 +67,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             setFormData(emptyProduct);
             setIsEditing(true); // Always editing when creating
         }
-    }, [product, isOpen]);
+    }, [product, isOpen, emptyProduct]);
 
     const handleSave = async () => {
         if (!formData.name || !formData.supplier) {

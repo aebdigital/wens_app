@@ -541,7 +541,6 @@ const Nastavenia = () => {
             ) : (
               <div className="space-y-2">
                 {allUsers.map((u) => {
-                  const isSelf = u.id === user?.id;
                   const isSuperAdminUser = SUPERADMIN_EMAILS.includes(u.email);
 
                   return (
