@@ -238,7 +238,26 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             type="checkbox"
             id="prenesenieDP"
             checked={data.prenesenieDP || false}
-            onChange={(e) => onChange({ ...data, prenesenieDP: e.target.checked })}
+            onChange={(e) => {
+              const isChecked = e.target.checked;
+              let newData = { ...data, prenesenieDP: isChecked };
+
+              // Mutual exclusion: if checking Prenesenie, uncheck Cena dohodou
+              if (isChecked) {
+                newData.cenaDohodou = false;
+              }
+
+              // Reset deposit amounts to force recalculation based on new effective price
+              if (newData.deposits) {
+                newData.deposits = newData.deposits.map((d: any) => ({ ...d, amount: null }));
+              }
+              // Also clear legacy fields
+              newData.platba1Amount = null;
+              newData.platba2Amount = null;
+              newData.platba3Amount = null;
+
+              onChange(newData);
+            }}
             className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
           />
           <label htmlFor="prenesenieDP" className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>
@@ -300,13 +319,36 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
         </div>
 
         {/* Cena dohodou checkbox and input */}
-        <div className="flex items-center gap-2 mt-2">
+        <div className={`flex items-center gap-2 mt-2 ${data.prenesenieDP ? 'opacity-50' : ''}`}>
           <input
             type="checkbox"
             id="cenaDohodou"
             checked={data.cenaDohodou || false}
-            onChange={(e) => onChange({ ...data, cenaDohodou: e.target.checked, cenaDohodouValue: e.target.checked ? (data.cenaDohodouValue || totals.cenaSDPH) : null })}
-            className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+            onChange={(e) => {
+              const isChecked = e.target.checked;
+              let newData = {
+                ...data,
+                cenaDohodou: isChecked,
+                cenaDohodouValue: isChecked ? (data.cenaDohodouValue || totals.cenaSDPH) : null
+              };
+
+              // Mutual exclusion: if checking Cena dohodou, uncheck Prenesenie DP
+              if (isChecked) {
+                newData.prenesenieDP = false;
+              }
+
+              // Reset deposit amounts to force recalculation based on new effective price
+              if (newData.deposits) {
+                newData.deposits = newData.deposits.map((d: any) => ({ ...d, amount: null }));
+              }
+              // Also clear legacy fields
+              newData.platba1Amount = null;
+              newData.platba2Amount = null;
+              newData.platba3Amount = null;
+
+              onChange(newData);
+            }}
+            className={`w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500`}
           />
           <label htmlFor="cenaDohodou" className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Cena dohodou
@@ -328,13 +370,35 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
                 onChange={(e) => setLocalCenaDohodou(e.target.value)}
                 onBlur={() => {
                   const parsed = parseFloat(localCenaDohodou.replace(',', '.')) || 0;
-                  onChange({ ...data, cenaDohodouValue: parsed });
+
+                  let newData = { ...data, cenaDohodouValue: parsed };
+
+                  // Reset deposit amounts on value change too
+                  if (newData.deposits) {
+                    newData.deposits = newData.deposits.map((d: any) => ({ ...d, amount: null }));
+                  }
+                  newData.platba1Amount = null;
+                  newData.platba2Amount = null;
+                  newData.platba3Amount = null;
+
+                  onChange(newData);
                   setEditingCenaDohodou(false);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const parsed = parseFloat(localCenaDohodou.replace(',', '.')) || 0;
-                    onChange({ ...data, cenaDohodouValue: parsed });
+
+                    let newData = { ...data, cenaDohodouValue: parsed };
+
+                    // Reset deposit amounts on value change too
+                    if (newData.deposits) {
+                      newData.deposits = newData.deposits.map((d: any) => ({ ...d, amount: null }));
+                    }
+                    newData.platba1Amount = null;
+                    newData.platba2Amount = null;
+                    newData.platba3Amount = null;
+
+                    onChange(newData);
                     setEditingCenaDohodou(false);
                     (e.target as HTMLInputElement).blur();
                   }
