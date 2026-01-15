@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTasks } from '../../contexts/TasksContext';
-import { usePermissions } from '../../contexts/PermissionsContext';
+
 import StyledNavLink from './StyledNavLink';
 
 interface SidebarProps {

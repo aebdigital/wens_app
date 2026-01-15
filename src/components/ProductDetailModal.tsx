@@ -21,7 +21,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
     const { isDark } = useTheme();
 
-    const emptyProduct: Omit<Product, 'id'> = {
+    const emptyProduct: Omit<Product, 'id'> = React.useMemo(() => ({
         name: '',
         supplier: '',
         supplierDetails: {
@@ -30,7 +30,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             tel: '',
             email: ''
         }
-    };
+    }), []);
 
     const [formData, setFormData] = useState<Omit<Product, 'id'>>(emptyProduct);
     const [isEditing, setIsEditing] = useState(false);
