@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useContacts, Contact } from '../../../contexts/ContactsContext';
 import { SpisEntry, SpisFormData } from '../types';
 import { ContactChange, ContactAction, SectionActions, detectContactChanges } from '../components/ContactChangesModal';
+import { formatSpisDateToISO } from '../utils/dateParsing';
 
 interface UseSpisPersistenceProps {
     formData: SpisFormData;
@@ -142,7 +143,7 @@ export const useSpisPersistence = ({
                 stav: currentFormData.stav || 'CP',
                 cisloCP: currentFormData.predmet || getNextCP(),
                 cisloZakazky: currentFormData.cisloZakazky || '',
-                datum: new Date().toLocaleDateString('sk-SK'),
+                datum: currentFormData.ochranaDatum || formatSpisDateToISO(new Date().toISOString()),
                 kontaktnaOsoba: `${currentFormData.meno} ${currentFormData.priezvisko}`.trim() || '',
                 architekt: `${currentFormData.architektonickyPriezvisko || ''} ${currentFormData.architektonickeMeno || ''}`.trim() || '',
                 realizator: `${currentFormData.realizatorPriezvisko || ''} ${currentFormData.realizatorMeno || ''}`.trim() || '',

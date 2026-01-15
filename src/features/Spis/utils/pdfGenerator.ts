@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
 import { CenovaPonukaItem, SpisFormData, PuzdraData } from '../types';
 import { NOTES_DVERE, NOTES_NABYTOK, NOTES_SCHODY } from './legalTexts';
 
@@ -732,7 +733,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       autoTable(doc, {
         startY: yPos,
         head: [[
-          { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
+          { content: data.montazLabel || "Montáž - Neumožnená kompletná montáž z dôvodu nepripravenosti stavby bude spoplatnená dopravou.", colSpan: 2, styles: { halign: 'left' } },
           { content: 'Ks', styles: { halign: 'right' } },
           { content: 'Cena/ks', styles: { halign: 'right' } },
           { content: 'Cena celkom', styles: { halign: 'right' } }
@@ -854,6 +855,22 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const tableStartX = pageWidth - 14 - tableWidth;
     const startYForBoth = yPos;
 
+    // Generate QR Code if place exists
+    let qrDataUrl = '';
+    let qrWidth = 0;
+    const miestoQR = data.miestoDodavky || '';
+    if (miestoQR) {
+      try {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(miestoQR)}`;
+        qrDataUrl = await QRCode.toDataURL(mapsUrl, { margin: 0 });
+        qrWidth = 25; // 25mm
+        const qrX = tableStartX - qrWidth - 5;
+        doc.addImage(qrDataUrl, 'PNG', qrX, startYForBoth, qrWidth, qrWidth);
+      } catch (e) {
+        console.error('Failed to generate QR', e);
+      }
+    }
+
     const isPrenesenieDP = !!data.prenesenieDP;
 
     // Price totals table - rows 1 & 2 (normal size, bold)
@@ -916,7 +933,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     });
 
     // Left side info - positioned next to the table
-    const maxLeftWidth = tableStartX - 14 - 5; // 5mm gap between text and table
+    // If QR code exists, subtract its width and gap from available width
+    const maxLeftWidth = tableStartX - 14 - 5 - (qrWidth > 0 ? qrWidth + 5 : 0);
 
     doc.setFontSize(8);
 
@@ -938,7 +956,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
-    printLabelValue('Zameranie:', data.zameranie || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
 
     // Termín dodania - custom rendering for full paragraph flow
@@ -1354,7 +1371,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       autoTable(doc, {
         startY: yPos,
         head: [[
-          { content: 'Montáž', colSpan: 2, styles: { halign: 'left' } },
+          { content: data.montazLabel || "Montáž - Neumožnená kompletná montáž z dôvodu nepripravenosti stavby bude spoplatnená dopravou.", colSpan: 2, styles: { halign: 'left' } },
           { content: 'Ks', styles: { halign: 'right' } },
           { content: 'Cena/ks', styles: { halign: 'right' } },
           { content: 'Cena celkom', styles: { halign: 'right' } }
@@ -1446,6 +1463,22 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const tableStartX = pageWidth - 14 - tableWidth;
     const startYForBoth = yPos;
 
+    // Generate QR Code if place exists
+    let qrDataUrl = '';
+    let qrWidth = 0;
+    const miestoQR = data.miestoDodavky || '';
+    if (miestoQR) {
+      try {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(miestoQR)}`;
+        qrDataUrl = await QRCode.toDataURL(mapsUrl, { margin: 0 });
+        qrWidth = 25; // 25mm
+        const qrX = tableStartX - qrWidth - 5;
+        doc.addImage(qrDataUrl, 'PNG', qrX, startYForBoth, qrWidth, qrWidth);
+      } catch (e) {
+        console.error('Failed to generate QR', e);
+      }
+    }
+
     // Price totals table - rows 1 & 2 (normal size, bold)
     autoTable(doc, {
       startY: yPos,
@@ -1501,7 +1534,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     });
 
     // Left side info - positioned next to the table
-    const maxLeftWidth = tableStartX - 14 - 5;
+    // If QR code exists, subtract its width and gap from available width
+    const maxLeftWidth = tableStartX - 14 - 5 - (qrWidth > 0 ? qrWidth + 5 : 0);
 
     doc.setFontSize(8);
 
@@ -1520,7 +1554,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
-    printLabelValue('Zameranie:', data.zameranie || '-');
     printLabelValue('Zameranie:', data.zameranie || '-');
 
     // Termín dodania - custom rendering for full paragraph flow

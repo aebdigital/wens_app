@@ -141,6 +141,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       kovanie: [
         { id: 1, nazov: 'pánt Tectus 3D (zkrát dvere) + úprava dverí a zárubní na bezfalcové prevedenie', ks: 1, cenaKs: 55, cenaCelkom: 55 },
         { id: 2, nazov: 'upevňovací segment', ks: 1, cenaKs: 15, cenaCelkom: 15 },
+        { id: 3, nazov: 'kľučky - doplniť - upresniť  typ kľučiek a mušlí je nutné upresniť do 7 dní od potvrdenia objednávky.', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montaz: [
         { id: 1, nazov: '1 krídlové bezfalcové dvere', ks: 1, cenaKs: 95, cenaCelkom: 95 },
@@ -184,6 +185,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       zlavaPercent: 5,
       kovanie: [
         { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
+        { id: 2, nazov: 'kľučky - doplniť - upresniť  typ kľučiek a mušlí je nutné upresniť do 7 dní od potvrdenia objednávky.', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montaz: [
         { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },
@@ -224,6 +226,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       zlavaPercent: 5,
       kovanie: [
         { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
+        { id: 2, nazov: 'kľučky - doplniť - upresniť  typ kľučiek a mušlí je nutné upresniť do 7 dní od potvrdenia objednávky.', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montaz: [
         { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },

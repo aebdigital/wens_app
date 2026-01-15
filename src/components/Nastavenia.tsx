@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { usePermissions } from '../contexts/PermissionsContext';
+import { usePermissions, SUPERADMIN_EMAILS } from '../contexts/PermissionsContext';
 import { supabase } from '../lib/supabase';
 
 interface UserWithPermission {
@@ -11,6 +11,156 @@ interface UserWithPermission {
   last_name: string;
   can_view_zamestnanci: boolean;
 }
+
+interface DirectoryEmployee {
+  id: string;
+  name: string;
+}
+
+const EmployeeDirectoryManager: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+  const [employees, setEmployees] = useState<DirectoryEmployee[]>([]);
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  const loadEmployees = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('employees_directory')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Failed to load employees:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddEmployee = async () => {
+    if (!newEmployeeName.trim()) return;
+
+    try {
+      setIsSubmitting(true);
+      const { data, error } = await supabase
+        .from('employees_directory')
+        .insert({ name: newEmployeeName.trim() })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEmployees(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewEmployeeName('');
+    } catch (error) {
+      console.error('Failed to add employee:', error);
+      alert('Nepodarilo sa pridať zamestnanca.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteEmployee = async (id: string) => {
+    if (!window.confirm('Naozaj chcete vymazať tohto zamestnanca?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('employees_directory')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setEmployees(prev => prev.filter(e => e.id !== id));
+    } catch (error) {
+      console.error('Failed to delete employee:', error);
+      alert('Nepodarilo sa vymazať zamestnanca.');
+    }
+  };
+
+  return (
+    <div
+      className={`mt-6 rounded-lg overflow-hidden ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+      style={{
+        boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center px-6 py-4 bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
+        <svg className="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <span className="text-white font-medium">Správa zoznamu zamestnancov</span>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          Tento zoznam sa zobrazuje vo výbere v sekcii Dovolenky.
+        </p>
+
+        {/* Add New */}
+        <div className="flex gap-2 mb-6">
+          <input
+            type="text"
+            value={newEmployeeName}
+            onChange={(e) => setNewEmployeeName(e.target.value)}
+            placeholder="Meno nového zamestnanca"
+            className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#e11b28] ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+              }`}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddEmployee()}
+          />
+          <button
+            onClick={handleAddEmployee}
+            disabled={isSubmitting || !newEmployeeName.trim()}
+            className="px-4 py-2 bg-[#e11b28] text-white rounded-md hover:bg-[#c71325] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            Pridať
+          </button>
+        </div>
+
+        {/* List */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e11b28]"></div>
+          </div>
+        ) : employees.length === 0 ? (
+          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Zoznam je prázdny.</p>
+        ) : (
+          <div className={`border rounded-lg divide-y ${isDark ? 'border-dark-600 divide-dark-600' : 'border-gray-200 divide-gray-100'}`}>
+            {employees.map((emp) => (
+              <div
+                key={emp.id}
+                className={`flex items-center justify-between p-3 ${isDark ? 'bg-dark-700' : 'bg-white'
+                  }`}
+              >
+                <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
+                  {emp.name}
+                </span>
+                <button
+                  onClick={() => handleDeleteEmployee(emp.id)}
+                  className="text-red-600 hover:text-red-800 p-1.5 hover:bg-red-50 rounded transition-colors"
+                  title="Vymazať"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const Nastavenia = () => {
   const { user } = useAuth();
@@ -109,10 +259,18 @@ const Nastavenia = () => {
           };
         });
 
-        // Sort so current user (superadmin) appears first
+        // Sort so superadmins appear first, then current user (if distinct), then alphabetical
         usersWithPermissions.sort((a, b) => {
+          const aIsSuper = SUPERADMIN_EMAILS.includes(a.email);
+          const bIsSuper = SUPERADMIN_EMAILS.includes(b.email);
+
+          if (aIsSuper && !bIsSuper) return -1;
+          if (!aIsSuper && bIsSuper) return 1;
+
+          // If both are super or both are not, sort by self
           if (a.id === user?.id) return -1;
           if (b.id === user?.id) return 1;
+
           return a.email.localeCompare(b.email);
         });
 
@@ -371,7 +529,7 @@ const Nastavenia = () => {
           {/* Content */}
           <div className="p-6">
             <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Spravujte, ktorí používatelia majú prístup k stránke Zamestnanci.
+              Spravujte, ktorí používatelia majú prístup k štatistikám (tlačidlo grafu v sekcii Spis).
             </p>
 
             {isLoadingUsers ? (
@@ -384,6 +542,8 @@ const Nastavenia = () => {
               <div className="space-y-2">
                 {allUsers.map((u) => {
                   const isSelf = u.id === user?.id;
+                  const isSuperAdminUser = SUPERADMIN_EMAILS.includes(u.email);
+
                   return (
                     <div
                       key={u.id}
@@ -399,13 +559,13 @@ const Nastavenia = () => {
                         <div>
                           <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {u.first_name} {u.last_name}
-                            {isSelf && <span className="ml-2 text-xs text-[#e11b28] font-normal">(Superadmin)</span>}
+                            {isSuperAdminUser && <span className="ml-2 text-xs text-[#e11b28] font-normal">(Superadmin)</span>}
                           </p>
                           <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{u.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {isSelf ? (
+                        {isSuperAdminUser ? (
                           <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-600'}`}>
                             Vždy povolené
                           </span>
@@ -430,6 +590,11 @@ const Nastavenia = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Employee Directory Management - Only visible for superadmin */}
+      {isSuperAdmin && (
+        <EmployeeDirectoryManager isDark={isDark} />
       )}
     </div>
   );

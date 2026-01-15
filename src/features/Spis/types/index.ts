@@ -1,3 +1,19 @@
+export interface FileItem {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  parentId: string | null;
+  url?: string;
+  storagePath?: string;
+  description?: string;
+  createdAt: string;
+  createdBy?: string;
+  // Legacy/Specific fields
+  category?: string; // For Technicke
+  sent?: string; // For Vyrobne (odoslane)
+  supplier?: string; // For Technicke (dodavatel)
+}
+
 export interface SpisEntry {
   id?: string;
   stav: string;
@@ -105,10 +121,10 @@ export interface SpisFormData {
   emailPredmet: string;
   emailText: string;
   emailItems: { popis: string, nazov: string, datum: string, vyvoj: string, stav: string }[];
-  meranieItems: { datum: string, popis: string, pridat: string, zodpovedny: string }[];
-  vyrobneVykresy: { popis: string, nazov: string, odoslane: string, vytvoril: string }[];
+  meranieItems: FileItem[];
+  vyrobneVykresy: FileItem[];
   fotky: { id: string, name: string, type: string, base64: string, description: string }[];
-  technickeItems: { nazov: string, datum: string, kategoria: string, dodavatel: string }[];
+  technickeItems: FileItem[];
   preberaciProtokol?: PreberaciProtokolData;
 }
 
@@ -188,6 +204,8 @@ export interface DvereData {
   montazPoznamka: string;
   platnostPonuky: string;
   miestoDodavky: string;
+  poznamkaKAdrese?: string; // New field for address note
+  montazLabel?: string; // Custom label for Montáž section
   zameranie: string;
   terminDodania: string;
   platba1Percent: number;
@@ -229,6 +247,8 @@ export interface NabytokData {
   montaz: any[];
   platnostPonuky: string;
   miestoDodavky: string;
+  poznamkaKAdrese?: string;
+  montazLabel?: string;
   zameranie: string;
   terminDodania: string;
   platba1Percent: number;
@@ -267,6 +287,8 @@ export interface SchodyData {
   montaz: any[];
   platnostPonuky: string;
   miestoDodavky: string;
+  poznamkaKAdrese?: string;
+  montazLabel?: string;
   zameranie: string;
   terminDodania: string;
   platba1Percent: number;

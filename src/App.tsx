@@ -15,7 +15,7 @@ import Spis from './components/Spis';
 import Objednavky from './components/Objednavky';
 import Kontakty from './components/Kontakty';
 import Nastavenia from './components/Nastavenia';
-import Zamestnanci from './components/Zamestnanci';
+
 import Dovolenky from './components/Dovolenky';
 import Ulohy from './components/Ulohy';
 import Layout from './components/layout/Layout';
@@ -43,7 +43,7 @@ const AuthenticatedApp: React.FC = () => {
                     <Route path="/spis" element={<Spis />} />
                     <Route path="/objednavky" element={<Objednavky />} />
                     <Route path="/kontakty" element={<Kontakty />} />
-                    <Route path="/zamestnanci" element={<Zamestnanci />} />
+
                     <Route path="/dovolenky" element={<Dovolenky />} />
                     <Route path="/nastavenia" element={<Nastavenia />} />
                     <Route path="/ulohy" element={<Ulohy />} />

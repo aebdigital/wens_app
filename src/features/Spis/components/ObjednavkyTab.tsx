@@ -77,8 +77,8 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
   };
 
   return (
-    <div className="p-2 h-full flex flex-col">
-      <div className="flex-1 overflow-auto">
+    <div className="p-2 flex flex-col">
+      <div className="overflow-x-auto">
         <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
@@ -202,7 +202,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex justify-start">
+      <div className="mt-2 flex justify-end">
         <button
           onClick={onAddVzor}
           disabled={isLocked}

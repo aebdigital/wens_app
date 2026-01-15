@@ -10,11 +10,12 @@ const Objednavky = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const { entries, isLoading } = useSpis();
-  const { products, updateProduct, deleteProduct } = useProducts();
+  const { products, updateProduct, deleteProduct, addProduct } = useProducts();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'objednavky' | 'produkty'>('objednavky');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
 
   const objednavkyData = useMemo(() => {
     return entries.flatMap(entry => {
@@ -80,10 +81,10 @@ const Objednavky = () => {
       key: 'supplierDetails',
       label: 'Kontakt dodávateľa',
       render: (val, item) => (
-         <div className="text-xs text-gray-500">
-             {item.supplierDetails?.tel && <div>Tel: {item.supplierDetails.tel}</div>}
-             {item.supplierDetails?.email && <div>Email: {item.supplierDetails.email}</div>}
-         </div>
+        <div className="text-xs text-gray-500">
+          {item.supplierDetails?.tel && <div>Tel: {item.supplierDetails.tel}</div>}
+          {item.supplierDetails?.email && <div>Email: {item.supplierDetails.email}</div>}
+        </div>
       )
     }
   ];
@@ -105,76 +106,96 @@ const Objednavky = () => {
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Objednávky</h1>
 
-         {/* Tabs */}
+        {/* Tabs */}
         <div className={`flex gap-2 p-1 rounded-lg self-start ${isDark ? 'bg-dark-800' : 'bg-gray-200'}`}>
-            <button
-                onClick={() => setActiveTab('objednavky')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'objednavky'
-                    ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
-                    : isDark
-                    ? 'text-gray-300 hover:text-white hover:bg-dark-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
-                }`}
-            >
-                Objednávky
-            </button>
-            <button
-                onClick={() => setActiveTab('produkty')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'produkty'
-                    ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
-                    : isDark
-                    ? 'text-gray-300 hover:text-white hover:bg-dark-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
-                }`}
-            >
-                Produkty
-            </button>
+          <button
+            onClick={() => setActiveTab('objednavky')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'objednavky'
+                ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
+                : isDark
+                  ? 'text-gray-300 hover:text-white hover:bg-dark-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
+              }`}
+          >
+            Objednávky
+          </button>
+          <button
+            onClick={() => setActiveTab('produkty')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'produkty'
+                ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
+                : isDark
+                  ? 'text-gray-300 hover:text-white hover:bg-dark-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
+              }`}
+          >
+            Produkty
+          </button>
         </div>
+
+        {/* Action Buttons */}
+        {activeTab === 'produkty' && (
+          <button
+            onClick={() => setIsCreatingProduct(true)}
+            className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Pridať produkt
+          </button>
+        )}
       </div>
 
       {/* --- Objednávky Tab --- */}
       {activeTab === 'objednavky' && (
         <>
-            <SortableTable
-                columns={orderColumns}
-                data={tableData}
-                onRowClick={(item) => handleOrderClick(item.rawOrder)}
-            />
-            {objednavkyData.length === 0 && (
-                <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Žiadne objednávky. Vytvorte objednávky v Spis → Objednávky tab.
-                </div>
-            )}
+          <SortableTable
+            columns={orderColumns}
+            data={tableData}
+            onRowClick={(item) => handleOrderClick(item.rawOrder)}
+          />
+          {objednavkyData.length === 0 && (
+            <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Žiadne objednávky. Vytvorte objednávky v Spis → Objednávky tab.
+            </div>
+          )}
         </>
       )}
 
       {/* --- Produkty Tab --- */}
       {activeTab === 'produkty' && (
-          <>
-            <SortableTable
-                columns={productColumns}
-                data={products}
-                onRowClick={(item) => setSelectedProduct(item)}
-            />
-             {products.length === 0 && (
-                <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Žiadne uložené produkty. Produkty sa ukladajú automaticky pri vytvorení objednávky.
-                </div>
-            )}
-          </>
+        <>
+          <SortableTable
+            columns={productColumns}
+            data={products}
+            onRowClick={(item) => setSelectedProduct(item)}
+          />
+          {products.length === 0 && (
+            <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Žiadne uložené produkty. Produkty sa ukladajú automaticky pri vytvorení objednávky.
+            </div>
+          )}
+        </>
       )}
 
       {/* Product Detail Modal */}
       {selectedProduct && (
-          <ProductDetailModal
-            isOpen={!!selectedProduct}
-            onClose={() => setSelectedProduct(null)}
-            product={selectedProduct}
-            onUpdate={updateProduct}
-            onDelete={deleteProduct}
-          />
+        <ProductDetailModal
+          isOpen={!!selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          product={selectedProduct}
+          onUpdate={updateProduct}
+          onDelete={deleteProduct}
+        />
+      )}
+
+      {/* Product Creation Modal */}
+      {isCreatingProduct && (
+        <ProductDetailModal
+          isOpen={isCreatingProduct}
+          onClose={() => setIsCreatingProduct(false)}
+          onAdd={addProduct}
+        />
       )}
 
     </div>

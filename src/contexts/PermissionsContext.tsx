@@ -19,7 +19,7 @@ export const usePermissions = () => {
   return context;
 };
 
-const SUPERADMIN_EMAIL = 'richter@wens.sk';
+export const SUPERADMIN_EMAILS = ['richter@wens.sk', 'zlocha@wens.sk'];
 
 interface PermissionsProviderProps {
   children: React.ReactNode;
@@ -30,7 +30,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
   const [canViewZamestnanci, setCanViewZamestnanci] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isSuperAdmin = user?.email === SUPERADMIN_EMAIL;
+  const isSuperAdmin = !!(user?.email && SUPERADMIN_EMAILS.includes(user.email));
 
   const refreshPermissions = useCallback(async () => {
     if (!user) {

@@ -224,32 +224,32 @@ const Dovolenky: React.FC = () => {
   // Day detail popup state
   const [selectedDay, setSelectedDay] = useState<{ date: Date; vacations: VacationEntry[] } | null>(null);
 
-  // Hardcoded employee list - Wrapped in useMemo to prevent re-renders
-  const users = useMemo(() => [
-    { id: '1', name: 'Andelová Kristína' },
-    { id: '2', name: 'Andrejkovičová Andrea, Bc.' },
-    { id: '3', name: 'Bartoš Daniel' },
-    { id: '4', name: 'Belák Peter' },
-    { id: '5', name: 'Belaňová Dália' },
-    { id: '6', name: 'Bugár Ľuboš' },
-    { id: '7', name: 'Butko Štefan' },
-    { id: '8', name: 'Butková Patrícia' },
-    { id: '9', name: 'Čertík Jaroslav' },
-    { id: '10', name: 'Dražo Tibor' },
-    { id: '11', name: 'Gatialová Marcela' },
-    { id: '12', name: 'Glavo Zdenko' },
-    { id: '13', name: 'Kyselicová Lucia' },
-    { id: '14', name: 'Palatínus Boris' },
-    { id: '15', name: 'Palkovič Marek, Ing.' },
-    { id: '16', name: 'Púčik Jozef' },
-    { id: '17', name: 'Repková Martina' },
-    { id: '18', name: 'Richter Karol' },
-    { id: '19', name: 'Richter Roman' },
-    { id: '20', name: 'Rybárik Juraj' },
-    { id: '21', name: 'Vasko Ľubomír' },
-    { id: '22', name: 'Vida Ján' },
-    { id: '23', name: 'Vrchovský Peter' },
-  ], []);
+  // Users list from directory
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('employees_directory')
+          .select('id, name')
+          .order('name');
+
+        if (error) {
+          console.error('Error loading employees:', error);
+          return;
+        }
+
+        if (data) {
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Failed to load employees:', error);
+      }
+    };
+
+    loadEmployees();
+  }, []);
 
   // Independent filters
   const [calendarSelectedUserId, setCalendarSelectedUserId] = useState<string | null>(null);

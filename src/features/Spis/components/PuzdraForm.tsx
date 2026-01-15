@@ -16,7 +16,39 @@ interface PuzdraFormProps {
 
 export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, headerInfo, availableProducts = [] }) => {
   const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
 
+  // Extract unique suppliers from available products
+  const uniqueSuppliers = Array.from(new Set(availableProducts.map(p => p.supplier).filter(s => s && s.trim().length > 0))).sort();
+
+  // Filter products by selected supplier
+  const filteredProducts = availableProducts.filter(p =>
+    !data.dodavatel?.nazov || p.supplier.toLowerCase().includes(data.dodavatel.nazov.toLowerCase()) ||
+    p.supplier.toLowerCase() === data.dodavatel.nazov.toLowerCase()
+  );
+
+  // Products specifically for the currently selected supplier (exact match)
+  const productsForCurrentSupplier = availableProducts.filter(p =>
+    data.dodavatel?.nazov && p.supplier.trim().toLowerCase() === data.dodavatel.nazov.trim().toLowerCase()
+  );
+
+  const handleSupplierSelect = (supplierName: string) => {
+    // Find a product from this supplier to pre-fill details if possible (optional, but nice)
+    const sampleProduct = availableProducts.find(p => p.supplier === supplierName);
+
+    const newDodavatel = { ...data.dodavatel, nazov: supplierName };
+
+    // Auto-fill address/contact if we found a sample product
+    if (sampleProduct && sampleProduct.supplierDetails) {
+      newDodavatel.ulica = sampleProduct.supplierDetails.ulica || newDodavatel.ulica;
+      newDodavatel.mesto = sampleProduct.supplierDetails.mesto || newDodavatel.mesto;
+      newDodavatel.tel = sampleProduct.supplierDetails.tel || newDodavatel.tel;
+      newDodavatel.email = sampleProduct.supplierDetails.email || newDodavatel.email;
+    }
+
+    onChange({ ...data, dodavatel: newDodavatel });
+    setShowSupplierDropdown(false);
+  };
   const handleProductSelect = (index: number, product: Product) => {
     const newPolozky = [...data.polozky];
     newPolozky[index].nazov = product.name;
@@ -63,12 +95,48 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
           <p className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Dodávateľ:</p>
           <div className="flex gap-2 items-center">
             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Firma:</span>
-            <input
-              type="text"
-              value={data.dodavatel?.nazov || ''}
-              onChange={(e) => onChange({ ...data, dodavatel: { ...data.dodavatel, nazov: e.target.value } })}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={data.dodavatel?.nazov || ''}
+                onChange={(e) => {
+                  onChange({ ...data, dodavatel: { ...data.dodavatel, nazov: e.target.value } });
+                  setShowSupplierDropdown(true);
+                }}
+                onFocus={() => setShowSupplierDropdown(true)}
+                onBlur={() => setTimeout(() => setShowSupplierDropdown(false), 200)}
+                className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+                placeholder="Vyhľadať dodávateľa..."
+              />
+              {showSupplierDropdown && (data.dodavatel?.nazov || '') === '' && uniqueSuppliers.length > 0 && (
+                <div className={`absolute z-[100] left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
+                  {uniqueSuppliers.map(supplier => (
+                    <div
+                      key={supplier}
+                      onClick={() => handleSupplierSelect(supplier)}
+                      className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-dark-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
+                    >
+                      {supplier}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showSupplierDropdown && (data.dodavatel?.nazov || '') !== '' && (
+                <div className={`absolute z-[100] left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
+                  {uniqueSuppliers
+                    .filter(s => s.toLowerCase().includes((data.dodavatel?.nazov || '').toLowerCase()))
+                    .map(supplier => (
+                      <div
+                        key={supplier}
+                        onClick={() => handleSupplierSelect(supplier)}
+                        className={`px-2 py-1 cursor-pointer text-xs ${isDark ? 'hover:bg-dark-700 text-gray-200' : 'hover:bg-gray-100 text-gray-800'}`}
+                      >
+                        {supplier}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 items-center">
             <span className={`w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ulica:</span>
@@ -123,11 +191,11 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
       </div>
 
       {/* Názov tovaru table */}
-      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
+      <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
         <div className={`px-4 py-2 ${isDark ? 'bg-dark-600' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-500' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>Názov tovaru:</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
@@ -151,12 +219,13 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
                       }}
                       onFocus={() => setActiveRowIndex(index)}
                       onBlur={() => setTimeout(() => setActiveRowIndex(null), 200)}
-                      rows={2}
-                      className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none resize-none`}
+                      rows={1}
+                      className={`w-full px-1 py-0.5 text-xs ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-gray-800'} border-none focus:outline-none resize-none overflow-hidden`}
                     />
-                    {activeRowIndex === index && item.nazov.length > 0 && availableProducts.length > 0 && (
-                      <div className={`absolute z-50 left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
-                        {availableProducts
+                    {activeRowIndex === index && availableProducts.length > 0 && (
+                      <div className={`absolute z-[100] left-0 top-full mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg border ${isDark ? 'bg-dark-800 border-dark-500' : 'bg-white border-gray-300'}`}>
+                        {/* If supplier is selected, ONLY show products from that supplier. If not, show all matching */}
+                        {(data.dodavatel?.nazov && data.dodavatel.nazov.trim() !== '' ? productsForCurrentSupplier : availableProducts)
                           .filter(p => p.name.toLowerCase().includes(item.nazov.toLowerCase()))
                           .map((p) => (
                             <div

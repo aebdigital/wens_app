@@ -82,6 +82,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('products')
         .select('*')
         .eq('user_id', userId)
+        .order('supplier', { ascending: true })
         .order('name', { ascending: true });
 
       if (error) {
@@ -111,7 +112,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Check if product with same name AND supplier exists
     const existingProduct = products.find(
       p => p.name.toLowerCase() === newProductData.name.toLowerCase() &&
-           p.supplier.toLowerCase() === newProductData.supplier.toLowerCase()
+        p.supplier.toLowerCase() === newProductData.supplier.toLowerCase()
     );
 
     if (existingProduct) {

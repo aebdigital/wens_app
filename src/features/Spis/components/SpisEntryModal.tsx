@@ -738,6 +738,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onUpdate={(items: any) => setFormData(prev => ({ ...prev, meranieItems: items }))}
                           isLocked={isEffectivelyLocked}
                           user={user}
+                          spisEntryId={internalId}
                         />
                       </Suspense>
                     </TabErrorBoundary>
@@ -764,6 +765,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onUpdate={(items: any) => setFormData(prev => ({ ...prev, vyrobneVykresy: items }))}
                           isLocked={isEffectivelyLocked}
                           user={user}
+                          spisEntryId={internalId}
                         />
                       </Suspense>
                     </TabErrorBoundary>
@@ -778,6 +780,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onUpdate={(items: any) => setFormData(prev => ({ ...prev, technickeItems: items }))}
                           isLocked={isEffectivelyLocked}
                           user={user}
+                          spisEntryId={internalId}
                         />
                       </Suspense>
                     </TabErrorBoundary>

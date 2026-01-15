@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { SpisFormData, SpisEntry } from '../types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { formatSpisDateToISO } from '../utils/dateParsing';
 
 export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean) => {
     const { user } = useAuth();
@@ -152,11 +153,15 @@ export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean
                     ...initialEntry.fullFormData,
                     // Load cisloCP from the entry into predmet field
                     predmet: initialEntry.cisloCP || initialEntry.fullFormData.predmet || '',
-                    objednavkyItems: initialEntry.fullFormData.objednavkyItems || []
+                    objednavkyItems: initialEntry.fullFormData.objednavkyItems || [],
+                    // Fix/init datum if missing from fullFormData (but present in top level)
+                    ochranaDatum: initialEntry.fullFormData.ochranaDatum || formatSpisDateToISO(initialEntry.datum) || new Date().toISOString().split('T')[0]
                 };
                 setFormData(loadedData);
                 setLastSavedJson(JSON.stringify(loadedData));
                 initialFormDataRef.current = loadedData;
+
+
 
                 // Load photos
                 if (initialEntry.fullFormData.fotky) {

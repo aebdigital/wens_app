@@ -145,6 +145,15 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
           )}
         </div>
         <div className="flex gap-2">
+          <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Poznámka k adrese:</span>
+          <textarea
+            value={data.poznamkaKAdrese || ''}
+            onChange={(e) => onChange({ ...data, poznamkaKAdrese: e.target.value })}
+            rows={1}
+            className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border resize-y min-h-[2.5rem]`}
+          />
+        </div>
+        <div className="flex gap-2">
           <span className={`w-32 ${isDark ? 'text-gray-400' : 'text-gray-800'}`}>Zameranie:</span>
           <input
             type="text"

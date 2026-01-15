@@ -4,8 +4,10 @@ import { useSpis } from '../contexts/SpisContext';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../contexts/PermissionsContext';
 import { SortableTable, Column } from './common/SortableTable';
 import { SpisEntryModal } from '../features/Spis/components/SpisEntryModal';
+import { SpisStatsModal } from '../features/Spis/components/SpisStatsModal';
 import { SpisEntry } from '../features/Spis/types';
 
 const Spis = () => {
@@ -14,6 +16,7 @@ const Spis = () => {
   const location = useLocation();
   const { isDark } = useTheme();
   const { user } = useAuth();
+  const { canViewZamestnanci } = usePermissions();
 
   // --- UI State ---
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +24,7 @@ const Spis = () => {
   const [selectedEntry, setSelectedEntry] = useState<SpisEntry | null>(null);
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   // Handle highlighting rows when navigating from Kontakty page or Ulohy page
   useEffect(() => {
@@ -108,10 +112,9 @@ const Spis = () => {
       key: 'stav',
       label: 'Stav',
       render: (val, item) => (
-        <span className={`px-2 py-1 rounded ${
-          item.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+        <span className={`px-2 py-1 rounded ${item.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
           item.color === 'red' ? 'bg-red-100 text-red-800' : ''
-        }`}>
+          }`}>
           {val}
         </span>
       )
@@ -153,6 +156,17 @@ const Spis = () => {
       {/* Page Title */}
       <div className="mb-6 flex justify-between items-center">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Spis</h1>
+        {canViewZamestnanci && (
+          <button
+            onClick={() => setShowStats(true)}
+            className={`mr-3 p-2 rounded-lg transition-colors ${isDark ? 'bg-dark-800 text-white hover:bg-dark-700' : 'bg-white text-gray-700 hover:bg-gray-50'} shadow-sm border ${isDark ? 'border-dark-600' : 'border-gray-200'}`}
+            title="Štatistiky"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </button>
+        )}
         <button
           onClick={() => {
             setSelectedEntry(null);
@@ -203,6 +217,12 @@ const Spis = () => {
           selectedOrderIndex={selectedOrderIndex}
         />
       )}
+      {/* Stats Modal */}
+      <SpisStatsModal
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        entries={entries}
+      />
     </div>
   );
 };

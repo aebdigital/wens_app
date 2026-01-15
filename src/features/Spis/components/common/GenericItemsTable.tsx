@@ -18,6 +18,7 @@ interface GenericItemsTableProps<T extends { id: string | number }> {
   footerContent?: React.ReactNode;
   mergeFirstTwoHeaders?: boolean; // If true, merge first two column headers into title
   extraButtons?: React.ReactNode; // Optional extra buttons next to the add button
+  onTitleChange?: (newTitle: string) => void;
 }
 
 export const GenericItemsTable = <T extends { id: string | number }>({
@@ -29,7 +30,8 @@ export const GenericItemsTable = <T extends { id: string | number }>({
   title,
   footerContent,
   mergeFirstTwoHeaders = false,
-  extraButtons
+  extraButtons,
+  onTitleChange
 }: GenericItemsTableProps<T>) => {
   return (
     <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
@@ -49,7 +51,17 @@ export const GenericItemsTable = <T extends { id: string | number }>({
                   <th
                     className="px-2 py-2 text-left border-r border-white/20 pl-4"
                   >
-                    {title?.replace(':', '')}
+                    {onTitleChange ? (
+                      <input
+                        type="text"
+                        value={title?.replace(':', '')}
+                        onChange={(e) => onTitleChange(e.target.value)}
+                        className="bg-transparent text-white font-bold border-none focus:outline-none w-full placeholder-white/50"
+                        placeholder="Názov sekcie..."
+                      />
+                    ) : (
+                      title?.replace(':', '')
+                    )}
                   </th>
                   {/* Remaining columns from index 1 onwards */}
                   {columns.slice(1).map((col, idx) => (

@@ -513,7 +513,14 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
         onChange={(items) => onChangeWithPaymentReset({ ...data, kovanie: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({ ...data, kovanie: [...data.kovanie, newItem] });
+          const newKovanie = [...data.kovanie];
+          const lastItem = newKovanie[newKovanie.length - 1];
+          if (lastItem && lastItem.nazov.startsWith('kľučky - doplniť')) {
+            newKovanie.splice(newKovanie.length - 1, 0, newItem);
+          } else {
+            newKovanie.push(newItem);
+          }
+          onChangeWithPaymentReset({ ...data, kovanie: newKovanie });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
@@ -529,7 +536,8 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
       />
 
       <GenericItemsTable
-        title="Montáž:"
+        title={data.montazLabel || "Montáž - Neumožnená kompletná montáž z dôvodu nepripravenosti stavby bude spoplatnená dopravou."}
+        onTitleChange={(newTitle) => onChange({ ...data, montazLabel: newTitle })}
         items={data.montaz}
         columns={commonColumns}
         isDark={isDark}
