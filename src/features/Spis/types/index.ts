@@ -46,6 +46,7 @@ export interface SpisFormData {
   sprostredkovatel: string;
   vybavene: boolean;
   terminDokoncenia: string;
+  dlzkaVyroby?: string;
 
   // Financie
   provizia: string;

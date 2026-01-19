@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CenovaPonukaItem } from '../types';
 import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface CenovePonukyTabProps {
   items: CenovaPonukaItem[];
@@ -14,6 +15,7 @@ interface CenovePonukyTabProps {
   onUpdate: (items: CenovaPonukaItem[]) => void;
   onSave?: () => void;
   predmet?: string;
+  cisloZakazky?: string;
 }
 
 export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
@@ -27,7 +29,8 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onToggleSelect,
   onUpdate,
   onSave,
-  predmet = ''
+  predmet = '',
+  cisloZakazky = ''
 }) => {
   // Helper to get full cisloCP - prepends predmet if cisloCP starts with '-'
   const getFullCisloCP = (cisloCP: string) => {
@@ -77,7 +80,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Typ</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Verzia</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo zakázky</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Cena bez DPH</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Cena s DPH</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
@@ -92,8 +95,8 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
               <tr
                 key={item.id}
                 className={`cursor-pointer ${item.selected
-                    ? (isDark ? 'bg-red-900/30 hover:bg-red-900/40' : 'bg-red-100 hover:bg-red-200')
-                    : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')
+                  ? (isDark ? 'bg-red-900/30 hover:bg-red-900/40' : 'bg-red-100 hover:bg-red-200')
+                  : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')
                   }`}
                 onClick={() => onEdit(item)}
               >
@@ -102,18 +105,18 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                 </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${item.typ === 'dvere'
-                      ? 'bg-blue-100 text-blue-800'
-                      : item.typ === 'nabytok'
-                        ? 'bg-green-100 text-green-800'
-                        : item.typ === 'schody'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                    ? 'bg-blue-100 text-blue-800'
+                    : item.typ === 'nabytok'
+                      ? 'bg-green-100 text-green-800'
+                      : item.typ === 'schody'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-yellow-100 text-yellow-800'
                     }`}>
                     {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
                   </span>
                 </td>
                 <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {item.verzia}
+                  {cisloZakazky || '-'}
                 </td>
                 <td className={`border px-3 py-2 text-right ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cenaBezDPH > 0 ? `${item.cenaBezDPH.toFixed(2)} €` : '-'}
@@ -121,8 +124,22 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                 <td className={`border px-3 py-2 text-right font-semibold ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cenaSDPH > 0 ? `${item.cenaSDPH.toFixed(2)} €` : '-'}
                 </td>
-                <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {item.odoslane || '-'}
+                <td
+                  className={`border px-1 py-1 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CustomDatePicker
+                    value={item.odoslane}
+                    onChange={(date) => {
+                      const newItems = [...items];
+                      newItems[index] = { ...newItems[index], odoslane: date };
+                      onUpdate(newItems);
+                    }}
+                    disabled={isLocked}
+                    compact={true}
+                    className={`w-full text-xs border-0 bg-transparent px-2 py-1 focus:ring-0 text-center ${isDark ? 'text-white' : 'text-gray-800'} ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    placeholder="-"
+                  />
                 </td>
                 <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.vytvoril}

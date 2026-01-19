@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SpisFormData } from '../types';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
@@ -19,6 +19,33 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
 }) => {
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
   const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>([]);
+
+  // Auto-calculate Termin Dokoncenia based on deposit date and production length (weeks)
+  useEffect(() => {
+    const weeks = formData.dlzkaVyroby;
+    // Determine start date: priority to dynamic deposits (1st one), then legacy zaloha1Datum
+    let startDate = formData.zaloha1Datum;
+    if (formData.financieDeposits && formData.financieDeposits.length > 0) {
+      if (formData.financieDeposits[0].datum) {
+        startDate = formData.financieDeposits[0].datum;
+      }
+    }
+
+    if (weeks && startDate) {
+      const weeksNum = parseInt(weeks, 10);
+      if (!isNaN(weeksNum) && weeksNum > 0) {
+        const date = new Date(startDate);
+        if (!isNaN(date.getTime())) {
+          date.setDate(date.getDate() + (weeksNum * 7));
+          const newDate = date.toISOString().split('T')[0];
+
+          if (newDate !== formData.terminDokoncenia) {
+            setFormData(prev => ({ ...prev, terminDokoncenia: newDate }));
+          }
+        }
+      }
+    }
+  }, [formData.dlzkaVyroby, formData.zaloha1Datum, formData.financieDeposits, formData.terminDokoncenia, setFormData]);
 
   const getInputClass = (widthClass = 'flex-1') => {
     const base = `text-xs border px-1 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28] ${widthClass}`;
@@ -206,6 +233,22 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   <option value="Kovanie">Kovanie</option>
                   <option value="Ostatné">Ostatné</option>
                 </select>
+              </div>
+            </div>
+            <div className="px-1 py-1">
+              <div className="flex items-center gap-2">
+                <label className={labelClass}>Dĺžka výroby</label>
+                <div className="flex items-center gap-1 flex-1">
+                  <input
+                    type="number"
+                    value={formData.dlzkaVyroby || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dlzkaVyroby: e.target.value }))}
+                    disabled={isLocked}
+                    className={getInputClass('w-full')}
+                    placeholder="#"
+                  />
+                  <span className={`text-xs whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>týždňov</span>
+                </div>
               </div>
             </div>
             <div className="px-1 py-1">

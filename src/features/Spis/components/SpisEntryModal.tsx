@@ -699,6 +699,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onToggleSelect={handleToggleSelect}
                           onSave={performSave}
                           predmet={formData.predmet}
+                          cisloZakazky={formData.cisloZakazky}
                         />
                       </Suspense>
                     </TabErrorBoundary>

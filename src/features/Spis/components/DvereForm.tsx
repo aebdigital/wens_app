@@ -1510,7 +1510,31 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         onChange={(items) => onChangeWithPaymentReset({ ...data, montaz: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({ ...data, montaz: [...data.montaz, newItem] });
+          const newMontaz = [...data.montaz];
+
+          // Ensure predefined item exists
+          const predefinedText = "vynášanie – doceniť po obhliadke";
+          const hasPredefined = newMontaz.some(item => item.nazov === predefinedText);
+
+          if (!hasPredefined) {
+            newMontaz.push({
+              id: Date.now() + 1,
+              nazov: predefinedText,
+              ks: 1,
+              cenaKs: 0,
+              cenaCelkom: 0
+            });
+          }
+
+          // Add new item above the predefined one if it exists at the end
+          const lastItem = newMontaz[newMontaz.length - 1];
+          if (lastItem && lastItem.nazov === predefinedText) {
+            newMontaz.splice(newMontaz.length - 1, 0, newItem);
+          } else {
+            newMontaz.push(newItem);
+          }
+
+          onChangeWithPaymentReset({ ...data, montaz: newMontaz });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
