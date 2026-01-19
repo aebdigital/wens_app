@@ -124,7 +124,7 @@ export interface SpisFormData {
   emailItems: { popis: string, nazov: string, datum: string, vyvoj: string, stav: string }[];
   meranieItems: FileItem[];
   vyrobneVykresy: FileItem[];
-  fotky: { id: string, name: string, type: string, base64: string, description: string }[];
+  fotky: { id: string, name: string, type: string, base64: string, description: string, parentId?: string | null, storagePath?: string }[];
   technickeItems: FileItem[];
   preberaciProtokol?: PreberaciProtokolData;
 }

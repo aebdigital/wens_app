@@ -31,7 +31,22 @@ const FileManager: React.FC<FileManagerProps> = ({
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+        // Initialize from localStorage if available
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('fileManagerViewMode');
+            return (saved === 'list' || saved === 'grid') ? saved : 'list';
+        }
+        return 'list';
+    });
     const [movingItem, setMovingItem] = useState<FileItem | null>(null);
+
+    // Save viewMode preference
+    useEffect(() => {
+        localStorage.setItem('fileManagerViewMode', viewMode);
+    }, [viewMode]);
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState("");
 
     // Ensure all items have IDs and basic fields (Migration for legacy data)
     useEffect(() => {
@@ -209,6 +224,23 @@ const FileManager: React.FC<FileManagerProps> = ({
         toast.success("Položka presunutá");
     };
 
+    const handleRename = () => {
+        if (!editingItemId || !editingName.trim()) {
+            setEditingItemId(null);
+            return;
+        }
+
+        const updated = items.map(i => i.id === editingItemId ? { ...i, name: editingName.trim() } : i);
+        onUpdate(updated);
+        setEditingItemId(null);
+        toast.success("Položka premenovaná");
+    };
+
+    const startEditing = (item: FileItem) => {
+        setEditingItemId(item.id);
+        setEditingName(item.name);
+    };
+
     // Icon Helpers with configurable size
     const FileIcon = ({ type, name, className = "w-10 h-10" }: { type: string, name: string, className?: string }) => {
         if (type === 'folder') return (
@@ -262,6 +294,22 @@ const FileManager: React.FC<FileManagerProps> = ({
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">
+                    <div className="flex bg-gray-200 rounded p-0.5 mr-2">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+                            title="Zoznam"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+                            title="Mriežka"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        </button>
+                    </div>
                     <button
                         onClick={() => handleCreateFolder()}
                         disabled={isLocked}
@@ -273,8 +321,8 @@ const FileManager: React.FC<FileManagerProps> = ({
                 </div>
             </div>
 
-            {/* Main Content Area (List View Only) */}
-            <div className={`h-[520px] border ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} rounded-lg overflow-auto`}>
+            {/* Main Content Area */}
+            <div className={`h-[520px] border ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} rounded-lg overflow-auto relative`}>
 
                 {/* Empty State */}
                 {folderContents.length === 0 && !isUploading && (
@@ -284,8 +332,83 @@ const FileManager: React.FC<FileManagerProps> = ({
                     </div>
                 )}
 
+                {/* Grid View */}
+                {viewMode === 'grid' && folderContents.length > 0 && (
+                    <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {folderContents.map(item => (
+                            <div
+                                key={item.id}
+                                onClick={() => {
+                                    if (item.type === 'folder') setCurrentFolderId(item.id);
+                                    else setPreviewFile(item);
+                                }}
+                                className={`group relative flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                {/* Thumbnail / Icon */}
+                                <div className="w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded">
+                                    {item.type === 'file' && item.url && item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                        <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <FileIcon type={item.type} name={item.name} className="w-36 h-36" />
+                                    )}
+                                </div>
+
+                                {/* Name */}
+                                <div className="w-full text-center">
+                                    {editingItemId === item.id ? (
+                                        <input
+                                            type="text"
+                                            value={editingName}
+                                            onChange={(e) => setEditingName(e.target.value)}
+                                            onBlur={handleRename}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleRename();
+                                                if (e.key === 'Escape') setEditingItemId(null);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            autoFocus
+                                            className={`w-full px-1 py-0.5 text-xs text-center rounded outline-none border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-black'}`}
+                                        />
+                                    ) : (
+                                        <span className={`text-xs font-medium truncate w-full block ${isDark ? 'text-gray-200' : 'text-gray-700'}`} title={item.name}>
+                                            {item.name}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Hover Actions */}
+                                {!isLocked && (
+                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg p-1 backdrop-blur-sm">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); startEditing(item); }}
+                                            className="p-1 text-white hover:text-yellow-300"
+                                            title="Premenovať"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setMovingItem(item); }}
+                                            className="p-1 text-white hover:text-blue-300"
+                                            title="Presunúť"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+                                            className="p-1 text-white hover:text-red-300"
+                                            title="Vymazať"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* List View Table */}
-                {folderContents.length > 0 && (
+                {viewMode === 'list' && folderContents.length > 0 && (
                     <table className="w-full text-sm text-left">
                         <thead className={`text-xs uppercase border-b sticky top-0 ${isDark ? 'text-gray-400 bg-gray-800 border-gray-700' : 'text-gray-500 bg-gray-50 border-gray-200'}`}>
                             <tr>
@@ -311,7 +434,23 @@ const FileManager: React.FC<FileManagerProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-4 py-2 font-medium">
-                                        {item.name}
+                                        {editingItemId === item.id ? (
+                                            <input
+                                                type="text"
+                                                value={editingName}
+                                                onChange={(e) => setEditingName(e.target.value)}
+                                                onBlur={handleRename}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRename();
+                                                    if (e.key === 'Escape') setEditingItemId(null);
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                autoFocus
+                                                className={`w-full px-2 py-1 rounded text-sm outline-none ${isDark ? 'bg-gray-700 text-white border border-gray-600 focus:border-blue-500' : 'bg-white text-gray-900 border border-gray-300 focus:border-blue-500'}`}
+                                            />
+                                        ) : (
+                                            item.name
+                                        )}
                                     </td>
                                     <td className="px-4 py-2 text-xs opacity-70">
                                         {item.createdAt ? new Date(item.createdAt).toLocaleDateString('sk-SK') : '-'}
@@ -319,6 +458,13 @@ const FileManager: React.FC<FileManagerProps> = ({
                                     <td className="px-4 py-2 text-right">
                                         {!isLocked && (
                                             <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); startEditing(item); }}
+                                                    className="text-yellow-500 hover:text-yellow-600"
+                                                    title="Premenovať"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
                                                 <button
                                                     onClick={() => setMovingItem(item)}
                                                     className="text-blue-500 hover:text-blue-700"
