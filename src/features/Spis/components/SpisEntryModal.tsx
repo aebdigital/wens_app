@@ -4,7 +4,7 @@ import { useDocumentLock } from '../../../contexts/DocumentLockContext';
 import { SpisEntry, CenovaPonukaItem, FinancieDeposit, Deposit } from '../types';
 import { VseobecneSidebar } from './VseobecneSidebar';
 import { VseobecneForm } from './VseobecneForm';
-import { generatePDF } from '../utils/pdfGenerator';
+import { generatePDF, generateAndSavePDF } from '../utils/pdfGenerator';
 import { useSpisEntryLogic } from '../hooks/useSpisEntryLogic';
 import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 import { TabErrorBoundary } from '../../../components/common/ErrorBoundary';
@@ -330,6 +330,14 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
 
   const handleGeneratePDF = async (item: CenovaPonukaItem): Promise<string> => {
     return generatePDF(item, formData, {
+      vypracoval: formData.vypracoval,
+      telefon: userPhone,
+      email: user?.email || ''
+    });
+  };
+
+  const handleDownloadPDF = async (item: CenovaPonukaItem): Promise<void> => {
+    await generateAndSavePDF(item, formData, {
       vypracoval: formData.vypracoval,
       telefon: userPhone,
       email: user?.email || ''
@@ -687,6 +695,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           }}
                           onEdit={handleEditOffer}
                           onGeneratePDF={handleGeneratePDF}
+                          onDownloadPDF={handleDownloadPDF}
                           isDark={isDark}
                           isLocked={isEffectivelyLocked}
                           onAddVzor={() => {

@@ -10,7 +10,12 @@ interface UserInfo {
   email: string;
 }
 
-export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo) => {
+interface GeneratePDFOptions {
+  includeQRCode?: boolean; // Default true for preview, false for download
+}
+
+export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo, options?: GeneratePDFOptions) => {
+  const includeQRCode = options?.includeQRCode ?? true; // Default to true (for preview)
   const doc = new jsPDF({ orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.width;
 
@@ -855,11 +860,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const tableStartX = pageWidth - 14 - tableWidth;
     const startYForBoth = yPos;
 
-    // Generate QR Code if place exists
+    // Generate QR Code if place exists and includeQRCode is true (only for preview)
     let qrDataUrl = '';
     let qrWidth = 0;
     const miestoQR = data.miestoDodavky || '';
-    if (miestoQR) {
+    if (miestoQR && includeQRCode) {
       try {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(miestoQR)}`;
         qrDataUrl = await QRCode.toDataURL(mapsUrl, { margin: 0 });
@@ -956,6 +961,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
+    if (data.poznamkaKAdrese) {
+      printLabelValue('Poznámka k adrese:', data.poznamkaKAdrese);
+    }
     printLabelValue('Zameranie:', data.zameranie || '-');
 
     // Termín dodania - custom rendering for full paragraph flow
@@ -1463,11 +1471,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const tableStartX = pageWidth - 14 - tableWidth;
     const startYForBoth = yPos;
 
-    // Generate QR Code if place exists
+    // Generate QR Code if place exists and includeQRCode is true (only for preview)
     let qrDataUrl = '';
     let qrWidth = 0;
     const miestoQR = data.miestoDodavky || '';
-    if (miestoQR) {
+    if (miestoQR && includeQRCode) {
       try {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(miestoQR)}`;
         qrDataUrl = await QRCode.toDataURL(mapsUrl, { margin: 0 });
@@ -1554,6 +1562,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     printLabelValue('Platnosť ponuky:', data.platnostPonuky || '-');
     printLabelValue('Miesto dodávky:', data.miestoDodavky || '-');
+    if (data.poznamkaKAdrese) {
+      printLabelValue('Poznámka k adrese:', data.poznamkaKAdrese);
+    }
     printLabelValue('Zameranie:', data.zameranie || '-');
 
     // Termín dodania - custom rendering for full paragraph flow
@@ -1646,9 +1657,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   return blobUrl;
 };
 
-// Backward compatible function that saves the PDF
+// Backward compatible function that saves the PDF (without QR code)
 export const generateAndSavePDF = async (item: CenovaPonukaItem, formData: SpisFormData, userInfo?: UserInfo) => {
-  const blobUrl = await generatePDF(item, formData, userInfo);
+  const blobUrl = await generatePDF(item, formData, userInfo, { includeQRCode: false });
   const link = document.createElement('a');
   link.href = blobUrl;
   link.download = `CP_${item.cisloCP}.pdf`;

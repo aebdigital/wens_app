@@ -5,7 +5,7 @@ import { NabytokForm } from './NabytokForm';
 import { SchodyForm } from './SchodyForm';
 import { PuzdraForm } from './PuzdraForm';
 import { DvereData, NabytokData, SchodyData, PuzdraData, CenovaPonukaItem } from '../types';
-import { generatePDF } from '../utils/pdfGenerator';
+import { generatePDF, generateAndSavePDF } from '../utils/pdfGenerator';
 import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals } from '../utils/priceCalculations';
 
@@ -79,7 +79,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   isEditing = false
 }) => {
   const { isDark } = useTheme();
-  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string; tempItem: CenovaPonukaItem; formData: any; headerInfo: any } | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -430,7 +430,10 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       const blobUrl = await generatePDF(tempItem, formData as any, headerInfo);
       setPdfPreview({
         url: blobUrl,
-        filename: `CP_${getDisplayCisloCP() || 'PREVIEW'}.pdf`
+        filename: `CP_${getDisplayCisloCP() || 'PREVIEW'}.pdf`,
+        tempItem,
+        formData,
+        headerInfo
       });
     } catch (error) {
       console.error('Error generating PDF preview:', error);
@@ -445,6 +448,11 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       URL.revokeObjectURL(pdfPreview.url);
     }
     setPdfPreview(null);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!pdfPreview) return;
+    await generateAndSavePDF(pdfPreview.tempItem, pdfPreview.formData, pdfPreview.headerInfo);
   };
 
   if (!isOpen) return null;
@@ -678,6 +686,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
           pdfUrl={pdfPreview.url}
           filename={pdfPreview.filename}
           isDark={isDark}
+          onDownload={handleDownloadPDF}
         />
       )}
     </div>

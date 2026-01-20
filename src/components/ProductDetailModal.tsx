@@ -115,7 +115,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
-            <div className={`${isDark ? 'bg-dark-800' : 'bg-white'} rounded-lg shadow-xl w-full max-w-lg overflow-hidden`}>
+            <div className={`${isDark ? 'bg-dark-800' : 'bg-white'} rounded-lg shadow-xl w-full max-w-3xl overflow-hidden`}>
                 {/* Header */}
                 <div className={`flex justify-between items-center px-6 py-4 border-b ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
                     <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -130,8 +130,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Content */}
                 <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-2">
+                    <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-3">
                             <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Názov produktu *</label>
                             <input
                                 type="text"

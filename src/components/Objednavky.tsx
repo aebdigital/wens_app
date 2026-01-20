@@ -5,6 +5,16 @@ import { useSpis } from '../contexts/SpisContext';
 import { useProducts, Product } from '../contexts/ProductsContext';
 import { SortableTable, Column } from './common/SortableTable';
 import { ProductDetailModal } from './ProductDetailModal';
+import { CompanyDetailModal } from './CompanyDetailModal';
+
+interface Company {
+  name: string;
+  ulica: string;
+  mesto: string;
+  tel: string;
+  email: string;
+  productCount: number;
+}
 
 const Objednavky = () => {
   const { isDark } = useTheme();
@@ -16,6 +26,7 @@ const Objednavky = () => {
   const [activeTab, setActiveTab] = useState<'objednavky' | 'produkty'>('objednavky');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const objednavkyData = useMemo(() => {
     return entries.flatMap(entry => {
@@ -64,7 +75,79 @@ const Objednavky = () => {
     { key: 'popisDisplay', label: 'Popis' }
   ];
 
+  // --- Companies (Firmy) Logic ---
+  const companies = useMemo(() => {
+    const companyMap = new Map<string, Company>();
+
+    products.forEach(product => {
+      if (!product.supplier || !product.supplier.trim()) return;
+
+      const existing = companyMap.get(product.supplier);
+      if (existing) {
+        existing.productCount += 1;
+        // Update details if current product has more info
+        if (!existing.ulica && product.supplierDetails?.ulica) existing.ulica = product.supplierDetails.ulica;
+        if (!existing.mesto && product.supplierDetails?.mesto) existing.mesto = product.supplierDetails.mesto;
+        if (!existing.tel && product.supplierDetails?.tel) existing.tel = product.supplierDetails.tel;
+        if (!existing.email && product.supplierDetails?.email) existing.email = product.supplierDetails.email;
+      } else {
+        companyMap.set(product.supplier, {
+          name: product.supplier,
+          ulica: product.supplierDetails?.ulica || '',
+          mesto: product.supplierDetails?.mesto || '',
+          tel: product.supplierDetails?.tel || '',
+          email: product.supplierDetails?.email || '',
+          productCount: 1
+        });
+      }
+    });
+
+    return Array.from(companyMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  const companyColumns: Column<Company>[] = [
+    {
+      key: 'name',
+      label: 'Názov firmy',
+      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span>
+    },
+    { key: 'ulica', label: 'Ulica' },
+    { key: 'mesto', label: 'Mesto' },
+    { key: 'tel', label: 'Telefón' },
+    { key: 'email', label: 'Email' },
+    {
+      key: 'productCount',
+      label: 'Počet produktov',
+      render: (val) => <span className="text-sm text-gray-500">{val}</span>
+    }
+  ];
+
   // --- Produkty Logic ---
+  // Group products by company (supplier)
+  const productsByCompany = useMemo(() => {
+    const grouped = new Map<string, Product[]>();
+
+    products.forEach(product => {
+      const supplier = product.supplier || 'Bez dodávateľa';
+      const existing = grouped.get(supplier);
+      if (existing) {
+        existing.push(product);
+      } else {
+        grouped.set(supplier, [product]);
+      }
+    });
+
+    // Sort companies alphabetically and products within each company by name
+    const sortedEntries = Array.from(grouped.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([supplier, prods]) => ({
+        supplier,
+        products: prods.sort((a, b) => a.name.localeCompare(b.name))
+      }));
+
+    return sortedEntries;
+  }, [products]);
+
   const productColumns: Column<Product>[] = [
     {
       key: 'name',
@@ -165,16 +248,49 @@ const Objednavky = () => {
       {/* --- Produkty Tab --- */}
       {activeTab === 'produkty' && (
         <>
-          <SortableTable
-            columns={productColumns}
-            data={products}
-            onRowClick={(item) => setSelectedProduct(item)}
-          />
-          {products.length === 0 && (
-            <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              Žiadne uložené produkty. Produkty sa ukladajú automaticky pri vytvorení objednávky.
-            </div>
-          )}
+          {/* Companies Table */}
+          <div className="mb-8">
+            <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Firmy
+            </h2>
+            <SortableTable
+              columns={companyColumns}
+              data={companies}
+              onRowClick={(item) => setSelectedCompany(item)}
+            />
+            {companies.length === 0 && (
+              <div className={`text-center py-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                Žiadne firmy. Firmy sa vytvárajú automaticky z dodávateľov produktov.
+              </div>
+            )}
+          </div>
+
+          {/* Products Table - Grouped by Company */}
+          <div>
+            <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Produkty
+            </h2>
+            {products.length === 0 ? (
+              <div className={`text-center py-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                Žiadne uložené produkty. Produkty sa ukladajú automaticky pri vytvorení objednávky.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {productsByCompany.map(({ supplier, products: companyProducts }) => (
+                  <div key={supplier}>
+                    <h3 className={`text-base font-semibold mb-2 px-2 py-1 rounded ${isDark ? 'text-white bg-dark-700' : 'text-gray-800 bg-gray-100'}`}>
+                      {supplier} <span className={`text-sm font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>({companyProducts.length})</span>
+                    </h3>
+                    <SortableTable
+                      columns={productColumns}
+                      data={companyProducts}
+                      onRowClick={(item) => setSelectedProduct(item)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
 
@@ -195,6 +311,15 @@ const Objednavky = () => {
           isOpen={isCreatingProduct}
           onClose={() => setIsCreatingProduct(false)}
           onAdd={addProduct}
+        />
+      )}
+
+      {/* Company Detail Modal */}
+      {selectedCompany && (
+        <CompanyDetailModal
+          isOpen={!!selectedCompany}
+          onClose={() => setSelectedCompany(null)}
+          company={selectedCompany}
         />
       )}
 

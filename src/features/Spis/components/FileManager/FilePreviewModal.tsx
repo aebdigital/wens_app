@@ -1,5 +1,7 @@
 import React from 'react';
 import { FileItem } from '../../types';
+import { PDFPreviewModal } from '../../../../components/common/PDFPreviewModal';
+import { useTheme } from '../../../../contexts/ThemeContext';
 
 interface FilePreviewModalProps {
     file: FileItem | null;
@@ -8,10 +10,64 @@ interface FilePreviewModalProps {
 }
 
 export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose }) => {
+    const { isDark } = useTheme();
+
     if (!isOpen || !file) return null;
 
     const isImage = file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
     const isPdf = file.name.match(/\.pdf$/i);
+
+    // Debug: log full file info
+    console.log('FilePreviewModal - full file object:', JSON.stringify(file, null, 2));
+
+    // For PDFs, use the advanced PDFPreviewModal
+    if (isPdf && file.url) {
+        return (
+            <PDFPreviewModal
+                isOpen={isOpen}
+                onClose={onClose}
+                pdfUrl={file.url}
+                filename={file.name}
+                isDark={isDark}
+            />
+        );
+    }
+
+    // If it's a PDF but no URL, show specific message
+    if (isPdf && !file.url) {
+        const handleBackdropClick = (e: React.MouseEvent) => {
+            if (e.target === e.currentTarget) {
+                onClose();
+            }
+        };
+
+        return (
+            <div
+                className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                onClick={handleBackdropClick}
+            >
+                <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-lg p-8 text-center">
+                    <div className="mb-4">
+                        <svg className="w-20 h-20 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                        {file.name}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        PDF súbor nemá URL. Skúste ho nahrať znova.
+                    </p>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded transition-colors"
+                    >
+                        Zavrieť
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Close on backdrop click
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -62,12 +118,6 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen
                             src={file.url}
                             alt={file.name}
                             className="max-w-full max-h-full object-contain"
-                        />
-                    ) : isPdf && file.url ? (
-                        <iframe
-                            src={file.url}
-                            className="w-full h-full"
-                            title={file.name}
                         />
                     ) : (
                         <div className="text-center p-8">

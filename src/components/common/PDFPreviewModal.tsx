@@ -10,6 +10,7 @@ interface PDFPreviewModalProps {
   pdfUrl: string;
   filename: string;
   isDark?: boolean;
+  onDownload?: () => void; // Optional custom download handler (e.g., to generate PDF without QR code)
 }
 
 export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
@@ -17,7 +18,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   onClose,
   pdfUrl,
   filename,
-  isDark = false
+  isDark = false,
+  onDownload: customDownload
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -168,6 +170,12 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   }, [pdfDoc, currentPage, scale]);
 
   const handleDownload = () => {
+    // Use custom download handler if provided (e.g., for generating PDF without QR code)
+    if (customDownload) {
+      customDownload();
+      return;
+    }
+    // Default: download the preview PDF as-is
     const link = document.createElement('a');
     link.href = pdfUrl;
     link.download = filename;

@@ -8,6 +8,7 @@ interface CenovePonukyTabProps {
   onDelete: (index: number) => void;
   onEdit: (item: CenovaPonukaItem) => void;
   onGeneratePDF: (item: CenovaPonukaItem) => Promise<string>;
+  onDownloadPDF?: (item: CenovaPonukaItem) => Promise<void>; // For downloading PDF without QR code
   isDark: boolean;
   isLocked?: boolean;
   onAddVzor: () => void;
@@ -23,6 +24,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onDelete,
   onEdit,
   onGeneratePDF,
+  onDownloadPDF,
   isDark,
   isLocked = false,
   onAddVzor,
@@ -39,7 +41,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
     }
     return cisloCP;
   };
-  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string; item: CenovaPonukaItem } | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
@@ -55,7 +57,8 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
       const blobUrl = await onGeneratePDF(item);
       setPdfPreview({
         url: blobUrl,
-        filename: `CP_${getFullCisloCP(item.cisloCP)}.pdf`
+        filename: `CP_${getFullCisloCP(item.cisloCP)}.pdf`,
+        item: item
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -242,6 +245,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
           pdfUrl={pdfPreview.url}
           filename={pdfPreview.filename}
           isDark={isDark}
+          onDownload={onDownloadPDF ? () => onDownloadPDF(pdfPreview.item) : undefined}
         />
       )}
 

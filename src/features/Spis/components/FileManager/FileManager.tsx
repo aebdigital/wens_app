@@ -159,19 +159,28 @@ const FileManager: React.FC<FileManagerProps> = ({
     };
 
     const uploadToSupabase = async (file: File): Promise<{ url: string, storagePath: string } | null> => {
-        if (!user) return null;
+        console.log('uploadToSupabase called, user:', user?.id, 'spisEntryId:', spisEntryId);
+        if (!user) {
+            console.error('uploadToSupabase: No user, cannot upload');
+            return null;
+        }
         try {
             const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
             const fileName = `${Date.now()}_${sanitizedName}`;
             const storagePath = `${user.id}/${spisEntryId || 'temp'}/documents/${fileName}`;
+            console.log('uploadToSupabase: uploading to path:', storagePath);
 
             const { error: uploadError } = await supabase.storage
                 .from('photos')
                 .upload(storagePath, file, { cacheControl: '3600', upsert: false });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('uploadToSupabase: upload error:', uploadError);
+                throw uploadError;
+            }
 
             const { data } = supabase.storage.from('photos').getPublicUrl(storagePath);
+            console.log('uploadToSupabase: success, public URL:', data.publicUrl);
             return { url: data.publicUrl, storagePath };
         } catch (error) {
             console.error('Upload failed:', error);
@@ -187,7 +196,8 @@ const FileManager: React.FC<FileManagerProps> = ({
         try {
             const newItemsPromises = files.map(async (file) => {
                 const uploadResult = await uploadToSupabase(file);
-                return {
+                console.log('FileManager upload result:', file.name, uploadResult);
+                const newItem = {
                     id: generateId(),
                     name: file.name,
                     type: 'file',
@@ -198,9 +208,12 @@ const FileManager: React.FC<FileManagerProps> = ({
                     createdBy: userName,
                     description: ''
                 } as FileItem;
+                console.log('FileManager new item:', JSON.stringify(newItem, null, 2));
+                return newItem;
             });
 
             const newItems = await Promise.all(newItemsPromises);
+            console.log('FileManager all new items:', newItems.length, 'items with URLs:', newItems.filter(i => i.url).length);
             onUpdate([...items, ...newItems]);
         } catch (e) {
             toast.error("Chyba pri nahrávaní súborov");
