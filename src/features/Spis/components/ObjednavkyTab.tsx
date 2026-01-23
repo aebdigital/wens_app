@@ -98,13 +98,6 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
               const isHighlighted = selectedOrderIndex === index;
               const itemId = item.id || item.cisloObjednavky || `objednavka-${index}`;
 
-              // Format date for display
-              const formatDate = (dateStr: string) => {
-                if (!dateStr) return '-';
-                const date = new Date(dateStr);
-                return date.toLocaleDateString('sk-SK');
-              };
-
               return (
                 <tr
                   key={itemId}
