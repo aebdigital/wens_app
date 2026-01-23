@@ -45,6 +45,7 @@ interface AddTemplateModalProps {
   editingData?: {
     type: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
     data: any;
+    cisloZakazky?: string;
   };
   visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'puzdra')[];
   isLocked?: boolean;
@@ -82,6 +83,12 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string; tempItem: CenovaPonukaItem; formData: any; headerInfo: any } | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Local cisloZakazky for this specific price offer (not shared globally)
+  const [localCisloZakazky, setLocalCisloZakazky] = useState<string>(() => {
+    // Initialize from editingData if available (the item's own cisloZakazky)
+    return editingData?.cisloZakazky || '';
+  });
 
   // Helper to get full cisloCP - prepends predmet if fullCisloCP starts with '-'
   const getDisplayCisloCP = () => {
@@ -294,7 +301,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       else if (activeTab === 'schody') dataToSave = schodyData;
       else dataToSave = puzdraData;
 
-      await onSave(activeTab, dataToSave);
+      // Include the local cisloZakazky in the data
+      await onSave(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky });
       // Don't close the modal after saving
     } finally {
       setIsSaving(false);
@@ -311,16 +319,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       else if (activeTab === 'schody') dataToSave = schodyData;
       else dataToSave = puzdraData;
 
-      // Use either onSaveAsNew if it supports options, or just assume it might not and we need to pass it differently.
-      // But based on the interface update, onSaveAsNew (which maps to handleSaveAsNew in useSpisEntryLogic) should support it.
-      // wait, handleSaveAsNew in useSpisEntryLogic wraps handleAddTemplateSave.
-      // let's check the props interface change requirement.
-      // Actually we just updated handleAddTemplateSave signature in the hook.
-      // We need to ensure onSaveAsNew prop passes this option down.
-      // The prop type for onSaveAsNew in AddTemplateModal needs to be updated too?
-      // Yes, see below.
-
-      await onSaveAsNew(activeTab, dataToSave, { forceNewVersion: true });
+      // Include the local cisloZakazky in the data
+      await onSaveAsNew(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky }, { forceNewVersion: true });
       onClose(); // Close modal after creating new offer
     } finally {
       setIsSavingAsNew(false);
@@ -512,8 +512,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                 <span className={`text-base font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Číslo zákazky:</span>
                 <input
                   type="text"
-                  value={cisloZakazky}
-                  onChange={(e) => onCisloZakazkyChange?.(e.target.value.replace(/[^a-zA-Z0-9/]/g, ''))}
+                  value={localCisloZakazky}
+                  onChange={(e) => setLocalCisloZakazky(e.target.value.replace(/[^a-zA-Z0-9/]/g, ''))}
                   placeholder="..."
                   className={`w-24 px-2 py-0.5 text-base font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
                 />

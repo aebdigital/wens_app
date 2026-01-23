@@ -6,6 +6,14 @@ import { useProducts, Product } from '../contexts/ProductsContext';
 import { SortableTable, Column } from './common/SortableTable';
 import { ProductDetailModal } from './ProductDetailModal';
 import { CompanyDetailModal } from './CompanyDetailModal';
+import { useAuth } from '../contexts/AuthContext';
+import { AddOrderModal } from '../features/Spis/components/AddOrderModal';
+import { CustomDatePicker } from './common/CustomDatePicker';
+import { generateOrderPDF, OrderPDFData } from '../features/Spis/utils/pdfGenerator';
+import { PDFPreviewModal } from './common/PDFPreviewModal';
+import { toast } from 'react-hot-toast';
+import { ObjednavkaItem, PuzdraData, SpisEntry } from '../features/Spis/types';
+import { calculateNextOrderNumber } from '../features/Spis/utils/orderNumbering';
 
 interface Company {
   name: string;
@@ -19,7 +27,10 @@ interface Company {
 const Objednavky = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const { entries, isLoading } = useSpis();
+  const { user } = useAuth();
+  const userName = user ? `${user.firstName} ${user.lastName}` : '';
+  const userEmail = user?.email || '';
+  const { entries, isLoading, addEntry, updateEntry } = useSpis();
   const { products, updateProduct, deleteProduct, addProduct } = useProducts();
 
   // Tab State
@@ -27,6 +38,12 @@ const Objednavky = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+
+  // New states for Standalone Orders
+  const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<{ order: ObjednavkaItem, parentSpisId: string } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const objednavkyData = useMemo(() => {
     return entries.flatMap(entry => {
@@ -54,25 +71,319 @@ const Objednavky = () => {
 
   const handleOrderClick = (order: any) => {
     // Navigate to Spis page - the highlighting is handled via location state
+    if (order.parentSpisId === 'GENERAL') {
+      // For general orders, we might want to open them in editing mode directly
+      setEditingOrder({ order, parentSpisId: 'GENERAL' });
+      setIsAddOrderModalOpen(true);
+      return;
+    }
     navigate('/spis', { state: { highlightProjectIds: [order.parentSpisId] } });
   };
 
+  const handleUpdateOrderDate = async (order: any, newDate: string) => {
+    try {
+      const entry = entries.find(e => e.cisloCP === order.parentSpisId);
+      if (!entry || !entry.fullFormData) return;
+
+      const updatedItems = entry.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
+        item.cisloObjednavky === order.cisloObjednavky ? { ...item, dorucene: newDate } : item
+      );
+
+      const updatedEntry: SpisEntry = {
+        ...entry,
+        fullFormData: {
+          ...entry.fullFormData,
+          objednavkyItems: updatedItems
+        }
+      };
+
+      await updateEntry(updatedEntry);
+      toast.success('Dátum doručenia aktualizovaný');
+    } catch (error) {
+      console.error('Error updating order date:', error);
+      toast.error('Chyba pri aktualizácii dátumu');
+    }
+  };
+
+  const handleUpdateOrderSentDate = async (order: any, newDate: string) => {
+    try {
+      const entry = entries.find(e => e.cisloCP === order.parentSpisId);
+      if (!entry || !entry.fullFormData) return;
+
+      const updatedItems = entry.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
+        item.cisloObjednavky === order.cisloObjednavky ? { ...item, datum: newDate } : item
+      );
+
+      const updatedEntry: SpisEntry = {
+        ...entry,
+        fullFormData: {
+          ...entry.fullFormData,
+          objednavkyItems: updatedItems
+        }
+      };
+
+      await updateEntry(updatedEntry);
+      toast.success('Dátum odoslania aktualizovaný');
+    } catch (error) {
+      console.error('Error updating order sent date:', error);
+      toast.error('Chyba pri aktualizácii dátumu');
+    }
+  };
+
+  const handleGeneratePDF = async (order: any) => {
+    setIsGeneratingPDF(true);
+    try {
+      const entry = entries.find(e => e.cisloCP === order.parentSpisId);
+      if (!entry || !entry.fullFormData) {
+        toast.error('Nepodarilo sa nájsť dáta spisu');
+        return;
+      }
+
+      const puzdraData: PuzdraData = order.puzdraData || {
+        dodavatel: { nazov: '', ulica: '', mesto: '', tel: '', email: '', email2: '' },
+        zakazka: order.popis || '',
+        polozky: [],
+        tovarDorucitNaAdresu: { firma: 'WENS door, s.r.o.', ulica: 'Vápenická 12', mesto: 'Prievidza 971 01' },
+      };
+
+      const pdfData: OrderPDFData = {
+        orderNumber: order.cisloObjednavky,
+        nazov: puzdraData.zakazka || order.nazov || '',
+        data: puzdraData,
+        headerInfo: {
+          vypracoval: userName,
+          telefon: '',
+          email: userEmail
+        }
+      };
+
+      const blobUrl = await generateOrderPDF(pdfData);
+      setPdfPreview({
+        url: blobUrl,
+        filename: `Objednavka_${order.cisloObjednavky}.pdf`
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Chyba pri generovaní PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleSaveStandaloneOrder = async (puzdraData: PuzdraData) => {
+    try {
+      let generalSpis = entries.find(e => e.cisloCP === 'GENERAL');
+
+      if (!generalSpis) {
+        // Create GENERAL spis first
+        const newSpis: SpisEntry = {
+          cisloCP: 'GENERAL',
+          cisloZakazky: 'GENERAL',
+          stav: 'Zakázka',
+          datum: new Date().toISOString(),
+          kontaktnaOsoba: 'Všeobecné',
+          firma: 'WENS general',
+          architekt: '',
+          realizator: '',
+          popis: 'Kontajner pre samostatné objednávky',
+          spracovatel: userName,
+          kategoria: 'Všeobecné',
+          terminDodania: '',
+          color: 'white',
+          fullFormData: {
+            predmet: 'Všeobecné objednávky',
+            cisloZakazky: 'GENERAL',
+            stav: 'Zakázka',
+            firma: 'WENS general',
+            vypracoval: userName,
+            kategoria: 'Všeobecné',
+            vybavene: false,
+            terminDokoncenia: '',
+            priezvisko: 'Všeobecné',
+            meno: 'Objednávky',
+            telefon: '',
+            email: '',
+            ulica: '',
+            ico: '',
+            mesto: '',
+            psc: '',
+            icDph: '',
+            dic: '',
+            popisProjektu: '',
+            fakturaciaTyp: 'Súkromná osoba',
+            fakturaciaPriezvisko: '',
+            fakturaciaMeno: '',
+            fakturaciaAdresa: '',
+            popisItems: [],
+            cenovePonukyItems: [],
+            objednavkyItems: [],
+            emailKomu: '',
+            emailKomuText: '',
+            emailPredmet: '',
+            emailText: '',
+            emailItems: [],
+            meranieItems: [],
+            vyrobneVykresy: [],
+            fotky: [],
+            technickeItems: [],
+            odsuhlesenaKS1: '',
+            odsuhlesenaKS2: '',
+            ochranaDatum: '',
+            sprostredkovatel: '',
+            provizia: '',
+            cena: '',
+            zaloha1: '',
+            zaloha1Datum: '',
+            zaloha2: '',
+            zaloha2Datum: '',
+            doplatok: '',
+            doplatokDatum: '',
+            architektonickyPriezvisko: '',
+            architektonickeMeno: '',
+            architektonickyTelefon: '',
+            architektonickyEmail: '',
+            architektonickyUlica: '',
+            architektonickyIco: '',
+            architektonickyMesto: '',
+            architektonickyPsc: '',
+            architektonickyIcDph: '',
+            architektonickyDic: '',
+            realizatorPriezvisko: '',
+            realizatorMeno: '',
+            realizatorTelefon: '',
+            realizatorEmail: '',
+            realizatorUlica: '',
+            realizatorIco: '',
+            realizatorMesto: '',
+            realizatorPsc: '',
+            realizatorIcDph: '',
+            realizatorDic: '',
+            kontaktnaPriezvisko: '',
+            kontaktnaMeno: '',
+            kontaktnaTelefon: '',
+            kontaktnaEmail: '',
+            fakturaciaK10: false
+          }
+        };
+        generalSpis = await addEntry(newSpis);
+      }
+
+      if (!generalSpis || !generalSpis.fullFormData) return;
+
+      const isNewOrder = !editingOrder;
+      let orderNumber = editingOrder?.order?.cisloObjednavky;
+
+      if (isNewOrder) {
+        orderNumber = calculateNextOrderNumber(entries);
+      }
+
+      const newItem: ObjednavkaItem = {
+        id: editingOrder?.order?.id || crypto.randomUUID(),
+        nazov: puzdraData.zakazka || 'Samostatná objednávka',
+        vypracoval: userName,
+        datum: new Date().toISOString(),
+        popis: puzdraData.zakazka || '',
+        cisloObjednavky: orderNumber!,
+        dorucene: editingOrder?.order?.dorucene || '',
+        puzdraData: puzdraData
+      };
+
+      let newItems = [...generalSpis.fullFormData.objednavkyItems];
+      if (isNewOrder) {
+        newItems.push(newItem);
+      } else {
+        newItems = newItems.map(item => item.cisloObjednavky === orderNumber ? newItem : item);
+      }
+
+      const updatedEntry: SpisEntry = {
+        ...generalSpis,
+        fullFormData: {
+          ...generalSpis.fullFormData,
+          objednavkyItems: newItems
+        }
+      };
+
+      await updateEntry(updatedEntry);
+      toast.success(isNewOrder ? 'Objednávka vytvorená' : 'Objednávka aktualizovaná');
+      setIsAddOrderModalOpen(false);
+      setEditingOrder(null);
+    } catch (error) {
+      console.error('Error saving standalone order:', error);
+      toast.error('Chyba pri ukladaní objednávky');
+    }
+  };
+
   const tableData = useMemo(() => {
-    return [...objednavkyData].reverse();
+    return [...objednavkyData].sort((a, b) => b.cisloObjednavky.localeCompare(a.cisloObjednavky));
   }, [objednavkyData]);
+
+  const nextOrderNumber = useMemo(() => {
+    return calculateNextOrderNumber(entries);
+  }, [entries]);
 
   const orderColumns: Column<typeof tableData[0]>[] = [
     {
       key: 'cisloObjednavky',
       label: 'Číslo objednávky',
-      render: (val) => <span className="font-medium text-[#e11b28]">{val}</span>
+      render: (val) => (
+        <span className="font-medium text-[#e11b28]">
+          {val}
+        </span>
+      )
     },
     { key: 'cisloZakazkyDisplay', label: 'Číslo zakázky' },
     { key: 'menoZakaznikaDisplay', label: 'Meno zákazníka' },
     { key: 'firmaDisplay', label: 'Firma' },
-    { key: 'odoslaneDisplay', label: 'Odoslané', isDate: true },
-    { key: 'doruceneDisplay', label: 'Doručené', isDate: true },
-    { key: 'popisDisplay', label: 'Popis' }
+    {
+      key: 'odoslaneDisplay',
+      label: 'Odoslané',
+      isDate: true,
+      render: (val, item) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <CustomDatePicker
+            value={item.datum || ''}
+            onChange={(newDate) => handleUpdateOrderSentDate(item, newDate)}
+            placeholder="Odoslané..."
+            compact
+            className={`w-28 text-xs ${isDark ? 'bg-dark-700 text-gray-300 pointer-events-auto' : 'bg-white text-gray-800'}`}
+          />
+        </div>
+      )
+    },
+    {
+      key: 'doruceneDisplay',
+      label: 'Doručené',
+      isDate: true,
+      render: (val, item) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <CustomDatePicker
+            value={item.dorucene || ''}
+            onChange={(newDate) => handleUpdateOrderDate(item, newDate)}
+            compact
+            className={`w-28 text-xs ${isDark ? 'bg-dark-700 text-gray-300 pointer-events-auto' : 'bg-white text-gray-800'}`}
+          />
+        </div>
+      )
+    },
+    { key: 'popisDisplay', label: 'Popis' },
+    {
+      key: 'akcie',
+      label: 'Akcie',
+      render: (_, item) => (
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => handleGeneratePDF(item)}
+            disabled={isGeneratingPDF}
+            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-500 text-blue-400' : 'hover:bg-blue-100 text-blue-600'}`}
+            title="Generovať PDF"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      )
+    }
   ];
 
   // --- Companies (Firmy) Logic ---
@@ -194,10 +505,10 @@ const Objednavky = () => {
           <button
             onClick={() => setActiveTab('objednavky')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'objednavky'
-                ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
-                : isDark
-                  ? 'text-gray-300 hover:text-white hover:bg-dark-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
+              ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
+              : isDark
+                ? 'text-gray-300 hover:text-white hover:bg-dark-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
               }`}
           >
             Objednávky
@@ -205,10 +516,10 @@ const Objednavky = () => {
           <button
             onClick={() => setActiveTab('produkty')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'produkty'
-                ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
-                : isDark
-                  ? 'text-gray-300 hover:text-white hover:bg-dark-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
+              ? 'bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white shadow'
+              : isDark
+                ? 'text-gray-300 hover:text-white hover:bg-dark-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
               }`}
           >
             Produkty
@@ -216,17 +527,33 @@ const Objednavky = () => {
         </div>
 
         {/* Action Buttons */}
-        {activeTab === 'produkty' && (
-          <button
-            onClick={() => setIsCreatingProduct(true)}
-            className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Pridať produkt
-          </button>
-        )}
+        <div className="flex gap-2">
+          {activeTab === 'objednavky' && (
+            <button
+              onClick={() => {
+                setEditingOrder(null);
+                setIsAddOrderModalOpen(true);
+              }}
+              className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Pridať objednávku
+            </button>
+          )}
+          {activeTab === 'produkty' && (
+            <button
+              onClick={() => setIsCreatingProduct(true)}
+              className="flex items-center px-4 py-2 bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white rounded-lg hover:from-[#c71325] hover:to-[#9e1019] transition-all font-semibold shadow-lg hover:shadow-xl"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Pridať produkt
+            </button>
+          )}
+        </div>
       </div>
 
       {/* --- Objednávky Tab --- */}
@@ -236,6 +563,13 @@ const Objednavky = () => {
             columns={orderColumns}
             data={tableData}
             onRowClick={(item) => handleOrderClick(item.rawOrder)}
+            rowClassName={(item) =>
+              item.parentSpisId === 'GENERAL'
+                ? isDark
+                  ? 'bg-red-900/20 hover:bg-red-900/30'
+                  : 'bg-red-50 hover:bg-red-100'
+                : ''
+            }
           />
           {objednavkyData.length === 0 && (
             <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -320,6 +654,34 @@ const Objednavky = () => {
           isOpen={!!selectedCompany}
           onClose={() => setSelectedCompany(null)}
           company={selectedCompany}
+        />
+      )}
+
+      {/* Add Order Modal for Standalone Orders */}
+      {isAddOrderModalOpen && (
+        <AddOrderModal
+          isOpen={isAddOrderModalOpen}
+          onClose={() => {
+            setIsAddOrderModalOpen(false);
+            setEditingOrder(null);
+          }}
+          onSave={handleSaveStandaloneOrder}
+          vypracoval={userName}
+          telefon=""
+          email={userEmail}
+          editingData={editingOrder?.order?.puzdraData as any}
+          orderNumber={editingOrder ? editingOrder.order.cisloObjednavky : nextOrderNumber}
+        />
+      )}
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <PDFPreviewModal
+          isOpen={true}
+          onClose={() => setPdfPreview(null)}
+          pdfUrl={pdfPreview.url}
+          filename={pdfPreview.filename}
+          isDark={isDark}
         />
       )}
 

@@ -29,6 +29,7 @@ export interface SpisEntry {
   kategoria: string;
   terminDodania: string;
   color: string;
+  isLocked?: boolean;
   fullFormData?: SpisFormData;
 }
 
@@ -116,7 +117,7 @@ export interface SpisFormData {
   // Items
   popisItems: { datum: string, popis: string, pridal: string }[];
   cenovePonukyItems: CenovaPonukaItem[];
-  objednavkyItems: { id?: string, nazov: string, vypracoval: string, datum: string, popis: string, cisloObjednavky: string, dorucene: string }[];
+  objednavkyItems: ObjednavkaItem[];
   emailKomu: string;
   emailKomuText: string;
   emailPredmet: string;
@@ -127,6 +128,18 @@ export interface SpisFormData {
   fotky: { id: string, name: string, type: string, base64: string, description: string, parentId?: string | null, storagePath?: string }[];
   technickeItems: FileItem[];
   preberaciProtokol?: PreberaciProtokolData;
+  isLocked?: boolean;
+}
+
+export interface ObjednavkaItem {
+  id?: string;
+  nazov: string;
+  vypracoval: string;
+  datum: string;
+  popis: string;
+  cisloObjednavky: string;
+  dorucene: string;
+  puzdraData?: PuzdraData;
 }
 
 export interface PreberaciProtokolData {
@@ -149,6 +162,7 @@ export interface PreberaciProtokolData {
 export interface CenovaPonukaItemBase {
   id: string;
   cisloCP: string;
+  cisloZakazky?: string;
   verzia: string;
   odoslane: string;
   vytvoril: string;
@@ -156,6 +170,7 @@ export interface CenovaPonukaItemBase {
   cenaBezDPH: number;
   cenaSDPH: number;
   selected?: boolean;
+  isLocked?: boolean;
 }
 
 export type CenovaPonukaItem =

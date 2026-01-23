@@ -67,6 +67,7 @@ export interface DbSpisEntry {
   kategoria: string;
   termin_dodania: string;
   color: string;
+  is_locked: boolean;
   full_form_data: any;
   created_at: string;
   updated_at: string;

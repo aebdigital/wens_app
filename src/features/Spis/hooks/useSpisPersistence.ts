@@ -153,6 +153,7 @@ export const useSpisPersistence = ({
                 kategoria: currentFormData.kategoria || '',
                 terminDodania: currentFormData.terminDokoncenia ? new Date(currentFormData.terminDokoncenia).toLocaleDateString('sk-SK') : '',
                 color: 'white',
+                isLocked: currentFormData.isLocked || false,
 
                 // All form data for later retrieval
                 fullFormData: {

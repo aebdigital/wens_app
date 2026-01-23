@@ -3,6 +3,7 @@ import { NabytokData } from '../types';
 import { NOTES_NABYTOK } from '../utils/legalTexts';
 import { QuoteLayout } from './common/QuoteLayout';
 import { QuoteSummary } from './common/QuoteSummary';
+import { sortPinnedItems } from '../utils/itemSorting';
 import { GenericItemsTable } from './common/GenericItemsTable';
 import { calculateNabytokTotals } from '../utils/priceCalculations';
 import { useResizableColumns } from '../hooks/useResizableColumns';
@@ -135,7 +136,8 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
       platba3Percent: DEFAULT_PLATBA3,
       platba1Amount: null,
       platba2Amount: null,
-      platba3Amount: null
+      platba3Amount: null,
+      deposits: newData.deposits ? newData.deposits.map(d => ({ ...d, amount: null })) : undefined
     });
   };
 
@@ -510,16 +512,13 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         items={data.kovanie}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({ ...data, kovanie: items })}
+        onChange={(items) => {
+          const sorted = sortPinnedItems(items, ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
+          onChangeWithPaymentReset({ ...data, kovanie: sorted });
+        }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          const newKovanie = [...data.kovanie];
-          const lastItem = newKovanie[newKovanie.length - 1];
-          if (lastItem && lastItem.nazov.startsWith('kľučky - doplniť')) {
-            newKovanie.splice(newKovanie.length - 1, 0, newItem);
-          } else {
-            newKovanie.push(newItem);
-          }
+          const newKovanie = sortPinnedItems([...data.kovanie, newItem], ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
           onChangeWithPaymentReset({ ...data, kovanie: newKovanie });
         }}
         mergeFirstTwoHeaders={true}
@@ -541,10 +540,14 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         items={data.montaz}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({ ...data, montaz: items })}
+        onChange={(items) => {
+          const sorted = sortPinnedItems(items, ['montáž kľučky', 'montáž kľučiek', 'montaz kluciek', 'montaz klucky', 'vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
+          onChangeWithPaymentReset({ ...data, montaz: sorted });
+        }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({ ...data, montaz: [...data.montaz, newItem] });
+          const newMontaz = sortPinnedItems([...data.montaz, newItem], ['montáž kľučky', 'montáž kľučiek', 'montaz kluciek', 'montaz klucky', 'vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
+          onChangeWithPaymentReset({ ...data, montaz: newMontaz });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={

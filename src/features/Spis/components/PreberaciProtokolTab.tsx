@@ -59,14 +59,43 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
   const effectiveMobil = data.mobil || formData.kontaktnaTelefon;
 
   const effectiveObjednavatelInfo = data.objednavatelInfo || (() => {
-    const customerName = `${formData.priezvisko} ${formData.meno}`;
-    const customerAddress = `${formData.ulica}\n${formData.psc} ${formData.mesto}`;
+    const useBilling = formData.fakturaciaTyp !== 'nepouzit';
+
+    let customerName = `${formData.priezvisko || ''} ${formData.meno || ''}`.trim();
+    let customerAddress = `${formData.ulica || ''}\n${formData.psc || ''} ${formData.mesto || ''}`.trim();
+    let ico = formData.ico;
+    let icDph = formData.icDph;
+    let dic = formData.dic;
+    let tel = formData.telefon;
+    let email = formData.email;
+
+    if (useBilling) {
+      const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
+      if (billingName) customerName = billingName;
+      if (formData.fakturaciaAdresa) customerAddress = formData.fakturaciaAdresa;
+
+      // Pull correct business IDs based on source
+      if (formData.fakturaciaSource === 'architekt') {
+        ico = formData.architektonickyIco;
+        icDph = formData.architektonickyIcDph;
+        dic = formData.architektonickyDic;
+        tel = formData.architektonickyTelefon;
+        email = formData.architektonickyEmail;
+      } else if (formData.fakturaciaSource === 'realizator') {
+        ico = formData.realizatorIco;
+        icDph = formData.realizatorIcDph;
+        dic = formData.realizatorDic;
+        tel = formData.realizatorTelefon;
+        email = formData.realizatorEmail;
+      }
+    }
+
     const customerContact = [
-      formData.ico ? `IČO: ${formData.ico}` : '',
-      formData.icDph ? `IČ DPH: ${formData.icDph}` : '',
-      formData.dic ? `DIČ: ${formData.dic}` : '',
-      formData.telefon ? `Mobil: ${formData.telefon}` : '',
-      formData.email ? `Email: ${formData.email}` : ''
+      ico ? `IČO: ${ico}` : '',
+      icDph ? `IČ DPH: ${icDph}` : '',
+      dic ? `DIČ: ${dic}` : '',
+      tel ? `Mobil: ${tel}` : '',
+      email ? `Email: ${email}` : ''
     ].filter(Boolean).join('\n');
 
     return [

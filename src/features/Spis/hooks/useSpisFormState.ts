@@ -133,6 +133,7 @@ export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean
         vyrobneVykresy: [],
         fotky: [],
         technickeItems: [],
+        isLocked: false,
     }), [user]);
 
     const [formData, setFormData] = useState<SpisFormData>(createDefaultFormData());
@@ -154,6 +155,7 @@ export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean
                     // Load cisloCP from the entry into predmet field
                     predmet: initialEntry.cisloCP || initialEntry.fullFormData.predmet || '',
                     objednavkyItems: initialEntry.fullFormData.objednavkyItems || [],
+                    isLocked: initialEntry.isLocked || initialEntry.fullFormData.isLocked || false,
                     // Fix/init datum if missing from fullFormData (but present in top level)
                     ochranaDatum: initialEntry.fullFormData.ochranaDatum || formatSpisDateToISO(initialEntry.datum) || new Date().toISOString().split('T')[0]
                 };

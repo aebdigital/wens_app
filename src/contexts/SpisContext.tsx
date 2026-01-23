@@ -40,6 +40,7 @@ const dbToSpisEntry = (db: DbSpisEntry): SpisEntry => ({
   kategoria: db.kategoria || '',
   terminDodania: db.termin_dodania || '',
   color: db.color || 'white',
+  isLocked: db.is_locked || false,
   fullFormData: db.full_form_data || undefined,
 });
 
@@ -59,6 +60,7 @@ const spisEntryToDb = (entry: SpisEntry, userId: string): Partial<DbSpisEntry> =
   kategoria: entry.kategoria || '',
   termin_dodania: entry.terminDodania || '',
   color: entry.color || 'white',
+  is_locked: entry.isLocked || false,
   full_form_data: entry.fullFormData || {},
 });
 

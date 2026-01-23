@@ -12,6 +12,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SpisEntry, CenovaPonukaItem, FinancieDeposit, Deposit } from '../types';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
+import { calculateNextOrderNumber } from '../utils/orderNumbering';
 import { useSpisFormState } from './useSpisFormState';
 import { useSpisPersistence } from './useSpisPersistence';
 
@@ -86,7 +87,7 @@ export const useSpisEntryLogic = (
   // 4. Modal States (Templates & Orders)
   const [showVzorModal, setShowVzorModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, cisloCP?: string } | undefined>(undefined);
+  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, cisloCP?: string, cisloZakazky?: string } | undefined>(undefined);
 
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingOrderData, setEditingOrderData] = useState<any>(undefined);
@@ -100,15 +101,7 @@ export const useSpisEntryLogic = (
   const handleAddTemplateSave = async (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }): Promise<void> => {
     // If we are in Objednavky tab (which uses 'puzdra' usually), save to objednavkyItems
     if (activeTab === 'objednavky') {
-      const allGlobalOrders = entries.flatMap(e => e.fullFormData?.objednavkyItems || []);
-      const allIds = [...allGlobalOrders, ...formData.objednavkyItems].map((o: any) => o.cisloObjednavky);
-
-      const maxId = allIds.reduce((max, id) => {
-        if (!id) return max;
-        const num = parseInt(id, 10);
-        return !isNaN(num) && num > max ? num : max;
-      }, 0);
-      const nextId = (maxId + 1).toString().padStart(6, '0');
+      const nextId = calculateNextOrderNumber(entries, formData.objednavkyItems);
 
       const newItem = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -182,9 +175,14 @@ export const useSpisEntryLogic = (
       };
     }
 
+    // Extract itemCisloZakazky from data if provided, then remove it from dataToSave
+    const itemCisloZakazky = dataToSave.itemCisloZakazky;
+    const { itemCisloZakazky: _, ...cleanDataToSave } = dataToSave;
+
     const entryData: CenovaPonukaItem = {
       id: newId,
       cisloCP: newCisloCP,
+      cisloZakazky: itemCisloZakazky || existingItem?.cisloZakazky || '',
       verzia: existingItem?.verzia || '1', // Versioning within the same item ID is different, here we just keep '1' or existing.
       odoslane: existingItem?.odoslane || '',
       vytvoril: formData.vypracoval || (user ? `${user.firstName} ${user.lastName}` : '') || '',
@@ -192,7 +190,7 @@ export const useSpisEntryLogic = (
       typ: type,
       cenaBezDPH: cenaBezDPH,
       cenaSDPH: cenaSDPH,
-      data: dataToSave,
+      data: cleanDataToSave,
       selected: isSelected
     };
 
@@ -264,9 +262,9 @@ export const useSpisEntryLogic = (
 
     if (isNewEntry) {
       setEditingOfferId(newId);
-      setEditingOfferData({ type, data: dataToSave, cisloCP: newCisloCP });
+      setEditingOfferData({ type, data: cleanDataToSave, cisloCP: newCisloCP, cisloZakazky: entryData.cisloZakazky });
     } else {
-      setEditingOfferData({ type, data: dataToSave, cisloCP: newCisloCP });
+      setEditingOfferData({ type, data: cleanDataToSave, cisloCP: newCisloCP, cisloZakazky: entryData.cisloZakazky });
     }
 
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -274,15 +272,7 @@ export const useSpisEntryLogic = (
   };
 
   const handleAddOrderSave = (data: any) => {
-    const allGlobalOrders = entries.flatMap(e => e.fullFormData?.objednavkyItems || []);
-    const allIds = [...allGlobalOrders, ...formData.objednavkyItems].map((o: any) => o.cisloObjednavky);
-
-    const maxId = allIds.reduce((max, id) => {
-      if (!id) return max;
-      const num = parseInt(id, 10);
-      return !isNaN(num) && num > max ? num : max;
-    }, 0);
-    const nextId = (maxId + 1).toString().padStart(6, '0');
+    const nextId = calculateNextOrderNumber(entries, formData.objednavkyItems);
 
     const newItem = {
       id: editingOrderId || Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -321,7 +311,7 @@ export const useSpisEntryLogic = (
 
   const handleEditOffer = (item: CenovaPonukaItem) => {
     setEditingOfferId(item.id);
-    setEditingOfferData({ type: item.typ, data: item.data, cisloCP: item.cisloCP });
+    setEditingOfferData({ type: item.typ, data: item.data, cisloCP: item.cisloCP, cisloZakazky: item.cisloZakazky });
     setShowVzorModal(true);
   };
 
@@ -354,15 +344,7 @@ export const useSpisEntryLogic = (
   }, [formData.cenovePonukyItems.length, formData.predmet, getNextCP]);
 
   const nextOrderNumber = useMemo(() => {
-    const allGlobalOrders = entries.flatMap(e => e.fullFormData?.objednavkyItems || []);
-    const allIds = [...allGlobalOrders, ...formData.objednavkyItems].map((o: any) => o.cisloObjednavky);
-
-    const maxId = allIds.reduce((max, id) => {
-      if (!id) return max;
-      const num = parseInt(id, 10);
-      return !isNaN(num) && num > max ? num : max;
-    }, 0);
-    return (maxId + 1).toString().padStart(6, '0');
+    return calculateNextOrderNumber(entries, formData.objednavkyItems);
   }, [entries, formData.objednavkyItems]);
 
   return {

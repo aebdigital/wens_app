@@ -213,6 +213,27 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     handleCancelContactChanges
   } = useSpisEntryLogic(initialEntry, entries, isOpen, setFirmaOptions, firmaOptions, onSave);
 
+  // Sync manual lock state with formData
+  useEffect(() => {
+    if (formData.isLocked !== undefined && formData.isLocked !== isLocked) {
+      setIsLocked(formData.isLocked);
+    }
+  }, [formData.isLocked, isLocked]);
+
+  const toggleManualLock = async () => {
+    const newLockState = !isLocked;
+    setIsLocked(newLockState);
+    setFormData(prev => ({ ...prev, isLocked: newLockState }));
+
+    // We need to wait a tiny bit for state to be ready or use currentFormDataRef
+    // But since performSave uses a ref anyway, it should be fine if we just call it.
+    // However, setFormData using a callback might be delayed.
+    // Let's use the ref directly for the save if possible or just wait.
+    setTimeout(() => {
+      performSave();
+    }, 100);
+  };
+
   // Document lock management
   const checkAndUpdateLockStatus = useCallback(async () => {
     if (!internalId) return;
@@ -708,7 +729,6 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           onToggleSelect={handleToggleSelect}
                           onSave={performSave}
                           predmet={formData.predmet}
-                          cisloZakazky={formData.cisloZakazky}
                         />
                       </Suspense>
                     </TabErrorBoundary>
@@ -838,7 +858,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   {isSaving ? 'Ukladám...' : 'Uložiť'}
                 </button>
                 <button
-                  onClick={() => setIsLocked(!isLocked)}
+                  onClick={toggleManualLock}
                   disabled={isLockedByOther}
                   className={`px-3 py-3 text-sm flex items-center justify-center rounded-lg text-center transition-colors font-semibold ${isLockedByOther ? 'bg-gray-400 text-white cursor-not-allowed' : (isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'))}`}
                 >
@@ -925,7 +945,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                   {isSaving ? 'Ukladám...' : 'Uložiť'}
                 </button>
                 <button
-                  onClick={() => setIsLocked(!isLocked)}
+                  onClick={toggleManualLock}
                   disabled={isLockedByOther}
                   className={`flex-1 px-2 py-3 text-xs flex items-center justify-center rounded-lg text-center transition-colors font-semibold shadow-sm ${isLockedByOther ? 'bg-gray-400 text-white cursor-not-allowed' : (isLocked ? 'bg-yellow-500 text-white hover:bg-yellow-600' : (isDark ? 'text-gray-200 bg-dark-600 hover:bg-dark-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'))}`}
                 >

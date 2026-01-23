@@ -103,10 +103,20 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
   };
 
   const handleTotalChange = (newTotal: number) => {
-    onChange({
+    const newData = {
       ...data,
       manualCenaSDPH: newTotal,
-    });
+    };
+
+    // Reset deposit amounts to force recalculation based on new custom total
+    if (newData.deposits) {
+      newData.deposits = newData.deposits.map((d: any) => ({ ...d, amount: null }));
+    }
+    newData.platba1Amount = null;
+    newData.platba2Amount = null;
+    newData.platba3Amount = null;
+
+    onChange(newData);
   };
 
   return (

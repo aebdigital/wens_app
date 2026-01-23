@@ -6,6 +6,7 @@ import { QuoteSummary } from './common/QuoteSummary';
 import { GenericItemsTable } from './common/GenericItemsTable';
 import { calculateDvereTotals } from '../utils/priceCalculations';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import { sortPinnedItems } from '../utils/itemSorting';
 
 interface DvereFormProps {
   data: DvereData;
@@ -196,7 +197,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       platba3Percent: DEFAULT_PLATBA3,
       platba1Amount: null,
       platba2Amount: null,
-      platba3Amount: null
+      platba3Amount: null,
+      deposits: newData.deposits ? newData.deposits.map(d => ({ ...d, amount: null })) : undefined
     });
   };
 
@@ -1476,16 +1478,13 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.kovanie}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({ ...data, kovanie: items })}
+        onChange={(items) => {
+          const sorted = sortPinnedItems(items, ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
+          onChangeWithPaymentReset({ ...data, kovanie: sorted });
+        }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          const newKovanie = [...data.kovanie];
-          const lastItem = newKovanie[newKovanie.length - 1];
-          if (lastItem && lastItem.nazov.startsWith('kľučky - doplniť')) {
-            newKovanie.splice(newKovanie.length - 1, 0, newItem);
-          } else {
-            newKovanie.push(newItem);
-          }
+          const newKovanie = sortPinnedItems([...data.kovanie, newItem], ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
           onChangeWithPaymentReset({ ...data, kovanie: newKovanie });
         }}
         mergeFirstTwoHeaders={true}
@@ -1507,7 +1506,10 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         items={data.montaz}
         columns={commonColumns}
         isDark={isDark}
-        onChange={(items) => onChangeWithPaymentReset({ ...data, montaz: items })}
+        onChange={(items) => {
+          const sorted = sortPinnedItems(items, ['montáž kľučky', 'montáž kľučiek', 'montaz kluciek', 'montaz klucky', 'vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
+          onChangeWithPaymentReset({ ...data, montaz: sorted });
+        }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
           const newMontaz = [...data.montaz];
@@ -1526,15 +1528,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             });
           }
 
-          // Add new item above the predefined one if it exists at the end
-          const lastItem = newMontaz[newMontaz.length - 1];
-          if (lastItem && lastItem.nazov === predefinedText) {
-            newMontaz.splice(newMontaz.length - 1, 0, newItem);
-          } else {
-            newMontaz.push(newItem);
-          }
-
-          onChangeWithPaymentReset({ ...data, montaz: newMontaz });
+          const sorted = sortPinnedItems([...newMontaz, newItem], ['montáž kľučky', 'montáž kľučiek', 'montaz kluciek', 'montaz klucky', 'vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
+          onChangeWithPaymentReset({ ...data, montaz: sorted });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={

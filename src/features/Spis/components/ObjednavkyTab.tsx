@@ -84,7 +84,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Názov</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Dátum</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo objednávky</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Doručené</th>
@@ -92,8 +92,9 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => {
-              // Check if this is the highlighted order from navigation
+            {[...items].sort((a, b) => b.cisloObjednavky.localeCompare(a.cisloObjednavky)).map((item, sortedIndex) => {
+              // Find original index for onUpdate
+              const index = items.findIndex(i => i.cisloObjednavky === item.cisloObjednavky);
               const isHighlighted = selectedOrderIndex === index;
               const itemId = item.id || item.cisloObjednavky || `objednavka-${index}`;
 
@@ -116,8 +117,17 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                   <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                     {item.vypracoval || '-'}
                   </td>
-                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                    {formatDate(item.datum)}
+                  <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
+                    <CustomDatePicker
+                      value={item.datum || ''}
+                      onChange={(val) => {
+                        const updated = [...items];
+                        updated[index].datum = val;
+                        onUpdate(updated);
+                      }}
+                      disabled={isLocked}
+                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    />
                   </td>
                   <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
                     <input
@@ -133,7 +143,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                       className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
                     />
                   </td>
-                  <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  <td className={`border px-3 py-2 text-center font-medium ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-[#e11b28]'}`}>
                     {item.cisloObjednavky || '-'}
                   </td>
                   <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
@@ -149,7 +159,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                     />
                   </td>
                   <td className={`border px-2 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -176,6 +186,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isLocked) return;
+                          if (!window.confirm('Skutočne chcete odstrániť túto objednávku?')) return;
                           const updated = items.filter((_, i) => i !== index);
                           onUpdate(updated);
                         }}
@@ -213,15 +224,17 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
       </div>
 
       {/* PDF Preview Modal */}
-      {pdfPreview && (
-        <PDFPreviewModal
-          isOpen={true}
-          onClose={handleClosePreview}
-          pdfUrl={pdfPreview.url}
-          filename={pdfPreview.filename}
-          isDark={isDark}
-        />
-      )}
-    </div>
+      {
+        pdfPreview && (
+          <PDFPreviewModal
+            isOpen={true}
+            onClose={handleClosePreview}
+            pdfUrl={pdfPreview.url}
+            filename={pdfPreview.filename}
+            isDark={isDark}
+          />
+        )
+      }
+    </div >
   );
 };

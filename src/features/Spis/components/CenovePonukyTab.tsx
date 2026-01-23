@@ -16,7 +16,6 @@ interface CenovePonukyTabProps {
   onUpdate: (items: CenovaPonukaItem[]) => void;
   onSave?: () => void;
   predmet?: string;
-  cisloZakazky?: string;
 }
 
 export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
@@ -31,8 +30,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
   onToggleSelect,
   onUpdate,
   onSave,
-  predmet = '',
-  cisloZakazky = ''
+  predmet = ''
 }) => {
   // Helper to get full cisloCP - prepends predmet if cisloCP starts with '-'
   const getFullCisloCP = (cisloCP: string) => {
@@ -118,8 +116,22 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
                   </span>
                 </td>
-                <td className={`border px-3 py-2 text-center ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {cisloZakazky || '-'}
+                <td className={`border px-1 py-1 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`} onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    value={item.cisloZakazky || ''}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index] = {
+                        ...newItems[index],
+                        cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '')
+                      };
+                      onUpdate(newItems);
+                    }}
+                    disabled={isLocked}
+                    placeholder="-"
+                    className={`w-full text-xs border-0 bg-transparent px-2 py-1 focus:ring-0 text-center ${isDark ? 'text-white' : 'text-gray-800'} ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  />
                 </td>
                 <td className={`border px-3 py-2 text-right ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
                   {item.cenaBezDPH > 0 ? `${item.cenaBezDPH.toFixed(2)} €` : '-'}

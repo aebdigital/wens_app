@@ -80,7 +80,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   doc.setFontSize(14);
   doc.setTextColor(225, 27, 40);
   doc.setFont(fontName, 'bold');
-  doc.text(item.cisloCP.replace(/^CP/, 'Cenová ponuka č. '), pageWidth - 14, 18, { align: 'right' });
+
+  const displayZakazka = item.cisloZakazky || formData.cisloZakazky;
+  const headerText = item.cisloCP.replace(/^CP/, 'Cenová ponuka č. ') + (displayZakazka ? ` / ${displayZakazka}` : '');
+  doc.text(headerText, pageWidth - 14, 18, { align: 'right' });
 
   doc.setDrawColor(200);
   doc.line(14, 22, pageWidth - 14, 22);
