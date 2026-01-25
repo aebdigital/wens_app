@@ -382,11 +382,18 @@ const Objednavky = () => {
         puzdraData: puzdraData
       };
 
-      const newItems = targetSpis.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
+      const existingItems = targetSpis.fullFormData.objednavkyItems || [];
+      const newItems = existingItems.map((item: ObjednavkaItem) =>
         item.id === editingOrder.order.id
           ? newItem
-          : (item.cisloObjednavky === orderNumber ? newItem : item) // Fallback to order number just in case
+          : (item.cisloObjednavky === orderNumber ? newItem : item)
       );
+
+      // If item was not found by ID or Number, add it
+      const itemExists = existingItems.some((item: any) => item.id === editingOrder.order.id || item.cisloObjednavky === orderNumber);
+      if (!itemExists) {
+        newItems.push(newItem);
+      }
 
       const updatedEntry: SpisEntry = {
         ...targetSpis,
@@ -396,15 +403,20 @@ const Objednavky = () => {
         }
       };
 
-      console.log('Updating Spis Entry via Objednavky:', updatedEntry.id, newItem);
+      console.log('Updating Spis Entry via Objednavky:', updatedEntry.id);
       await updateEntry(updatedEntry);
       toast.success('Objednávka aktualizovaná');
       // Do NOT close modal
     } catch (error) {
-      console.error('Error saving order:', error);
-      const errorMessage = error instanceof Error
-        ? error.message
-        : (typeof error === 'object' ? JSON.stringify(error) : String(error));
+      console.error('Error saving order (detailed):', error);
+      let errorMessage = 'Neznáma chyba';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = (error as any).message || (error as any).error?.message || JSON.stringify(error, Object.getOwnPropertyNames(error));
+      } else {
+        errorMessage = String(error);
+      }
       toast.error('Chyba pri ukladaní objednávky: ' + errorMessage);
     }
   };

@@ -200,6 +200,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     handleAddOrderSave,
     handleEditOffer,
     handleEditOrderAction,
+    handleAddNewOrderAction,
     handleSaveAsNew,
     internalId,
     lastSavedJson,
@@ -748,9 +749,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           entries={entries}
                           selectedOrderIndex={selectedOrderIndex}
                           isLocked={isEffectivelyLocked}
-                          onAddVzor={() => {
-                            setShowOrderModal(true);
-                          }}
+                          onAddVzor={handleAddNewOrderAction}
                           onEdit={handleEditOrderAction}
                           headerInfo={{
                             vypracoval: formData.vypracoval,

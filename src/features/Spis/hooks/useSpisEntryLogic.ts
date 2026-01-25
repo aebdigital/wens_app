@@ -329,9 +329,11 @@ export const useSpisEntryLogic = (
     };
 
     setFormData(newFormData);
-    setEditingOrderId(null);
-    setEditingOrderData(undefined);
-    setEditingOrderNumber(null);
+    // Switch to edit mode for the saved item so subsequent Saves/Previews in the same modal session
+    // use the same ID and Number instead of creating duplicates or incrementing the number.
+    setEditingOrderId(newItem.id);
+    setEditingOrderData(data);
+    setEditingOrderNumber(orderNumber);
 
     // Trigger save immediately with NEW data
     performSave(newFormData);
@@ -352,6 +354,13 @@ export const useSpisEntryLogic = (
     setEditingOrderId(item.id);
     setEditingOrderData(item.data);
     setEditingOrderNumber(item.cisloObjednavky);
+    setShowOrderModal(true);
+  };
+
+  const handleAddNewOrderAction = () => {
+    setEditingOrderId(null);
+    setEditingOrderData(undefined);
+    setEditingOrderNumber(null);
     setShowOrderModal(true);
   };
 
@@ -400,6 +409,7 @@ export const useSpisEntryLogic = (
     handleAddOrderSave,
     handleEditOffer,
     handleEditOrderAction,
+    handleAddNewOrderAction,
     handleSaveAsNew,
     handleReset,
     internalId,
