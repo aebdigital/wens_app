@@ -7,6 +7,8 @@ export interface Column<T> {
   label: string;
   render?: (value: any, item: T) => React.ReactNode;
   isDate?: boolean; // Mark column as date type for date range filtering
+  width?: string; // Optional width (e.g., '80px', '150px')
+  className?: string; // Optional className for the column
 }
 
 interface DateRangeFilter {
@@ -227,7 +229,8 @@ export const SortableTable = <T extends { [key: string]: any }>({
               return (
                 <th
                   key={colKey}
-                  className={`px-2 py-2 text-left text-xs font-medium transition-all text-white ${index < columns.length - 1 ? 'border-r border-white/20' : ''}`}
+                  className={`px-2 py-2 text-left text-xs font-medium transition-all text-white ${index < columns.length - 1 ? 'border-r border-white/20' : ''} ${column.className || ''}`}
+                  style={column.width ? { width: column.width, minWidth: column.width } : undefined}
                 >
                   {activeSearchColumn === colKey ? (
                     isDateColumn ? (
@@ -360,11 +363,8 @@ export const SortableTable = <T extends { [key: string]: any }>({
                   return (
                     <td
                       key={String(column.key)}
-                      className={`px-2 py-1 text-xs ${isDark ? 'border-r border-dark-500 text-gray-300' : 'border-r border-gray-200'} ${
-                        // Apply specific styling for specific columns if needed, but keep it generic mostly
-                        // Or allow column to define className
-                        ''
-                      }`}
+                      className={`px-2 py-1 text-xs ${isDark ? 'border-r border-dark-500 text-gray-300' : 'border-r border-gray-200'} ${column.className || ''}`}
+                      style={column.width ? { width: column.width, minWidth: column.width } : undefined}
                     >
                       {column.render ? column.render(value, item) : value}
                     </td>

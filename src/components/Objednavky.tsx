@@ -56,9 +56,11 @@ const Objednavky = () => {
         ...order,
         // Add context from the parent project
         parentSpisId: entry.cisloCP,
-        cisloZakazkyDisplay: entry.cisloZakazky,
-        menoZakaznikaDisplay: entry.kontaktnaOsoba,
-        firmaDisplay: entry.firma,
+        // Don't show cisloZakazky for standalone orders (GENERAL)
+        cisloZakazkyDisplay: entry.cisloCP === 'GENERAL' ? '' : entry.cisloZakazky,
+        menoZakaznikaDisplay: entry.cisloCP === 'GENERAL' ? '' : entry.kontaktnaOsoba,
+        // Show dodavatel from order, not firma from entry
+        firmaDisplay: order.puzdraData?.dodavatel?.nazov || '',
         // Map order specific fields
         odoslaneDisplay: order.datum ? new Date(order.datum).toLocaleDateString('sk-SK') : '',
         doruceneDisplay: order.dorucene || '-',
@@ -77,7 +79,12 @@ const Objednavky = () => {
       setIsAddOrderModalOpen(true);
       return;
     }
-    navigate('/spis', { state: { highlightProjectIds: [order.parentSpisId] } });
+    navigate('/spis', {
+      state: {
+        highlightProjectIds: [order.parentSpisId],
+        selectedOrderId: order.id
+      }
+    });
   };
 
   const handleUpdateOrderDate = async (order: any, newDate: string) => {
@@ -127,6 +134,31 @@ const Objednavky = () => {
     } catch (error) {
       console.error('Error updating order sent date:', error);
       toast.error('Chyba pri aktualizácii dátumu');
+    }
+  };
+
+  const handleUpdateOrderPopis = async (order: any, newPopis: string) => {
+    try {
+      const entry = entries.find(e => e.cisloCP === order.parentSpisId);
+      if (!entry || !entry.fullFormData) return;
+
+      const updatedItems = entry.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
+        item.cisloObjednavky === order.cisloObjednavky ? { ...item, popis: newPopis } : item
+      );
+
+      const updatedEntry: SpisEntry = {
+        ...entry,
+        fullFormData: {
+          ...entry.fullFormData,
+          objednavkyItems: updatedItems
+        }
+      };
+
+      await updateEntry(updatedEntry);
+      // No toast for every keystroke usually, but if we use onBlur it's fine
+    } catch (error) {
+      console.error('Error updating order popis:', error);
+      toast.error('Chyba pri aktualizácii popisu');
     }
   };
 
@@ -324,16 +356,17 @@ const Objednavky = () => {
   const orderColumns: Column<typeof tableData[0]>[] = [
     {
       key: 'cisloObjednavky',
-      label: 'Číslo objednávky',
+      label: 'Č. obj.',
+      width: '80px',
       render: (val) => (
         <span className="font-medium text-[#e11b28]">
           {val}
         </span>
       )
     },
-    { key: 'cisloZakazkyDisplay', label: 'Číslo zakázky' },
+    { key: 'cisloZakazkyDisplay', label: 'Č. zák.', width: '80px' },
     { key: 'menoZakaznikaDisplay', label: 'Meno zákazníka' },
-    { key: 'firmaDisplay', label: 'Firma' },
+    { key: 'firmaDisplay', label: 'Dodávateľ' },
     {
       key: 'odoslaneDisplay',
       label: 'Odoslané',
@@ -365,7 +398,25 @@ const Objednavky = () => {
         </div>
       )
     },
-    { key: 'popisDisplay', label: 'Popis' },
+    {
+      key: 'popisDisplay',
+      label: 'Popis',
+      width: '250px',
+      render: (val, item) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            defaultValue={val}
+            onBlur={(e) => {
+              if (e.target.value !== val) {
+                handleUpdateOrderPopis(item, e.target.value);
+              }
+            }}
+            className={`w-full px-2 py-1 text-xs rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+          />
+        </div>
+      )
+    },
     {
       key: 'akcie',
       label: 'Akcie',

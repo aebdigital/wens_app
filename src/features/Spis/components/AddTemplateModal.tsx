@@ -192,7 +192,6 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       zlavaPercent: 5,
       kovanie: [
         { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
-        { id: 2, nazov: 'kľučky - doplniť - upresniť  typ kľučiek a mušlí je nutné upresniť do 7 dní od potvrdenia objednávky.', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montaz: [
         { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },
@@ -233,7 +232,6 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       zlavaPercent: 5,
       kovanie: [
         { id: 1, nazov: 'montážny materiál', ks: 1, cenaKs: 255, cenaCelkom: 255 },
-        { id: 2, nazov: 'kľučky - doplniť - upresniť  typ kľučiek a mušlí je nutné upresniť do 7 dní od potvrdenia objednávky.', ks: 1, cenaKs: 0, cenaCelkom: 0 },
       ],
       montaz: [
         { id: 1, nazov: 'montáž + doprava', ks: 1, cenaKs: 748, cenaCelkom: 748 },

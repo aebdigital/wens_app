@@ -504,6 +504,9 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
       return {
         ...prev,
         cenovePonukyItems: newItems,
+        cisloZakazky: (!isCurrentlySelected && selectedItem.cisloZakazky && !prev.cisloZakazky)
+          ? selectedItem.cisloZakazky
+          : prev.cisloZakazky,
         odsuhlesenaKS1: !isCurrentlySelected ? (selectedItem.cisloCP ? (selectedItem.cisloCP.split('/').pop() || '') : '') : '',
         odsuhlesenaKS2: !isCurrentlySelected ? totalQuantity.toString() : '',
         ...financeUpdates

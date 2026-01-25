@@ -51,6 +51,30 @@ const Spis = () => {
 
       setHighlightedProjectIds(expandedIds);
 
+      // If we have a selectedOrderId, find the entry and open it
+      if (location.state?.selectedOrderId) {
+        const targetId = projectIds[0];
+        const matchingEntry = entries.find(e => e.cisloCP === targetId || e.id === targetId);
+        if (matchingEntry) {
+          const orderIndex = matchingEntry.fullFormData?.objednavkyItems?.findIndex(
+            (o: any) => o.id === location.state.selectedOrderId
+          );
+
+          if (orderIndex !== undefined && orderIndex !== -1) {
+            setSelectedEntry(matchingEntry);
+            setEditingIndex(entries.indexOf(matchingEntry));
+            setSelectedOrderIndex(orderIndex);
+            setShowModal(true);
+          } else {
+            // If order ID not found (might be internal order ID mismatch), still open the project
+            setSelectedEntry(matchingEntry);
+            setEditingIndex(entries.indexOf(matchingEntry));
+            setSelectedOrderIndex(null);
+            setShowModal(true);
+          }
+        }
+      }
+
       // Clear highlights after 5 seconds
       const timer = setTimeout(() => {
         setHighlightedProjectIds([]);

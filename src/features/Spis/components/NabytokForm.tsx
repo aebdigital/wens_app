@@ -141,6 +141,18 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
     });
   };
 
+  // Helper to reset only payment amounts (forcing recalculation from %) when totals change (e.g. discount)
+  const onChangeWithPaymentRecalc = (newData: NabytokData) => {
+    onChange({
+      ...newData,
+      manualCenaSDPH: undefined,
+      platba1Amount: null,
+      platba2Amount: null,
+      platba3Amount: null,
+      deposits: newData.deposits ? newData.deposits.map(d => ({ ...d, amount: null })) : undefined
+    });
+  };
+
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
     { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[280px]' },
@@ -501,10 +513,10 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         zlavaEur={data.zlavaEur || 0}
         useZlavaPercent={data.useZlavaPercent !== false}
         useZlavaEur={data.useZlavaEur || false}
-        onZlavaChange={(val) => onChange({ ...data, zlavaPercent: val })}
-        onZlavaEurChange={(val) => onChange({ ...data, zlavaEur: val })}
-        onUseZlavaPercentChange={(val) => onChange({ ...data, useZlavaPercent: val })}
-        onUseZlavaEurChange={(val) => onChange({ ...data, useZlavaEur: val })}
+        onZlavaChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaPercent: val })}
+        onZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaEur: val })}
+        onUseZlavaPercentChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaPercent: val })}
+        onUseZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaEur: val })}
       />
 
       <GenericItemsTable
@@ -513,12 +525,12 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
         columns={commonColumns}
         isDark={isDark}
         onChange={(items) => {
-          const sorted = sortPinnedItems(items, ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
+          const sorted = sortPinnedItems(items, ['vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
           onChangeWithPaymentReset({ ...data, kovanie: sorted });
         }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          const newKovanie = sortPinnedItems([...data.kovanie, newItem], ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
+          const newKovanie = sortPinnedItems([...data.kovanie, newItem], ['vynášanie – doceniť po obhliadke', 'vynášanie - doceniť po obhliadke']);
           onChangeWithPaymentReset({ ...data, kovanie: newKovanie });
         }}
         mergeFirstTwoHeaders={true}

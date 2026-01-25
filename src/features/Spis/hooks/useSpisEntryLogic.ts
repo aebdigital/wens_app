@@ -179,6 +179,11 @@ export const useSpisEntryLogic = (
     const itemCisloZakazky = dataToSave.itemCisloZakazky;
     const { itemCisloZakazky: _, ...cleanDataToSave } = dataToSave;
 
+    // Sync Case Number to main entry if it's currently empty
+    if (itemCisloZakazky && !formData.cisloZakazky) {
+      setFormData(prev => ({ ...prev, cisloZakazky: itemCisloZakazky }));
+    }
+
     const entryData: CenovaPonukaItem = {
       id: newId,
       cisloCP: newCisloCP,

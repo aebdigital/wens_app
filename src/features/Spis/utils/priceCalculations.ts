@@ -135,12 +135,19 @@ const calculateCommonTotals = (
   vyrobkyTotal: number,
   priplatkyTotal: number,
   zlavaPercent: number,
+  zlavaEur: number,
+  useZlavaPercent: boolean,
+  useZlavaEur: boolean,
   kovanieItems: Array<{ cenaCelkom: number }>,
   montazItems: Array<{ cenaCelkom: number }>,
   manualCenaSDPH?: number | null
 ): QuoteTotals => {
   const subtotal = vyrobkyTotal + priplatkyTotal;
-  const zlava = subtotal * zlavaPercent / 100;
+
+  const percentDiscount = useZlavaPercent ? subtotal * (zlavaPercent / 100) : 0;
+  const eurDiscount = useZlavaEur ? zlavaEur : 0;
+  const zlava = percentDiscount + eurDiscount;
+
   const afterZlava = subtotal - zlava;
   const kovanieTotal = kovanieItems.reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
   const montazTotal = montazItems.reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
@@ -206,6 +213,9 @@ export const calculateDvereTotals = (data: DvereData): QuoteTotals => {
     vyrobkyTotal,
     priplatkyTotal,
     data.zlavaPercent || 0,
+    data.zlavaEur || 0,
+    data.useZlavaPercent !== false, // Default to true if undefined
+    data.useZlavaEur || false,
     data.kovanie || [],
     data.montaz || [],
     data.manualCenaSDPH
@@ -236,6 +246,9 @@ export const calculateNabytokTotals = (data: NabytokData): QuoteTotals => {
     vyrobkyTotal,
     priplatkyTotal,
     data.zlavaPercent || 0,
+    data.zlavaEur || 0,
+    data.useZlavaPercent !== false,
+    data.useZlavaEur || false,
     data.kovanie || [],
     data.montaz || [],
     data.manualCenaSDPH
@@ -266,6 +279,9 @@ export const calculateSchodyTotals = (data: SchodyData): QuoteTotals => {
     vyrobkyTotal,
     priplatkyTotal,
     data.zlavaPercent || 0,
+    data.zlavaEur || 0,
+    data.useZlavaPercent !== false,
+    data.useZlavaEur || false,
     data.kovanie || [],
     data.montaz || [],
     data.manualCenaSDPH
