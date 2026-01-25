@@ -28,6 +28,7 @@ interface SortableTableProps<T> {
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
   totalCount?: number;
+  unlimitedHeight?: boolean; // Don't constrain table height, let page scroll instead
 }
 
 // Helper to parse Slovak date format (d.m.yyyy or dd.mm.yyyy) to Date object
@@ -59,7 +60,8 @@ export const SortableTable = <T extends { [key: string]: any }>({
   hasMore,
   isLoadingMore,
   onLoadMore,
-  totalCount
+  totalCount,
+  unlimitedHeight = false
 }: SortableTableProps<T>) => {
   const { isDark } = useTheme();
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
@@ -72,25 +74,41 @@ export const SortableTable = <T extends { [key: string]: any }>({
 
   // Infinite scroll - load more when scrolling near bottom
   const handleScroll = useCallback(() => {
-    if (!tableContainerRef.current || !onLoadMore || !hasMore || isLoadingMore) return;
+    if (!onLoadMore || !hasMore || isLoadingMore) return;
 
-    const container = tableContainerRef.current;
-    const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-
-    // Load more when within 200px of the bottom
-    if (scrollBottom < 200) {
-      onLoadMore();
+    if (unlimitedHeight) {
+      // Use window scroll for unlimited height
+      const scrollBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (scrollBottom < 200) {
+        onLoadMore();
+      }
+    } else {
+      // Use container scroll for constrained height
+      if (!tableContainerRef.current) return;
+      const container = tableContainerRef.current;
+      const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (scrollBottom < 200) {
+        onLoadMore();
+      }
     }
-  }, [onLoadMore, hasMore, isLoadingMore]);
+  }, [onLoadMore, hasMore, isLoadingMore, unlimitedHeight]);
 
   // Set up scroll listener for infinite scroll
   useEffect(() => {
-    const container = tableContainerRef.current;
-    if (!container || !onLoadMore) return;
+    if (!onLoadMore) return;
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [handleScroll, onLoadMore]);
+    if (unlimitedHeight) {
+      // Listen to window scroll for unlimited height
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    } else {
+      // Listen to container scroll for constrained height
+      const container = tableContainerRef.current;
+      if (!container) return;
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll, onLoadMore, unlimitedHeight]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -206,7 +224,7 @@ export const SortableTable = <T extends { [key: string]: any }>({
   return (
     <div
       ref={tableContainerRef}
-      className={`rounded-lg overflow-x-auto max-h-[calc(100vh-200px)] ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+      className={`rounded-lg overflow-x-auto ${unlimitedHeight ? '' : 'max-h-[calc(100vh-200px)] overflow-y-auto'} ${isDark ? 'bg-dark-800' : 'bg-white'}`}
       style={{
         boxShadow: 'inset 0 1px 2px #ffffff30, 0 1px 2px #00000030, 0 2px 4px #00000015'
       }}

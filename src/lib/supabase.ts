@@ -181,3 +181,16 @@ export interface DbDocumentLock {
   last_heartbeat: string;
   queue_position: number;
 }
+
+export interface DbStandaloneOrder {
+  id: string;
+  cislo_objednavky: string;
+  nazov: string | null;
+  vypracoval: string | null;
+  datum: string;
+  popis: string | null;
+  dorucene: string | null;
+  puzda_data: any;
+  created_at: string;
+  updated_at: string;
+}

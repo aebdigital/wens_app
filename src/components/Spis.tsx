@@ -217,7 +217,7 @@ const Spis = () => {
       {/* Table */}
       <SortableTable
         columns={columns}
-        data={[...entries].reverse()}
+        data={[...entries].filter(e => e.cisloCP !== 'GENERAL').reverse()}
         onRowClick={handleRowClick}
         highlightedIds={highlightedProjectIds}
         highlightKey="id"
@@ -226,6 +226,7 @@ const Spis = () => {
         isLoadingMore={isLoadingMore}
         onLoadMore={loadMoreEntries}
         totalCount={totalCount}
+        unlimitedHeight
       />
 
       {/* Modal */}

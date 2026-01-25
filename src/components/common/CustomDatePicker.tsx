@@ -46,7 +46,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   );
 
   return (
-    <div className="custom-datepicker-wrapper w-full relative">
+    <div className={`custom-datepicker-wrapper w-full relative ${compact ? 'compact-mode' : ''}`}>
       <style>{`
         /* Wrapper styles */
         .custom-datepicker-wrapper .react-datepicker-wrapper {
@@ -58,6 +58,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         .custom-datepicker-wrapper .react-datepicker__input-container input {
           width: 100%;
           height: 100%;
+        }
+        .custom-datepicker-wrapper:not(.compact-mode) .react-datepicker__input-container input {
           padding-right: 28px !important;
         }
 

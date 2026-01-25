@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSpis } from '../contexts/SpisContext';
 import { useProducts, Product } from '../contexts/ProductsContext';
@@ -13,7 +12,7 @@ import { generateOrderPDF, OrderPDFData } from '../features/Spis/utils/pdfGenera
 import { PDFPreviewModal } from './common/PDFPreviewModal';
 import { toast } from 'react-hot-toast';
 import { ObjednavkaItem, PuzdraData, SpisEntry } from '../features/Spis/types';
-import { calculateNextOrderNumber } from '../features/Spis/utils/orderNumbering';
+import { supabase, DbStandaloneOrder } from '../lib/supabase';
 
 interface Company {
   name: string;
@@ -26,11 +25,10 @@ interface Company {
 
 const Objednavky = () => {
   const { isDark } = useTheme();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const userName = user ? `${user.firstName} ${user.lastName}` : '';
   const userEmail = user?.email || '';
-  const { entries, isLoading, addEntry, updateEntry } = useSpis();
+  const { entries, isLoading, updateEntry } = useSpis();
   const { products, updateProduct, deleteProduct, addProduct } = useProducts();
 
   // Tab State
@@ -41,14 +39,35 @@ const Objednavky = () => {
 
   // New states for Standalone Orders
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<{ order: ObjednavkaItem, parentSpisId: string } | null>(null);
+  const [editingOrder, setEditingOrder] = useState<{ order: ObjednavkaItem, parentSpisId: string, isStandalone?: boolean } | null>(null);
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [standaloneOrders, setStandaloneOrders] = useState<DbStandaloneOrder[]>([]);
+
+  // Load standalone orders from database
+  const loadStandaloneOrders = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('standalone_orders')
+        .select('*')
+        .order('cislo_objednavky', { ascending: false });
+
+      if (error) throw error;
+      setStandaloneOrders(data || []);
+    } catch (error) {
+      console.error('Error loading standalone orders:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStandaloneOrders();
+  }, [loadStandaloneOrders]);
 
   const objednavkyData = useMemo(() => {
-    return entries.flatMap(entry => {
-      // Filter out the problematic parent entry if it somehow still exists in the loop
-      if (entry.cisloCP === 'CP2025/0367') return [];
+    // Orders from spis entries (exclude GENERAL since we now use standalone_orders table)
+    const spisOrders = entries.flatMap(entry => {
+      // Filter out GENERAL and problematic entries
+      if (entry.cisloCP === 'GENERAL' || entry.cisloCP === 'CP2025/0367') return [];
 
       // Safely access nested items
       const items = entry.fullFormData?.objednavkyItems || [];
@@ -56,9 +75,9 @@ const Objednavky = () => {
         ...order,
         // Add context from the parent project
         parentSpisId: entry.cisloCP,
-        // Don't show cisloZakazky for standalone orders (GENERAL)
-        cisloZakazkyDisplay: entry.cisloCP === 'GENERAL' ? '' : entry.cisloZakazky,
-        menoZakaznikaDisplay: entry.cisloCP === 'GENERAL' ? '' : entry.kontaktnaOsoba,
+        isStandalone: false,
+        cisloZakazkyDisplay: entry.cisloZakazky,
+        menoZakaznikaDisplay: entry.kontaktnaOsoba,
         // Show dodavatel from order, not firma from entry
         firmaDisplay: order.puzdraData?.dodavatel?.nazov || '',
         // Map order specific fields
@@ -69,26 +88,53 @@ const Objednavky = () => {
         rawOrder: { ...order, parentSpisId: entry.cisloCP }
       }));
     });
-  }, [entries]);
+
+    // Standalone orders from the new table
+    const standaloneOrdersMapped = standaloneOrders.map(order => ({
+      id: order.id,
+      cisloObjednavky: order.cislo_objednavky,
+      nazov: order.nazov || '',
+      vypracoval: order.vypracoval || '',
+      datum: order.datum,
+      popis: order.popis || '',
+      dorucene: order.dorucene || '',
+      puzdraData: order.puzda_data,
+      // Standalone order specific fields
+      parentSpisId: 'STANDALONE',
+      isStandalone: true,
+      cisloZakazkyDisplay: '',
+      menoZakaznikaDisplay: '',
+      firmaDisplay: order.puzda_data?.dodavatel?.nazov || '',
+      odoslaneDisplay: order.datum ? new Date(order.datum).toLocaleDateString('sk-SK') : '',
+      doruceneDisplay: order.dorucene || '-',
+      popisDisplay: order.popis || '',
+      rawOrder: { ...order, parentSpisId: 'STANDALONE', isStandalone: true }
+    }));
+
+    return [...spisOrders, ...standaloneOrdersMapped];
+  }, [entries, standaloneOrders]);
 
   const handleOrderClick = (order: any) => {
-    // Navigate to Spis page - the highlighting is handled via location state
-    if (order.parentSpisId === 'GENERAL') {
-      // For general orders, we might want to open them in editing mode directly
-      setEditingOrder({ order, parentSpisId: 'GENERAL' });
-      setIsAddOrderModalOpen(true);
-      return;
-    }
-    navigate('/spis', {
-      state: {
-        highlightProjectIds: [order.parentSpisId],
-        selectedOrderId: order.id
-      }
-    });
+    // Always open the order for editing directly, regardless of parent spis
+    setEditingOrder({ order, parentSpisId: order.parentSpisId, isStandalone: order.isStandalone });
+    setIsAddOrderModalOpen(true);
   };
 
   const handleUpdateOrderDate = async (order: any, newDate: string) => {
     try {
+      // Handle standalone orders
+      if (order.isStandalone) {
+        const { error } = await supabase
+          .from('standalone_orders')
+          .update({ dorucene: newDate })
+          .eq('id', order.id);
+        if (error) throw error;
+        await loadStandaloneOrders();
+        toast.success('Dátum doručenia aktualizovaný');
+        return;
+      }
+
+      // Handle spis orders
       const entry = entries.find(e => e.cisloCP === order.parentSpisId);
       if (!entry || !entry.fullFormData) return;
 
@@ -114,6 +160,19 @@ const Objednavky = () => {
 
   const handleUpdateOrderSentDate = async (order: any, newDate: string) => {
     try {
+      // Handle standalone orders
+      if (order.isStandalone) {
+        const { error } = await supabase
+          .from('standalone_orders')
+          .update({ datum: newDate })
+          .eq('id', order.id);
+        if (error) throw error;
+        await loadStandaloneOrders();
+        toast.success('Dátum odoslania aktualizovaný');
+        return;
+      }
+
+      // Handle spis orders
       const entry = entries.find(e => e.cisloCP === order.parentSpisId);
       if (!entry || !entry.fullFormData) return;
 
@@ -139,6 +198,18 @@ const Objednavky = () => {
 
   const handleUpdateOrderPopis = async (order: any, newPopis: string) => {
     try {
+      // Handle standalone orders
+      if (order.isStandalone) {
+        const { error } = await supabase
+          .from('standalone_orders')
+          .update({ popis: newPopis })
+          .eq('id', order.id);
+        if (error) throw error;
+        await loadStandaloneOrders();
+        return;
+      }
+
+      // Handle spis orders
       const entry = entries.find(e => e.cisloCP === order.parentSpisId);
       if (!entry || !entry.fullFormData) return;
 
@@ -155,7 +226,6 @@ const Objednavky = () => {
       };
 
       await updateEntry(updatedEntry);
-      // No toast for every keystroke usually, but if we use onBlur it's fine
     } catch (error) {
       console.error('Error updating order popis:', error);
       toast.error('Chyba pri aktualizácii popisu');
@@ -165,12 +235,8 @@ const Objednavky = () => {
   const handleGeneratePDF = async (order: any) => {
     setIsGeneratingPDF(true);
     try {
-      const entry = entries.find(e => e.cisloCP === order.parentSpisId);
-      if (!entry || !entry.fullFormData) {
-        toast.error('Nepodarilo sa nájsť dáta spisu');
-        return;
-      }
-
+      // For standalone orders, we have the data directly
+      // For spis orders, we might need to look up entry but puzdraData should be on order anyway
       const puzdraData: PuzdraData = order.puzdraData || {
         dodavatel: { nazov: '', ulica: '', mesto: '', tel: '', email: '', email2: '' },
         zakazka: order.popis || '',
@@ -202,145 +268,111 @@ const Objednavky = () => {
     }
   };
 
+  // Calculate next order number considering both spis orders and standalone orders
+  const getNextOrderNumber = useCallback(() => {
+    // Get all order numbers from spis entries
+    const spisOrderNumbers = entries.flatMap(entry =>
+      (entry.fullFormData?.objednavkyItems || []).map((o: any) => o.cisloObjednavky)
+    );
+    // Get all order numbers from standalone orders
+    const standaloneOrderNumbers = standaloneOrders.map(o => o.cislo_objednavky);
+
+    const allNumbers = [...spisOrderNumbers, ...standaloneOrderNumbers];
+
+    if (allNumbers.length === 0) return '0001';
+
+    const maxNum = Math.max(...allNumbers.map(n => parseInt(n, 10) || 0));
+    return (maxNum + 1).toString().padStart(4, '0');
+  }, [entries, standaloneOrders]);
+
   const handleSaveStandaloneOrder = async (puzdraData: PuzdraData) => {
     try {
-      let generalSpis = entries.find(e => e.cisloCP === 'GENERAL');
-
-      if (!generalSpis) {
-        // Create GENERAL spis first
-        const newSpis: SpisEntry = {
-          cisloCP: 'GENERAL',
-          cisloZakazky: 'GENERAL',
-          stav: 'Zakázka',
-          datum: new Date().toISOString(),
-          kontaktnaOsoba: 'Všeobecné',
-          firma: 'WENS general',
-          architekt: '',
-          realizator: '',
-          popis: 'Kontajner pre samostatné objednávky',
-          spracovatel: userName,
-          kategoria: 'Všeobecné',
-          terminDodania: '',
-          color: 'white',
-          fullFormData: {
-            predmet: 'Všeobecné objednávky',
-            cisloZakazky: 'GENERAL',
-            stav: 'Zakázka',
-            firma: 'WENS general',
-            vypracoval: userName,
-            kategoria: 'Všeobecné',
-            vybavene: false,
-            terminDokoncenia: '',
-            priezvisko: 'Všeobecné',
-            meno: 'Objednávky',
-            telefon: '',
-            email: '',
-            ulica: '',
-            ico: '',
-            mesto: '',
-            psc: '',
-            icDph: '',
-            dic: '',
-            popisProjektu: '',
-            fakturaciaTyp: 'Súkromná osoba',
-            fakturaciaPriezvisko: '',
-            fakturaciaMeno: '',
-            fakturaciaAdresa: '',
-            popisItems: [],
-            cenovePonukyItems: [],
-            objednavkyItems: [],
-            emailKomu: '',
-            emailKomuText: '',
-            emailPredmet: '',
-            emailText: '',
-            emailItems: [],
-            meranieItems: [],
-            vyrobneVykresy: [],
-            fotky: [],
-            technickeItems: [],
-            odsuhlesenaKS1: '',
-            odsuhlesenaKS2: '',
-            ochranaDatum: '',
-            sprostredkovatel: '',
-            provizia: '',
-            cena: '',
-            zaloha1: '',
-            zaloha1Datum: '',
-            zaloha2: '',
-            zaloha2Datum: '',
-            doplatok: '',
-            doplatokDatum: '',
-            architektonickyPriezvisko: '',
-            architektonickeMeno: '',
-            architektonickyTelefon: '',
-            architektonickyEmail: '',
-            architektonickyUlica: '',
-            architektonickyIco: '',
-            architektonickyMesto: '',
-            architektonickyPsc: '',
-            architektonickyIcDph: '',
-            architektonickyDic: '',
-            realizatorPriezvisko: '',
-            realizatorMeno: '',
-            realizatorTelefon: '',
-            realizatorEmail: '',
-            realizatorUlica: '',
-            realizatorIco: '',
-            realizatorMesto: '',
-            realizatorPsc: '',
-            realizatorIcDph: '',
-            realizatorDic: '',
-            kontaktnaPriezvisko: '',
-            kontaktnaMeno: '',
-            kontaktnaTelefon: '',
-            kontaktnaEmail: '',
-            fakturaciaK10: false
-          }
-        };
-        generalSpis = await addEntry(newSpis);
-      }
-
-      if (!generalSpis || !generalSpis.fullFormData) return;
-
       const isNewOrder = !editingOrder;
-      let orderNumber = editingOrder?.order?.cisloObjednavky;
+      const isStandalone = editingOrder?.isStandalone ?? true; // New orders are standalone by default
+      const parentSpisId = editingOrder?.parentSpisId;
 
+      // CASE 1: New standalone order - save to standalone_orders table
       if (isNewOrder) {
-        orderNumber = calculateNextOrderNumber(entries);
+        const orderNumber = getNextOrderNumber();
+
+        const { error } = await supabase
+          .from('standalone_orders')
+          .insert({
+            cislo_objednavky: orderNumber,
+            nazov: puzdraData.zakazka || 'Samostatná objednávka',
+            vypracoval: userName,
+            datum: new Date().toISOString(),
+            popis: puzdraData.zakazka || '',
+            dorucene: '',
+            puzda_data: puzdraData
+          });
+
+        if (error) throw error;
+
+        await loadStandaloneOrders();
+        toast.success('Objednávka vytvorená');
+        setIsAddOrderModalOpen(false);
+        setEditingOrder(null);
+        return;
       }
 
+      // CASE 2: Editing standalone order - update in standalone_orders table
+      if (isStandalone) {
+        const { error } = await supabase
+          .from('standalone_orders')
+          .update({
+            nazov: puzdraData.zakazka || 'Samostatná objednávka',
+            popis: puzdraData.zakazka || '',
+            puzda_data: puzdraData
+          })
+          .eq('id', editingOrder.order.id);
+
+        if (error) throw error;
+
+        await loadStandaloneOrders();
+        toast.success('Objednávka aktualizovaná');
+        setIsAddOrderModalOpen(false);
+        setEditingOrder(null);
+        return;
+      }
+
+      // CASE 3: Editing spis order - update in spis entry
+      const targetSpis = entries.find(e => e.cisloCP === parentSpisId);
+      if (!targetSpis || !targetSpis.fullFormData) {
+        toast.error('Nepodarilo sa nájsť spis');
+        return;
+      }
+
+      const orderNumber = editingOrder.order.cisloObjednavky;
       const newItem: ObjednavkaItem = {
-        id: editingOrder?.order?.id || crypto.randomUUID(),
-        nazov: puzdraData.zakazka || 'Samostatná objednávka',
-        vypracoval: userName,
-        datum: new Date().toISOString(),
+        id: editingOrder.order.id,
+        nazov: puzdraData.zakazka || editingOrder.order.nazov,
+        vypracoval: editingOrder.order.vypracoval || userName,
+        datum: editingOrder.order.datum,
         popis: puzdraData.zakazka || '',
-        cisloObjednavky: orderNumber!,
-        dorucene: editingOrder?.order?.dorucene || '',
+        cisloObjednavky: orderNumber,
+        dorucene: editingOrder.order.dorucene || '',
         puzdraData: puzdraData
       };
 
-      let newItems = [...generalSpis.fullFormData.objednavkyItems];
-      if (isNewOrder) {
-        newItems.push(newItem);
-      } else {
-        newItems = newItems.map(item => item.cisloObjednavky === orderNumber ? newItem : item);
-      }
+      const newItems = targetSpis.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
+        item.cisloObjednavky === orderNumber ? newItem : item
+      );
 
       const updatedEntry: SpisEntry = {
-        ...generalSpis,
+        ...targetSpis,
         fullFormData: {
-          ...generalSpis.fullFormData,
+          ...targetSpis.fullFormData,
           objednavkyItems: newItems
         }
       };
 
       await updateEntry(updatedEntry);
-      toast.success(isNewOrder ? 'Objednávka vytvorená' : 'Objednávka aktualizovaná');
+      toast.success('Objednávka aktualizovaná');
       setIsAddOrderModalOpen(false);
       setEditingOrder(null);
     } catch (error) {
-      console.error('Error saving standalone order:', error);
+      console.error('Error saving order:', error);
       toast.error('Chyba pri ukladaní objednávky');
     }
   };
@@ -350,50 +382,53 @@ const Objednavky = () => {
   }, [objednavkyData]);
 
   const nextOrderNumber = useMemo(() => {
-    return calculateNextOrderNumber(entries);
-  }, [entries]);
+    return getNextOrderNumber();
+  }, [getNextOrderNumber]);
 
   const orderColumns: Column<typeof tableData[0]>[] = [
     {
       key: 'cisloObjednavky',
       label: 'Č. obj.',
-      width: '80px',
+      width: '96px',
       render: (val) => (
         <span className="font-medium text-[#e11b28]">
           {val}
         </span>
       )
     },
-    { key: 'cisloZakazkyDisplay', label: 'Č. zák.', width: '80px' },
-    { key: 'menoZakaznikaDisplay', label: 'Meno zákazníka' },
-    { key: 'firmaDisplay', label: 'Dodávateľ' },
+    { key: 'cisloZakazkyDisplay', label: 'Č. zák.', width: '96px' },
+    { key: 'menoZakaznikaDisplay', label: 'Zákazník', width: '120px' },
+    { key: 'firmaDisplay', label: 'Dodávateľ', width: '140px' },
     {
       key: 'odoslaneDisplay',
-      label: 'Odoslané',
+      label: 'Odosl.',
       isDate: true,
+      width: '90px',
       render: (val, item) => (
         <div onClick={(e) => e.stopPropagation()}>
           <CustomDatePicker
             value={item.datum || ''}
             onChange={(newDate) => handleUpdateOrderSentDate(item, newDate)}
-            placeholder="Odoslané..."
+            placeholder="..."
             compact
-            className={`w-28 text-xs ${isDark ? 'bg-dark-700 text-gray-300 pointer-events-auto' : 'bg-white text-gray-800'}`}
+            className={`w-full text-xs py-1 ${isDark ? 'bg-transparent text-gray-300 pointer-events-auto' : 'bg-transparent text-gray-800'}`}
           />
         </div>
       )
     },
     {
       key: 'doruceneDisplay',
-      label: 'Doručené',
+      label: 'Doruč.',
       isDate: true,
+      width: '90px',
       render: (val, item) => (
         <div onClick={(e) => e.stopPropagation()}>
           <CustomDatePicker
             value={item.dorucene || ''}
             onChange={(newDate) => handleUpdateOrderDate(item, newDate)}
+            placeholder="..."
             compact
-            className={`w-28 text-xs ${isDark ? 'bg-dark-700 text-gray-300 pointer-events-auto' : 'bg-white text-gray-800'}`}
+            className={`w-full text-xs py-1 ${isDark ? 'bg-transparent text-gray-300 pointer-events-auto' : 'bg-transparent text-gray-800'}`}
           />
         </div>
       )
@@ -401,7 +436,6 @@ const Objednavky = () => {
     {
       key: 'popisDisplay',
       label: 'Popis',
-      width: '250px',
       render: (val, item) => (
         <div onClick={(e) => e.stopPropagation()}>
           <input
@@ -412,7 +446,7 @@ const Objednavky = () => {
                 handleUpdateOrderPopis(item, e.target.value);
               }
             }}
-            className={`w-full px-2 py-1 text-xs rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
+            className={`w-full px-2 py-1 text-xs rounded border ${isDark ? 'bg-transparent text-white border-dark-500' : 'bg-transparent text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-[#e11b28]`}
           />
         </div>
       )
@@ -420,17 +454,27 @@ const Objednavky = () => {
     {
       key: 'akcie',
       label: 'Akcie',
+      width: '80px',
       render: (_, item) => (
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleGeneratePDF(item)}
             disabled={isGeneratingPDF}
-            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-500 text-blue-400' : 'hover:bg-blue-100 text-blue-600'}`}
-            title="Generovať PDF"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            title="Zobraziť PDF"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
+            {isGeneratingPDF ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            )}
+            PDF
           </button>
         </div>
       )
@@ -615,7 +659,7 @@ const Objednavky = () => {
             data={tableData}
             onRowClick={(item) => handleOrderClick(item.rawOrder)}
             rowClassName={(item) =>
-              item.parentSpisId === 'GENERAL'
+              item.isStandalone
                 ? isDark
                   ? 'bg-red-900/20 hover:bg-red-900/30'
                   : 'bg-red-50 hover:bg-red-100'
