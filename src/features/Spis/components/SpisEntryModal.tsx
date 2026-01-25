@@ -757,6 +757,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             telefon: userPhone,
                             email: user?.email || ''
                           }}
+                          cisloZakazky={formData.cisloZakazky}
+                          customerName={`${formData.meno} ${formData.priezvisko}`.trim() || formData.firma}
                         />
                       </Suspense>
                     </TabErrorBoundary>

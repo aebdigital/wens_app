@@ -121,10 +121,10 @@ export const useSpisPersistence = ({
         return allChanges;
     }, [formData, getContactById]);
 
-    const performSaveInternal = useCallback(async (contactActions?: { zakaznik?: ContactAction, architekt?: ContactAction, realizator?: ContactAction }) => {
+    const performSaveInternal = useCallback(async (contactActions?: { zakaznik?: ContactAction, architekt?: ContactAction, realizator?: ContactAction }, formDataOverride?: SpisFormData) => {
         try {
-            // Use ref to get the latest formData (important for async saves after state updates)
-            const currentFormData = formDataRef.current;
+            // Use override if provided, otherwise ref
+            const currentFormData = formDataOverride || formDataRef.current;
 
             // Map photos to persistent format
             const persistentPhotos = uploadedPhotos.map(p => ({
@@ -373,6 +373,32 @@ export const useSpisPersistence = ({
 
             setLastSavedJson(JSON.stringify(currentFormData));
             onSave(entryData);
+            toast.custom((t) => (
+                <div
+                    className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 border border-green-200`}
+                    style={{ animationDuration: '0.3s', minWidth: '300px' }}
+                >
+                    <div className="flex-1 w-0 p-4">
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0 pt-0.5">
+                                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                                    <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-4 flex-1">
+                                <p className="text-lg font-bold text-gray-900">
+                                    Uložené
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    Zmeny boli úspešne uložené.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ), { duration: 2500 });
         } catch (error: any) {
             console.error('Failed to save entry:', error);
             toast.error('Nepodarilo sa uložiť záznam: ' + error.message);
@@ -396,7 +422,7 @@ export const useSpisPersistence = ({
     ]);
 
     // Wrapper performSave that checks for contact changes first
-    const performSave = useCallback(() => {
+    const performSave = useCallback((formDataOverride?: SpisFormData) => {
         const changes = detectAllContactChanges();
         console.log('[performSave] Detected changes:', changes.length, changes);
 
@@ -406,7 +432,7 @@ export const useSpisPersistence = ({
             setShowContactChangesModal(true);
         } else {
             // No changes, proceed with save
-            performSaveInternal();
+            performSaveInternal(undefined, formDataOverride);
         }
     }, [detectAllContactChanges, performSaveInternal]);
 

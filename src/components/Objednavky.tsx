@@ -28,7 +28,7 @@ const Objednavky = () => {
   const { user } = useAuth();
   const userName = user ? `${user.firstName} ${user.lastName}` : '';
   const userEmail = user?.email || '';
-  const { entries, isLoading, updateEntry } = useSpis();
+  const { entries, isLoading, updateEntry, refreshStandaloneOrders } = useSpis();
   const { products, updateProduct, deleteProduct, addProduct } = useProducts();
 
   // Tab State
@@ -85,7 +85,7 @@ const Objednavky = () => {
         doruceneDisplay: order.dorucene || '-',
         popisDisplay: order.popis || '',
         // Keep raw data
-        rawOrder: { ...order, parentSpisId: entry.cisloCP }
+        rawOrder: { ...order, parentSpisId: entry.cisloCP, isStandalone: false }
       }));
     });
 
@@ -108,7 +108,12 @@ const Objednavky = () => {
       odoslaneDisplay: order.datum ? new Date(order.datum).toLocaleDateString('sk-SK') : '',
       doruceneDisplay: order.dorucene || '-',
       popisDisplay: order.popis || '',
-      rawOrder: { ...order, parentSpisId: 'STANDALONE', isStandalone: true }
+      rawOrder: {
+        ...order,
+        cisloObjednavky: order.cislo_objednavky, // Ensure camelCase is available
+        parentSpisId: 'STANDALONE',
+        isStandalone: true
+      }
     }));
 
     return [...spisOrders, ...standaloneOrdersMapped];
@@ -295,7 +300,7 @@ const Objednavky = () => {
       if (isNewOrder) {
         const orderNumber = getNextOrderNumber();
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('standalone_orders')
           .insert({
             cislo_objednavky: orderNumber,
@@ -305,14 +310,35 @@ const Objednavky = () => {
             popis: puzdraData.zakazka || '',
             dorucene: '',
             puzda_data: puzdraData
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
         await loadStandaloneOrders();
+        await refreshStandaloneOrders(); // Global context refresh
         toast.success('Objednávka vytvorená');
-        setIsAddOrderModalOpen(false);
-        setEditingOrder(null);
+
+        // Switch to editing mode for the new order so subsequent saves update it
+        // We need to match the structure of editingOrder state
+        const newOrderMapped: ObjednavkaItem = {
+          id: data.id,
+          cisloObjednavky: data.cislo_objednavky,
+          nazov: data.nazov || '',
+          vypracoval: data.vypracoval || '',
+          datum: data.datum,
+          popis: data.popis || '',
+          dorucene: data.dorucene || '',
+          puzdraData: data.puzda_data
+        };
+
+        setEditingOrder({
+          order: newOrderMapped,
+          parentSpisId: 'STANDALONE',
+          isStandalone: true
+        });
+        // Do NOT close modal
         return;
       }
 
@@ -330,16 +356,17 @@ const Objednavky = () => {
         if (error) throw error;
 
         await loadStandaloneOrders();
+        await refreshStandaloneOrders(); // Global context refresh
         toast.success('Objednávka aktualizovaná');
-        setIsAddOrderModalOpen(false);
-        setEditingOrder(null);
+        // Do NOT close modal
         return;
       }
 
       // CASE 3: Editing spis order - update in spis entry
       const targetSpis = entries.find(e => e.cisloCP === parentSpisId);
       if (!targetSpis || !targetSpis.fullFormData) {
-        toast.error('Nepodarilo sa nájsť spis');
+        console.error('Target Spis not found or empty:', { parentSpisId, found: !!targetSpis });
+        toast.error('Nepodarilo sa nájsť spis pre túto objednávku');
         return;
       }
 
@@ -356,7 +383,9 @@ const Objednavky = () => {
       };
 
       const newItems = targetSpis.fullFormData.objednavkyItems.map((item: ObjednavkaItem) =>
-        item.cisloObjednavky === orderNumber ? newItem : item
+        item.id === editingOrder.order.id
+          ? newItem
+          : (item.cisloObjednavky === orderNumber ? newItem : item) // Fallback to order number just in case
       );
 
       const updatedEntry: SpisEntry = {
@@ -367,13 +396,16 @@ const Objednavky = () => {
         }
       };
 
+      console.log('Updating Spis Entry via Objednavky:', updatedEntry.id, newItem);
       await updateEntry(updatedEntry);
       toast.success('Objednávka aktualizovaná');
-      setIsAddOrderModalOpen(false);
-      setEditingOrder(null);
+      // Do NOT close modal
     } catch (error) {
       console.error('Error saving order:', error);
-      toast.error('Chyba pri ukladaní objednávky');
+      const errorMessage = error instanceof Error
+        ? error.message
+        : (typeof error === 'object' ? JSON.stringify(error) : String(error));
+      toast.error('Chyba pri ukladaní objednávky: ' + errorMessage);
     }
   };
 

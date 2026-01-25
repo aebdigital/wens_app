@@ -20,6 +20,8 @@ interface SpisContextType {
   addFirmaOption: (option: string) => Promise<void>;
   refreshEntries: () => Promise<void>;
   loadMoreEntries: () => Promise<void>;
+  standaloneOrders: any[];
+  refreshStandaloneOrders: () => Promise<void>;
 }
 
 const SpisContext = createContext<SpisContextType | undefined>(undefined);
@@ -67,6 +69,7 @@ const spisEntryToDb = (entry: SpisEntry, userId: string): Partial<DbSpisEntry> =
 export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [entries, setEntries] = useState<SpisEntry[]>([]);
+  const [standaloneOrders, setStandaloneOrders] = useState<any[]>([]);
   const [firmaOptions, setFirmaOptions] = useState<string[]>(['R1 Bratislava', 'WENS DOOR Prievidza']);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -141,6 +144,24 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
   }, [user]);
+
+  const refreshStandaloneOrders = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('standalone_orders')
+        .select('*');
+
+      if (error) throw error;
+      setStandaloneOrders(data || []);
+    } catch (error) {
+      console.error('Error loading standalone orders:', error);
+    }
+  }, []);
+
+  // Load standalone orders initially
+  useEffect(() => {
+    refreshStandaloneOrders();
+  }, [refreshStandaloneOrders]);
 
   // Load more entries (pagination)
   const loadMoreEntries = useCallback(async () => {
@@ -289,7 +310,9 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getEntryById,
         addFirmaOption,
         refreshEntries,
-        loadMoreEntries
+        loadMoreEntries,
+        standaloneOrders,
+        refreshStandaloneOrders
       }}
     >
       {children}

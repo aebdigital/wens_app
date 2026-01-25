@@ -9,10 +9,29 @@ import { ObjednavkaItem, SpisEntry } from '../types';
  */
 export const calculateNextOrderNumber = (
     entries: SpisEntry[],
-    localItems: ObjednavkaItem[] = []
+    localItems: ObjednavkaItem[] = [],
+    standaloneOrders: any[] = []
 ): string => {
+    // Collect order numbers from SpisEntries
     const allOrders = entries.flatMap(e => e.fullFormData?.objednavkyItems || []);
-    const allIds = [...allOrders, ...localItems].map(o => o.cisloObjednavky);
+    const spisIds = allOrders.map(o => o.cisloObjednavky);
+
+    // Collect order numbers from localItems
+    const localIds = localItems.map(o => o.cisloObjednavky);
+
+    // Collect order numbers from StandaloneOrders
+    const standaloneIds = standaloneOrders.map(o => o.cislo_objednavky);
+
+    // Combine all IDs
+    const allIds = [...spisIds, ...localIds, ...standaloneIds];
+
+    console.log('calculateNextOrderNumber Debug:', {
+        spisIds,
+        localIds,
+        standaloneOrdersCount: standaloneOrders.length,
+        standaloneIds,
+        allIds
+    });
 
     const maxId = allIds.reduce((max, id) => {
         if (!id) return max;

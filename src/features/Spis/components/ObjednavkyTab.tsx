@@ -18,6 +18,8 @@ interface ObjednavkyTabProps {
     telefon: string;
     email: string;
   };
+  cisloZakazky?: string;
+  customerName?: string;
 }
 
 export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
@@ -30,7 +32,9 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
   isLocked = false,
   onAddVzor,
   onEdit,
-  headerInfo
+  headerInfo,
+  cisloZakazky,
+  customerName
 }) => {
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
@@ -82,13 +86,14 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
         <table className={`w-full text-xs border ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f]">
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Názov</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-24">Č. obj.</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-24">Č. zák.</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-32">Zákazník</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-40">Dodávateľ</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-36">Odosl.</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-36">Doruč.</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo objednávky</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Doručené</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Akcie</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white whitespace-nowrap w-20">Akcie</th>
             </tr>
           </thead>
           <tbody>
@@ -104,11 +109,17 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                   className={`${isHighlighted ? 'bg-yellow-100 border-yellow-400' : (isDark ? 'hover:bg-dark-600' : 'hover:bg-gray-50')} ${onEdit ? 'cursor-pointer' : ''}`}
                   onClick={() => onEdit && onEdit(item)}
                 >
-                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                    {item.nazov || '-'}
+                  <td className={`border px-3 py-2 text-center font-medium ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-[#e11b28]'}`}>
+                    {item.cisloObjednavky || '-'}
                   </td>
                   <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                    {item.vypracoval || '-'}
+                    {cisloZakazky || '-'}
+                  </td>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {customerName || '-'}
+                  </td>
+                  <td className={`border px-3 py-2 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
+                    {item.puzdraData?.dodavatel?.nazov || '-'}
                   </td>
                   <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
                     <CustomDatePicker
@@ -116,6 +127,18 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                       onChange={(val) => {
                         const updated = [...items];
                         updated[index].datum = val;
+                        onUpdate(updated);
+                      }}
+                      disabled={isLocked}
+                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    />
+                  </td>
+                  <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
+                    <CustomDatePicker
+                      value={item.dorucene || ''}
+                      onChange={(val) => {
+                        const updated = [...items];
+                        updated[index].dorucene = val;
                         onUpdate(updated);
                       }}
                       disabled={isLocked}
@@ -133,21 +156,6 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
                       }}
                       disabled={isLocked}
                       placeholder="Zadajte popis..."
-                      className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
-                    />
-                  </td>
-                  <td className={`border px-3 py-2 text-center font-medium ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-[#e11b28]'}`}>
-                    {item.cisloObjednavky || '-'}
-                  </td>
-                  <td className={`border px-1 py-1 ${isDark ? 'border-dark-500' : 'border-gray-300'}`} onClick={(e) => e.stopPropagation()}>
-                    <CustomDatePicker
-                      value={item.dorucene || ''}
-                      onChange={(val) => {
-                        const updated = [...items];
-                        updated[index].dorucene = val;
-                        onUpdate(updated);
-                      }}
-                      disabled={isLocked}
                       className={`w-full h-8 text-xs border-0 bg-transparent rounded px-2 ${isDark ? 'text-white focus:bg-dark-700 focus:border focus:border-[#e11b28]' : 'focus:bg-white focus:border focus:border-[#e11b28]'} ${isHighlighted ? 'bg-yellow-50' : ''} ${isLocked ? 'cursor-not-allowed' : ''}`}
                     />
                   </td>
@@ -198,7 +206,7 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
             })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="border border-gray-300 px-3 py-4 text-center text-gray-500">
+                <td colSpan={8} className="border border-gray-300 px-3 py-4 text-center text-gray-500">
                   Žiadne objednávky. Kliknite "Pridať objednávku" pre vytvorenie novej.
                 </td>
               </tr>

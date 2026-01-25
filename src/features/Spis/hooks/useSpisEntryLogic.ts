@@ -8,19 +8,15 @@
  * @module useSpisEntryLogic
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SpisEntry, CenovaPonukaItem, FinancieDeposit, Deposit } from '../types';
 import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
 import { calculateNextOrderNumber } from '../utils/orderNumbering';
 import { useSpisFormState } from './useSpisFormState';
 import { useSpisPersistence } from './useSpisPersistence';
+import { useSpis } from '../../../contexts/SpisContext';
 
-/**
- * Main hook for managing Spis entry form state and logic.
- *
- * This hook initiates the form state and composes the persistence logic.
- */
 export const useSpisEntryLogic = (
   initialEntry: SpisEntry | null,
   entries: SpisEntry[],
@@ -30,6 +26,29 @@ export const useSpisEntryLogic = (
   onSave: (entryData: SpisEntry) => void
 ) => {
   const { user } = useAuth();
+  const { standaloneOrders, refreshStandaloneOrders } = useSpis(); // Get standalone orders from context
+
+  // Refresh standalone orders on mount to ensure we have the latest list for numbering
+  // This is crucial because SpisEntryModal might be kept alive or mounting logic might race
+  // with the initial context load.
+  // Use a ref to prevent infinite loops if refreshStandaloneOrders is not stable (though it is useCallback)
+  const hasRefreshedRef = useRef(false);
+
+  // We use useMemo/useEffect combo or just useEffect.
+  // Since refreshStandaloneOrders is stable, we can just call it.
+  useEffect(() => {
+    if (!hasRefreshedRef.current) {
+      refreshStandaloneOrders();
+      hasRefreshedRef.current = true;
+    }
+  }, [refreshStandaloneOrders]);
+
+  // Also refresh when opening the modal (isOpen becomes true)
+  useEffect(() => {
+    if (isOpen) {
+      refreshStandaloneOrders();
+    }
+  }, [isOpen, refreshStandaloneOrders]);
 
   // 1. Form State Management
   const {
@@ -277,41 +296,45 @@ export const useSpisEntryLogic = (
   };
 
   const handleAddOrderSave = (data: any) => {
-    const nextId = calculateNextOrderNumber(entries, formData.objednavkyItems);
+    const orderNumber = editingOrderNumber || calculateNextOrderNumber(entries, formData.objednavkyItems, standaloneOrders);
 
     const newItem = {
       id: editingOrderId || Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      nazov: data.zakazka || `Objednávka ${nextId}`,
+      nazov: data.zakazka || `Objednávka ${orderNumber}`,
       vypracoval: user ? `${user.firstName} ${user.lastName}` : '',
       datum: new Date().toISOString().split('T')[0],
       popis: '',
-      cisloObjednavky: nextId,
+      cisloObjednavky: orderNumber,
       dorucene: '',
       data: data,
       puzdraData: data
     };
 
-    setFormData(prev => {
-      let newItems = [...prev.objednavkyItems];
-      const isNewOrder = !editingOrderId;
+    // Calculate new state based on current formData
+    let newItems = [...formData.objednavkyItems];
+    const isNewOrder = !editingOrderId;
 
-      if (editingOrderId) {
-        newItems = newItems.map(item => item.id === editingOrderId ? { ...item, ...newItem, id: item.id } : item);
-      } else {
-        newItems.push(newItem);
-      }
+    if (editingOrderId) {
+      newItems = newItems.map(item => item.id === editingOrderId ? { ...item, ...newItem, id: item.id } : item);
+    } else {
+      newItems.push(newItem);
+    }
 
-      const shouldChangeStav = isNewOrder && prev.objednavkyItems.length === 0 && prev.stav === 'CP';
+    const shouldChangeStav = isNewOrder && formData.objednavkyItems.length === 0 && formData.stav === 'CP';
 
-      return {
-        ...prev,
-        objednavkyItems: newItems,
-        ...(shouldChangeStav ? { stav: 'Zakázka' } : {})
-      };
-    });
+    const newFormData = {
+      ...formData,
+      objednavkyItems: newItems,
+      ...(shouldChangeStav ? { stav: 'Zakázka' } : {})
+    };
+
+    setFormData(newFormData);
     setEditingOrderId(null);
     setEditingOrderData(undefined);
     setEditingOrderNumber(null);
+
+    // Trigger save immediately with NEW data
+    performSave(newFormData);
   };
 
   const handleEditOffer = (item: CenovaPonukaItem) => {
@@ -349,8 +372,8 @@ export const useSpisEntryLogic = (
   }, [formData.cenovePonukyItems.length, formData.predmet, getNextCP]);
 
   const nextOrderNumber = useMemo(() => {
-    return calculateNextOrderNumber(entries, formData.objednavkyItems);
-  }, [entries, formData.objednavkyItems]);
+    return calculateNextOrderNumber(entries, formData.objednavkyItems, standaloneOrders);
+  }, [entries, formData.objednavkyItems, standaloneOrders]);
 
   return {
     activeTab,
