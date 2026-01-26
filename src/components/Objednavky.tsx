@@ -112,7 +112,8 @@ const Objednavky = () => {
         ...order,
         cisloObjednavky: order.cislo_objednavky, // Ensure camelCase is available
         parentSpisId: 'STANDALONE',
-        isStandalone: true
+        isStandalone: true,
+        puzdraData: order.puzda_data // Map puzda_data to puzdraData for standard handling
       }
     }));
 
@@ -703,7 +704,7 @@ const Objednavky = () => {
             data={tableData}
             onRowClick={(item) => handleOrderClick(item.rawOrder)}
             rowClassName={(item) =>
-              item.isStandalone
+              item.dorucene
                 ? isDark
                   ? 'bg-red-900/20 hover:bg-red-900/30'
                   : 'bg-red-50 hover:bg-red-100'

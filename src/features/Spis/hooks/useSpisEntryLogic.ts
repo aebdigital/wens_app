@@ -298,14 +298,19 @@ export const useSpisEntryLogic = (
   const handleAddOrderSave = (data: any) => {
     const orderNumber = editingOrderNumber || calculateNextOrderNumber(entries, formData.objednavkyItems, standaloneOrders);
 
+    // Find existing item to preserve metadata
+    const existingItem = editingOrderId
+      ? formData.objednavkyItems.find(item => item.id === editingOrderId)
+      : null;
+
     const newItem = {
       id: editingOrderId || Date.now().toString() + Math.random().toString(36).substr(2, 9),
       nazov: data.zakazka || `Objednávka ${orderNumber}`,
-      vypracoval: user ? `${user.firstName} ${user.lastName}` : '',
-      datum: new Date().toISOString().split('T')[0],
-      popis: '',
+      vypracoval: existingItem?.vypracoval || (user ? `${user.firstName} ${user.lastName}` : ''),
+      datum: existingItem?.datum || new Date().toISOString().split('T')[0],
+      popis: existingItem?.popis || '',
       cisloObjednavky: orderNumber,
-      dorucene: '',
+      dorucene: existingItem?.dorucene || '',
       data: data,
       puzdraData: data
     };
@@ -352,7 +357,7 @@ export const useSpisEntryLogic = (
 
   const handleEditOrderAction = (item: any) => {
     setEditingOrderId(item.id);
-    setEditingOrderData(item.data);
+    setEditingOrderData(item.data || item.puzdraData);
     setEditingOrderNumber(item.cisloObjednavky);
     setShowOrderModal(true);
   };

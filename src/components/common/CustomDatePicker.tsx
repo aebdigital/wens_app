@@ -31,7 +31,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     if (date) {
       // Format as YYYY-MM-DD
       const offset = date.getTimezoneOffset();
-      const adjustedDate = new Date(date.getTime() - (offset*60*1000));
+      const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
       onChange(adjustedDate.toISOString().split('T')[0]);
     } else {
       onChange('');
@@ -190,6 +190,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         .react-datepicker__day--weekend.react-datepicker__day--selected {
           color: #ffffff !important;
         }
+        /* Clear button styling - REMOVED (using custom header) */
       `}</style>
       <DatePicker
         selected={dateValue}
@@ -202,6 +203,57 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         showPopperArrow={false}
         popperPlacement="bottom-start"
         portalId="root"
+        renderCustomHeader={({
+          date,
+          decreaseMonth,
+          increaseMonth,
+          prevMonthButtonDisabled,
+          nextMonthButtonDisabled,
+        }) => (
+          <div className="flex items-center justify-between px-2 pt-2 pb-2">
+            <button
+              onClick={decreaseMonth}
+              disabled={prevMonthButtonDisabled}
+              className="p-1 rounded-full hover:bg-white/20 text-white disabled:opacity-50"
+              type="button"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-semibold text-lg capitalize">
+                {date.toLocaleString('sk', { month: 'long', year: 'numeric' })}
+              </span>
+              {value && !disabled && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange('');
+                  }}
+                  className="ml-2 p-1.5 rounded-full bg-white/20 hover:bg-red-700 text-white transition-colors"
+                  title="Vymazať dátum"
+                  type="button"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              onClick={increaseMonth}
+              disabled={nextMonthButtonDisabled}
+              className="p-1 rounded-full hover:bg-white/20 text-white disabled:opacity-50"
+              type="button"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
       />
       {!compact && (
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
