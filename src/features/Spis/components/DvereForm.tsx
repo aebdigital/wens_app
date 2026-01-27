@@ -52,12 +52,12 @@ const DEFAULT_PLATBA3 = 10;
 const DEFAULT_WIDTHS = {
   miestnost: 8,
   polozka: 10,
-  typRozmer: 9,
+  typRozmer: 12,
   pl: 5,
-  zamok: 13,
-  sklo: 8,
+  zamok: 6,
+  sklo: 5,
   povrch: 8,
-  poznamka: 9,
+  poznamka: 17,
   ks: 5,
   cenaKs: 8,
   cenaCelkom: 10

@@ -484,6 +484,19 @@ export const QuoteFooter: React.FC<QuoteFooterProps> = ({ isDark, data, onChange
             </div>
           ))}
         </div>
+
+        {/* Total of payments */}
+        <div className={`flex justify-between items-center text-xs font-bold pt-2 mt-2 border-t ${isDark ? 'border-gray-500 text-white' : 'border-gray-300 text-gray-800'}`}>
+          <span>Spolu (úhrady):</span>
+          <span>
+            {deposits.reduce((sum, deposit, index) => {
+              const val = editingAmountId === deposit.id
+                ? parseFloat((localAmounts[deposit.id] || '0').replace(',', '.')) || 0
+                : getDisplayAmount(deposit, index);
+              return sum + val;
+            }, 0).toFixed(2)} €
+          </span>
+        </div>
       </div>
 
       {/* Legal Text Section - Editable */}

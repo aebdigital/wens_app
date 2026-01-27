@@ -183,9 +183,17 @@ export const useSpisEntryLogic = (
 
     let dataToSave = data;
     if (isDefaultSplit && hasNoManualAmounts && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
-      const amount1 = roundUpToTen(cenaSDPH * 0.60);
-      const amount2 = roundUpToTen(cenaSDPH * 0.30);
-      const amount3 = cenaSDPH - amount1 - amount2;
+      // Calculate effective price for storage defaults
+      let effectivePriceForStorage = cenaSDPH;
+      if (data.cenaDohodou && data.cenaDohodouValue) {
+        effectivePriceForStorage = data.cenaDohodouValue;
+      } else if (data.prenesenieDP) {
+        effectivePriceForStorage = cenaBezDPH;
+      }
+
+      const amount1 = roundUpToTen(effectivePriceForStorage * 0.60);
+      const amount2 = roundUpToTen(effectivePriceForStorage * 0.30);
+      const amount3 = effectivePriceForStorage - amount1 - amount2;
       dataToSave = {
         ...data,
         platba1Amount: amount1,
@@ -249,10 +257,7 @@ export const useSpisEntryLogic = (
           doplatok: '0'
         };
       } else {
-        const platba1 = dataToSave.platba1Amount ?? 0;
-        const platba2 = dataToSave.platba2Amount ?? 0;
-        const platba3 = dataToSave.platba3Amount ?? 0;
-
+        // Calculate effective price for legacy calculation too
         let effectivePriceForLegacy = cenaSDPH;
         if (dataToSave.cenaDohodou && dataToSave.cenaDohodouValue) {
           effectivePriceForLegacy = dataToSave.cenaDohodouValue;
@@ -260,11 +265,38 @@ export const useSpisEntryLogic = (
           effectivePriceForLegacy = cenaBezDPH;
         }
 
+        // RECALCULATE DEFAULTS based on EFFECTIVE price if amounts are missing
+        // This fixes the bug where saving would reset to cenaSDPH-based splits because dataToSave.platbaXAmount was null
+        const roundUpToTen = (value: number) => Math.ceil(value / 10) * 10;
+
+        let platba1 = dataToSave.platba1Amount;
+        let platba2 = dataToSave.platba2Amount;
+        let platba3 = dataToSave.platba3Amount;
+
+        if (platba1 == null && isDefaultSplit) {
+          platba1 = roundUpToTen(effectivePriceForLegacy * 0.60);
+        } else if (platba1 == null) {
+          platba1 = effectivePriceForLegacy * (dataToSave.platba1Percent || 60) / 100;
+        }
+
+        if (platba2 == null && isDefaultSplit) {
+          platba2 = roundUpToTen(effectivePriceForLegacy * 0.30);
+        } else if (platba2 == null) {
+          platba2 = effectivePriceForLegacy * (dataToSave.platba2Percent || 30) / 100;
+        }
+
+        if (platba3 == null && isDefaultSplit) {
+          // Ensure it sums up exactly to effective price
+          platba3 = effectivePriceForLegacy - (platba1 || 0) - (platba2 || 0);
+        } else if (platba3 == null) {
+          platba3 = effectivePriceForLegacy * (dataToSave.platba3Percent || 10) / 100;
+        }
+
         financeUpdates = {
           cena: effectivePriceForLegacy.toFixed(2),
-          zaloha1: platba1.toFixed(2),
-          zaloha2: platba2.toFixed(2),
-          doplatok: platba3.toFixed(2),
+          zaloha1: (platba1 || 0).toFixed(2),
+          zaloha2: (platba2 || 0).toFixed(2),
+          doplatok: (platba3 || 0).toFixed(2),
           financieDeposits: undefined
         };
       }
