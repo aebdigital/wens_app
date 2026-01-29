@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { DvereData, ProductPhoto } from '../types';
 import { NOTES_DVERE } from '../utils/legalTexts';
 import { QuoteLayout } from './common/QuoteLayout';
@@ -96,6 +96,56 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   const [priplatokPercent, setPriplatokPercent] = useState<number>(10);
   const [priplatokNazov, setPriplatokNazov] = useState<string>('Príplatok z výrobkov');
   const [showHiddenColumnsMenu, setShowHiddenColumnsMenu] = useState(false);
+
+  // Helper to calculate price for specific item IDs from vyrobky
+  const calculatePriceForItemIds = useCallback((itemIds: string[]): number => {
+    return itemIds.reduce((sum, itemId) => {
+      const [roomIndexStr, type] = itemId.split('-');
+      const roomIndex = parseInt(roomIndexStr, 10);
+      const vyrobok = data.vyrobky[roomIndex];
+      if (!vyrobok) return sum;
+
+      let price = 0;
+      if (type === 'dvere' && vyrobok.hasDvere) {
+        price = (vyrobok.ks || 0) * (vyrobok.cenaDvere || 0);
+      } else if (type === 'zarubna' && vyrobok.hasZarubna) {
+        price = (vyrobok.ksZarubna || 0) * (vyrobok.cenaZarubna || 0);
+      } else if (type === 'obklad' && vyrobok.hasObklad) {
+        price = (vyrobok.ksObklad || 0) * (vyrobok.cenaObklad || 0);
+      } else if (type === 'prazdne' && vyrobok.hasPrazdne) {
+        price = (vyrobok.ksPrazdne || 0) * (vyrobok.cenaPrazdne || 0);
+      }
+      return sum + price;
+    }, 0);
+  }, [data.vyrobky]);
+
+  // Recalculate percentage-based príplatky when vyrobky prices change
+  useEffect(() => {
+    const hasPercentPriplatky = data.priplatky?.some((p: any) => p.percentFromVyrobky && p.selectedVyrobkyIds);
+    if (!hasPercentPriplatky) return;
+
+    const updatedPriplatky = data.priplatky.map((priplatok: any) => {
+      if (priplatok.percentFromVyrobky && priplatok.selectedVyrobkyIds) {
+        const selectedTotal = calculatePriceForItemIds(priplatok.selectedVyrobkyIds);
+        const newValue = selectedTotal * (priplatok.percentFromVyrobky / 100);
+        return {
+          ...priplatok,
+          cenaKs: newValue,
+          cenaCelkom: newValue
+        };
+      }
+      return priplatok;
+    });
+
+    // Only update if values actually changed
+    const hasChanged = updatedPriplatky.some((p: any, i: number) =>
+      p.cenaCelkom !== data.priplatky[i]?.cenaCelkom
+    );
+
+    if (hasChanged) {
+      onChange({ ...data, priplatky: updatedPriplatky });
+    }
+  }, [data.vyrobky, calculatePriceForItemIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleColumnVisibility = (columnKey: string) => {
     const currentHidden = data.hiddenColumns || [];
@@ -435,12 +485,18 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     const selectedTotal = calculateSelectedItemsTotal();
     const priplatokValue = selectedTotal * (priplatokPercent / 100);
 
+    // Format name with percentage
+    const formattedNazov = `${priplatokNazov} - ${priplatokPercent}%`;
+
     const newPriplatok = {
       id: Date.now(),
-      nazov: priplatokNazov,
+      nazov: formattedNazov,
       ks: 1,
       cenaKs: priplatokValue,
-      cenaCelkom: priplatokValue
+      cenaCelkom: priplatokValue,
+      // Store percentage info for dynamic recalculation
+      percentFromVyrobky: priplatokPercent,
+      selectedVyrobkyIds: [...selectedItems]
     };
 
     onChangeWithPaymentReset({
