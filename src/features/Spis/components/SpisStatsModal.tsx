@@ -243,6 +243,9 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                 const closedStatuses = ['Uzavreté', 'Storno', 'Zrušené'];
                 if (closedStatuses.includes(entry.stav)) return false;
 
+                // Only show entries with assigned order number
+                if (!entry.cisloZakazky || entry.cisloZakazky.trim() === '') return false;
+
                 // Check for first deposit date or general financial activity
                 const formData = entry.fullFormData;
                 if (!formData) return false;
@@ -264,6 +267,22 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
             });
     }, [entries]);
 
+    // Helper function to get the correct invoicing name
+    const getInvoicingName = (entry: SpisEntry): string => {
+        const formData = entry.fullFormData;
+        if (!formData) return entry.konecnyZakaznik || entry.kontaktnaOsoba || '';
+
+        // If invoicing is enabled and has data, use it
+        if (formData.fakturaciaTyp === 'pouzit' && formData.fakturaciaPriezvisko) {
+            return [formData.fakturaciaPriezvisko, formData.fakturaciaMeno]
+                .filter(Boolean)
+                .join(' ');
+        }
+
+        // Fallback to end customer
+        return entry.konecnyZakaznik || entry.kontaktnaOsoba || '';
+    };
+
     const calculateRowData = (entry: SpisEntry) => {
         const formData = entry.fullFormData || {} as SpisFormData;
         const selectedOffer = formData.cenovePonukyItems?.find(i => i.selected);
@@ -281,13 +300,23 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         let hasDohoda = false;
 
         if (selectedOffer) {
-            price = parsePrice(selectedOffer.cenaSDPH);
-
             // Flags from offer data
             const offerData = selectedOffer.data as any;
             if (offerData) {
                 if (offerData.prenesenieDP) hasPrenos = true;
                 if (offerData.cenaDohodou) hasDohoda = true;
+            }
+
+            // Calculate price based on priority: 1. cenaDohodou, 2. prenesenieDP, 3. cenaSDPH
+            if (hasDohoda && offerData?.cenaDohodouValue) {
+                // Price by agreement
+                price = parsePrice(offerData.cenaDohodouValue);
+            } else if (hasPrenos) {
+                // VAT transfer - use price without VAT
+                price = parsePrice(selectedOffer.cenaBezDPH);
+            } else {
+                // Standard price with VAT
+                price = parsePrice(selectedOffer.cenaSDPH);
             }
 
             // Logic for deposits from offer
@@ -530,8 +559,8 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                                             <tr key={entry.id} className={`transition-colors ${isDark ? 'hover:bg-dark-700' : 'hover:bg-gray-50'}`}>
                                                 <td className={`px-4 py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{entry.cisloCP}</td>
                                                 <td className="px-4 py-3">{entry.cisloZakazky}</td>
-                                                <td className="px-4 py-3 truncate max-w-[200px]" title={entry.konecnyZakaznik || entry.kontaktnaOsoba || ''}>
-                                                    {entry.konecnyZakaznik || entry.kontaktnaOsoba}
+                                                <td className="px-4 py-3 truncate max-w-[200px]" title={getInvoicingName(entry)}>
+                                                    {getInvoicingName(entry)}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex justify-center gap-1">
