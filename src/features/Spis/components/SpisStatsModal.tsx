@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { SpisEntry, CenovaPonukaItem, SpisFormData } from '../types';
 import { useSpis } from '../../../contexts/SpisContext';
