@@ -454,7 +454,7 @@ const Objednavky = () => {
           <CustomDatePicker
             value={item.datum || ''}
             onChange={(newDate) => handleUpdateOrderSentDate(item, newDate)}
-            placeholder="..."
+            placeholder="Dátum..."
             compact
             className={`w-full text-xs py-1 ${isDark ? 'bg-transparent text-gray-300 pointer-events-auto' : 'bg-transparent text-gray-800'}`}
           />
@@ -471,7 +471,7 @@ const Objednavky = () => {
           <CustomDatePicker
             value={item.dorucene || ''}
             onChange={(newDate) => handleUpdateOrderDate(item, newDate)}
-            placeholder="..."
+            placeholder="Dátum..."
             compact
             className={`w-full text-xs py-1 ${isDark ? 'bg-transparent text-gray-300 pointer-events-auto' : 'bg-transparent text-gray-800'}`}
           />

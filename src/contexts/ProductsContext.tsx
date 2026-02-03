@@ -68,7 +68,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load products from Supabase when user is available
+  // Load products from Supabase (shared for all users)
   const loadProducts = useCallback(async () => {
     if (!userId) {
       setProducts([]);
@@ -81,7 +81,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', userId)
+        // .eq('user_id', userId) // REMOVED: Shared products for everyone
         .order('supplier', { ascending: true })
         .order('name', { ascending: true });
 
@@ -171,8 +171,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { error } = await supabase
         .from('products')
         .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
+      // .eq('user_id', userId); // REMOVED to allow shared editing
 
       if (error) {
         console.error('Error updating product:', error);
@@ -192,8 +192,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
+      // .eq('user_id', userId); // REMOVED to allow shared deleting
 
       if (error) {
         console.error('Error deleting product:', error);

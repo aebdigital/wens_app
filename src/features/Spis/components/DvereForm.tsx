@@ -7,6 +7,7 @@ import { GenericItemsTable } from './common/GenericItemsTable';
 import { calculateDvereTotals } from '../utils/priceCalculations';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import { sortPinnedItems } from '../utils/itemSorting';
+import { GalleryModal } from './common/GalleryModal';
 
 interface DvereFormProps {
   data: DvereData;
@@ -96,6 +97,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   const [priplatokPercent, setPriplatokPercent] = useState<number>(10);
   const [priplatokNazov, setPriplatokNazov] = useState<string>('Príplatok z výrobkov');
   const [showHiddenColumnsMenu, setShowHiddenColumnsMenu] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
 
   // Helper to calculate price for specific item IDs from vyrobky
   const calculatePriceForItemIds = useCallback((itemIds: string[]): number => {
@@ -445,6 +447,16 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     }
   };
 
+  const handleGallerySelect = (base64: string) => {
+    const newPhoto: ProductPhoto = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      base64: base64,
+      description: ''
+    };
+    const currentPhotos = data.productPhotos || [];
+    onChange({ ...data, productPhotos: [...currentPhotos, newPhoto] });
+  };
+
   const handleRemovePhoto = (photoId: string) => {
     const currentPhotos = data.productPhotos || [];
     onChange({ ...data, productPhotos: currentPhotos.filter(p => p.id !== photoId) });
@@ -674,6 +686,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
                 className={`text-xs px-2 py-1 rounded border ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
               >
                 + Pridať
+              </button>
+              <button
+                onClick={() => setShowGalleryModal(true)}
+                className={`text-xs px-2 py-1 rounded border ml-2 ${isDark ? 'border-gray-500 text-gray-300 hover:bg-dark-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+              >
+                + Galéria
               </button>
               <input
                 ref={fileInputRef}
@@ -1726,6 +1744,12 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </div>
         </div>
       )}
+      <GalleryModal
+        isOpen={showGalleryModal}
+        onClose={() => setShowGalleryModal(false)}
+        onSelect={handleGallerySelect}
+        isDark={isDark}
+      />
     </QuoteLayout>
   );
 };

@@ -405,9 +405,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     if (hasPhotos) {
       const photoStartX = leftMargin + specSectionWidth + 5; // Start after specs + gap
       const photoSize = 28; // Size of square photo in mm
-      const photoGapX = 4; // Gap between photos horizontally
-      const photoGapY = 2; // Reduced gap between rows
-      const descHeight = 6; // Space for description
+      const photoGapX = 0; // Gap between photos horizontally
+      const photoGapY = 0; // Reduced gap between rows
+      const descHeight = 0; // No space for description
       const photosPerRow = 2;
 
       let currentPhotoY = specsStartY;
@@ -419,23 +419,56 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
         // Calculate position
         const photoX = photoStartX + colIndex * (photoSize + photoGapX);
-        const photoY = specsStartY + rowIndex * (photoSize + descHeight + photoGapY);
+        const photoY = specsStartY + rowIndex * (photoSize + photoGapY);
 
         try {
-          // Add the image (already cropped to square at upload)
-          doc.addImage(photo.base64, 'JPEG', photoX, photoY, photoSize, photoSize);
+          // Calculate dimensions to fit within square while maintaining aspect ratio (contain)
+          const imgProps = await new Promise<{ width: number; height: number; ratio: number }>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              resolve({
+                width: img.naturalWidth,
+                height: img.naturalHeight,
+                ratio: img.naturalWidth / img.naturalHeight
+              });
+            };
+            img.onerror = () => resolve({ width: photoSize, height: photoSize, ratio: 1 }); // Fallback
+            img.src = photo.base64;
+          });
 
-          // Add border around photo
+          let drawW = photoSize;
+          let drawH = photoSize;
+          let offX = 0;
+          let offY = 0;
+
+          // If image is wider than tall (relative to square target)
+          if (imgProps.ratio > 1) {
+            drawH = photoSize / imgProps.ratio;
+            offY = (photoSize - drawH) / 2;
+          } else {
+            // Taller or square
+            drawW = photoSize * imgProps.ratio;
+            offX = (photoSize - drawW) / 2;
+          }
+
+          // Add the image centered
+          doc.addImage(photo.base64, 'JPEG', photoX + offX, photoY + offY, drawW, drawH);
+
+          // Add border around the full square frame (not just the image)
           doc.setDrawColor(200);
           doc.rect(photoX, photoY, photoSize, photoSize);
 
-          // Add description below photo if exists
+          // Add description if exists (inside photo area, black text, no overlay)
           if (photo.description) {
             doc.setFontSize(6);
-            doc.setTextColor(0);
             doc.setFont(fontName, 'normal');
-            const descLines = doc.splitTextToSize(photo.description, photoSize);
-            doc.text(descLines, photoX, photoY + photoSize + 2);
+            doc.setTextColor(0, 0, 0);
+
+            const descLines = doc.splitTextToSize(photo.description, photoSize - 2);
+            const lineCount = descLines.length;
+            const overlayHeight = lineCount * 2.5 + 1.5;
+
+            doc.text(descLines, photoX + 1, photoY + photoSize - overlayHeight + 2.2);
           }
 
           // Track the bottom position

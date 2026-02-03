@@ -31,6 +31,7 @@ export interface SpisEntry {
   color: string;
   isLocked?: boolean;
   fullFormData?: SpisFormData;
+  konecnyZakaznik?: string;
 }
 
 export interface SpisFormData {
@@ -59,6 +60,7 @@ export interface SpisFormData {
   doplatok: string;
   doplatokDatum: string;
   financieDeposits?: FinancieDeposit[]; // Dynamic deposits from selected price offer
+  stat_note?: string; // Note for stats/cashflow view
 
   // Konečný zákazník
   zakaznikId?: string;

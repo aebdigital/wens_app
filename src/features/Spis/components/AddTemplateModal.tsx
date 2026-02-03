@@ -512,7 +512,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                   type="text"
                   value={localCisloZakazky}
                   onChange={(e) => setLocalCisloZakazky(e.target.value.replace(/[^a-zA-Z0-9/]/g, ''))}
-                  placeholder="..."
+                  placeholder="Zadajte..."
                   className={`w-24 px-2 py-0.5 text-base font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
                 />
               </div>
