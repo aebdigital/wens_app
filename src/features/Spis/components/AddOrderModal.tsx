@@ -56,7 +56,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
         { id: 1, nazov: '', mnozstvo: 1 },
       ],
       tovarDorucitNaAdresu: {
-        firma: 'WENS door, s.r.o.',
+        firma: 'WENS DOOR s.r.o.',
         ulica: 'Vápenická 12',
         mesto: 'Prievidza 971 01',
       },
@@ -75,21 +75,21 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
     try {
       // Save new products
       if (orderData.dodavatel?.nazov) {
-          orderData.polozky.forEach(item => {
-              if (item.nazov && item.nazov.trim() !== '') {
-                  addProduct({
-                      name: item.nazov,
-                      kod: item.kod, // Save the code
-                      supplier: orderData.dodavatel.nazov,
-                      supplierDetails: {
-                          ulica: orderData.dodavatel.ulica,
-                          mesto: orderData.dodavatel.mesto,
-                          tel: orderData.dodavatel.tel,
-                          email: orderData.dodavatel.email
-                      }
-                  });
+        orderData.polozky.forEach(item => {
+          if (item.nazov && item.nazov.trim() !== '') {
+            addProduct({
+              name: item.nazov,
+              kod: item.kod, // Save the code
+              supplier: orderData.dodavatel.nazov,
+              supplierDetails: {
+                ulica: orderData.dodavatel.ulica,
+                mesto: orderData.dodavatel.mesto,
+                tel: orderData.dodavatel.tel,
+                email: orderData.dodavatel.email
               }
-          });
+            });
+          }
+        });
       }
 
       await onSave(orderData);
@@ -188,9 +188,9 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
 
         {/* Content area */}
         <div className="flex-1 overflow-auto p-6">
-          <PuzdraForm 
-            data={orderData} 
-            onChange={setOrderData} 
+          <PuzdraForm
+            data={orderData}
+            onChange={setOrderData}
             isDark={isDark}
             headerInfo={{
               vypracoval,

@@ -96,7 +96,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   doc.text('WENS DOOR s.r.o., Vápenická 12, Prievidza 971 01', 14, yPos);
   doc.setFont(fontName, 'normal');
   yPos += 4;
-  doc.text('zap.v OR SR Trenčín od.Sro, Vl.č. 17931 / R', 14, yPos);
+  doc.text('zap. v OR OS Trenčín od.Sro, Vl.č. 17931 / R', 14, yPos);
   yPos += 4;
   doc.text('IČO: 36792942, IČ DPH: SK2022396904', 14, yPos);
   yPos += 4;

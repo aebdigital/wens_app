@@ -82,8 +82,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo CP</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Typ</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Číslo zakázky</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Cena bez DPH</th>
-              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Cena s DPH</th>
+              <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">CENA</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Odoslané</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Vytvoril</th>
               <th className="border border-white/20 px-3 py-2.5 font-semibold text-white">Popis</th>
@@ -133,11 +132,17 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                     className={`w-full text-xs border-0 bg-transparent px-2 py-1 focus:ring-0 text-center ${isDark ? 'text-white' : 'text-gray-800'} ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                   />
                 </td>
-                <td className={`border px-3 py-2 text-right ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {item.cenaBezDPH > 0 ? `${item.cenaBezDPH.toFixed(2)} €` : '-'}
-                </td>
-                <td className={`border px-3 py-2 text-right font-semibold ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
-                  {item.cenaSDPH > 0 ? `${item.cenaSDPH.toFixed(2)} €` : '-'}
+                <td className={`border px-3 py-2 text-right font-bold ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}>
+                  {(() => {
+                    const data = item.data as any;
+                    let price = item.cenaSDPH;
+                    if (data.cenaDohodou && data.cenaDohodouValue != null) {
+                      price = data.cenaDohodouValue;
+                    } else if (data.prenesenieDP) {
+                      price = item.cenaBezDPH;
+                    }
+                    return price > 0 ? `${price.toFixed(2)} €` : '-';
+                  })()}
                 </td>
                 <td
                   className={`border px-1 py-1 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`}
@@ -231,7 +236,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={10} className={`border px-3 py-8 text-center ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
+                <td colSpan={9} className={`border px-3 py-8 text-center ${isDark ? 'border-dark-500 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
                   Žiadne cenové ponuky. Kliknite na "Pridať cenovú ponuku" pre vytvorenie novej cenovej ponuky.
                 </td>
               </tr>

@@ -13,13 +13,13 @@ interface PreberaciProtokolTabProps {
 }
 
 const DEFAULT_ZHOTOVITEL = `Zhotoviteľ:
-WENS door s.r.o.
+WENS DOOR s.r.o.
 Vápenická 12
 971 01 Prievidza
 IČO: 36792942
 IČ DPH: SK2022396904
-zap.v OR SR Trenčín od.Sro, Vl.č. 17931 / R
-tel./fax.:046/542 2057 e-mail.: info@wens.sk`;
+zap. v OR OS Trenčín od.Sro, Vl.č. 17931 / R
+tel.: 046/542 2057 e-mail.: info@wens.sk`;
 
 const DEFAULT_BANK = `PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100
 IBAN: SK4431000000004520001507,

@@ -57,12 +57,12 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
       <div className="text-xs space-y-1">
-        <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>WENS door, s.r.o., Vápenická 12, 971 01 Prievidza</p>
-        <p className={`notranslate ${isDark ? 'text-gray-300' : 'text-gray-800'}`} translate="no">zap.v OR SR Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428</p>
+        <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>WENS DOOR s.r.o., Vápenická 12, 971 01 Prievidza</p>
+        <p className={`notranslate ${isDark ? 'text-gray-300' : 'text-gray-800'}`} translate="no">zap. v OR OS Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428</p>
         <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>IČO: 36792942, IČ DPH: SK2022396904</p>
         <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100</p>
         <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>IBAN: SK4431000000004520001507, BIC (SWIFT): LUBASKBX</p>
-        <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>tel./fax.: 046 / 542 2057, e-mail: info@wens.sk</p>
+        <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>tel.: 046 / 542 2057, e-mail: info@wens.sk</p>
       </div>
 
       <div className="flex gap-4">
