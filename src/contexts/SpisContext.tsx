@@ -27,24 +27,30 @@ interface SpisContextType {
 const SpisContext = createContext<SpisContextType | undefined>(undefined);
 
 // Helper to convert DB format to app format
-const dbToSpisEntry = (db: DbSpisEntry): SpisEntry => ({
-  id: db.id,
-  stav: db.stav || 'CP',
-  cisloCP: db.cislo_cp,
-  cisloZakazky: db.cislo_zakazky || '',
-  datum: db.datum || '',
-  kontaktnaOsoba: db.kontaktna_osoba || '',
-  architekt: db.architekt || '',
-  realizator: db.realizator || '',
-  popis: db.popis || '',
-  firma: db.firma || '',
-  spracovatel: db.spracovatel || '',
-  kategoria: db.kategoria || '',
-  terminDodania: db.termin_dodania || '',
-  color: db.color || 'white',
-  isLocked: db.is_locked || false,
-  fullFormData: db.full_form_data || undefined,
-});
+const dbToSpisEntry = (db: DbSpisEntry): SpisEntry => {
+  const fullFormData = db.full_form_data || {};
+  const konecnyZakaznik = `${fullFormData.meno || ''} ${fullFormData.priezvisko || ''}`.trim();
+
+  return {
+    id: db.id,
+    stav: db.stav || 'CP',
+    cisloCP: db.cislo_cp,
+    cisloZakazky: db.cislo_zakazky || '',
+    datum: db.datum || '',
+    kontaktnaOsoba: db.kontaktna_osoba || '',
+    konecnyZakaznik: konecnyZakaznik,
+    architekt: db.architekt || '',
+    realizator: db.realizator || '',
+    popis: db.popis || '',
+    firma: db.firma || '',
+    spracovatel: db.spracovatel || '',
+    kategoria: db.kategoria || '',
+    terminDodania: db.termin_dodania || '',
+    color: db.color || 'white',
+    isLocked: db.is_locked || false,
+    fullFormData: db.full_form_data || undefined,
+  };
+};
 
 // Helper to convert app format to DB format
 const spisEntryToDb = (entry: SpisEntry, userId: string): Partial<DbSpisEntry> => ({

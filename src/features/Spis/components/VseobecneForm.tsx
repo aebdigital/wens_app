@@ -14,12 +14,12 @@ interface VseobecneFormProps {
 export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormData, isDark, isLocked = false }) => {
   const { contacts } = useContacts();
   // Removed local activeSource state, now using formData.fakturaciaSource
-  const [activeAutocomplete, setActiveAutocomplete] = useState<{field: string, type: string} | null>(null);
+  const [activeAutocomplete, setActiveAutocomplete] = useState<{ field: string, type: string } | null>(null);
 
   const getInputClass = (customWidth = 'w-full') => {
     const base = `${customWidth} text-xs border px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#e11b28]`;
     if (isLocked) {
-        return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
+      return `${base} cursor-not-allowed ${isDark ? 'bg-dark-800 border-dark-500 text-gray-500' : 'bg-gray-100 border-gray-300 text-gray-500'}`;
     }
     return `${base} ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`;
   };
@@ -33,25 +33,28 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
     let adresa = '';
 
     if (type === 'zakaznik') {
-        priezvisko = formData.priezvisko;
-        meno = formData.meno;
-        adresa = [formData.ulica, formData.mesto, formData.psc].filter(Boolean).join(', ');
+      priezvisko = formData.priezvisko;
+      meno = formData.meno;
+      adresa = [formData.ulica, formData.mesto, formData.psc].filter(Boolean).join(', ');
     } else if (type === 'architekt') {
-        priezvisko = formData.architektonickyPriezvisko;
-        meno = formData.architektonickeMeno;
-        adresa = [formData.architektonickyUlica, formData.architektonickyMesto, formData.architektonickyPsc].filter(Boolean).join(', ');
+      priezvisko = formData.architektonickyPriezvisko;
+      meno = formData.architektonickeMeno;
+      adresa = [formData.architektonickyUlica, formData.architektonickyMesto, formData.architektonickyPsc].filter(Boolean).join(', ');
     } else if (type === 'realizator') {
-        priezvisko = formData.realizatorPriezvisko;
-        meno = formData.realizatorMeno;
-        adresa = [formData.realizatorUlica, formData.realizatorMesto, formData.realizatorPsc].filter(Boolean).join(', ');
+      priezvisko = formData.realizatorPriezvisko;
+      meno = formData.realizatorMeno;
+      adresa = [formData.realizatorUlica, formData.realizatorMesto, formData.realizatorPsc].filter(Boolean).join(', ');
     }
 
     setFormData(prev => ({
-        ...prev,
-        fakturaciaSource: type, // Save source
-        fakturaciaPriezvisko: priezvisko,
-        fakturaciaMeno: meno,
-        fakturaciaAdresa: adresa
+      ...prev,
+      fakturaciaSource: type, // Save source
+      fakturaciaPriezvisko: priezvisko,
+      fakturaciaMeno: meno,
+      fakturaciaAdresa: adresa,
+      fakturaciaIco: type === 'zakaznik' ? formData.ico : (type === 'architekt' ? formData.architektonickyIco : formData.realizatorIco),
+      fakturaciaDic: type === 'zakaznik' ? formData.dic : (type === 'architekt' ? formData.architektonickyDic : formData.realizatorDic),
+      fakturaciaIcDph: type === 'zakaznik' ? formData.icDph : (type === 'architekt' ? formData.architektonickyIcDph : formData.realizatorIcDph)
     }));
   };
 
@@ -156,21 +159,21 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
     const normalizeString = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const filteredContacts = contacts.filter(c => {
-        // Filter by type
-        if (section === 'realizator') {
-            if (c.typ !== 'fakturacna_firma') return false;
-        } else {
-            if (c.typ !== section) return false;
-        }
+      // Filter by type
+      if (section === 'realizator') {
+        if (c.typ !== 'fakturacna_firma') return false;
+      } else {
+        if (c.typ !== section) return false;
+      }
 
-        const needle = normalizeString(value);
-        if (!needle) return false;
+      const needle = normalizeString(value);
+      if (!needle) return false;
 
-        // Search in both Priezvisko and Meno
-        const p = normalizeString(c.priezvisko || '');
-        const m = normalizeString(c.meno || '');
+      // Search in both Priezvisko and Meno
+      const p = normalizeString(c.priezvisko || '');
+      const m = normalizeString(c.meno || '');
 
-        return p.includes(needle) || m.includes(needle);
+      return p.includes(needle) || m.includes(needle);
     });
 
     return (
@@ -181,13 +184,13 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           value={value}
           disabled={isLocked}
           onChange={(e) => {
-              const val = e.target.value;
-              setFormData(prev => ({...prev, [field]: val}));
-              if (val.length > 0) {
-                  setActiveAutocomplete({ field, type: section });
-              } else {
-                  setActiveAutocomplete(null);
-              }
+            const val = e.target.value;
+            setFormData(prev => ({ ...prev, [field]: val }));
+            if (val.length > 0) {
+              setActiveAutocomplete({ field, type: section });
+            } else {
+              setActiveAutocomplete(null);
+            }
           }}
           onBlur={() => setTimeout(() => setActiveAutocomplete(null), 200)} // Delay to allow click
           className={getInputClass()}
@@ -222,13 +225,13 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           <div>
             {renderAutocompleteInput(formData.meno, 'meno', 'Meno', 'zakaznik')}
           </div>
-          
+
           <div>
             <input
               type="text"
               placeholder="Telefón"
               value={formData.telefon}
-              onChange={(e) => setFormData(prev => ({...prev, telefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, telefon: e.target.value.replace(/[^0-9+\s-]/g, '') }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -238,7 +241,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Email"
               value={formData.email}
-              onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -249,7 +252,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Ulica"
               value={formData.ulica}
-              onChange={(e) => setFormData(prev => ({...prev, ulica: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, ulica: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -257,7 +260,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           <div>
             <RpoAutocomplete
               value={formData.ico}
-              onChange={(val) => setFormData(prev => ({...prev, ico: val.replace(/[^0-9]/g, '')}))}
+              onChange={(val) => setFormData(prev => ({ ...prev, ico: val.replace(/[^0-9]/g, '') }))}
               onSelect={(entity) => handleRpoSelect(entity, 'zakaznik')}
               getItemValue={(entity) => entity.ico || ''}
               placeholder="IČO"
@@ -272,7 +275,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="Mesto"
                 value={formData.mesto}
-                onChange={(e) => setFormData(prev => ({...prev, mesto: e.target.value}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, mesto: e.target.value }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -280,7 +283,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="PSČ"
                 value={formData.psc}
-                onChange={(e) => setFormData(prev => ({...prev, psc: e.target.value.replace(/[^0-9\s]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, psc: e.target.value.replace(/[^0-9\s]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -292,7 +295,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="IČ DPH"
                 value={formData.icDph}
-                onChange={(e) => setFormData(prev => ({...prev, icDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, icDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -300,7 +303,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="DIČ"
                 value={formData.dic}
-                onChange={(e) => setFormData(prev => ({...prev, dic: e.target.value.replace(/[^0-9]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, dic: e.target.value.replace(/[^0-9]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -313,7 +316,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Popis projektu"
               value={formData.popisProjektu}
-              onChange={(e) => setFormData(prev => ({...prev, popisProjektu: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, popisProjektu: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -335,7 +338,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Telefón"
               value={formData.architektonickyTelefon}
-              onChange={(e) => setFormData(prev => ({...prev, architektonickyTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, architektonickyTelefon: e.target.value.replace(/[^0-9+\s-]/g, '') }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -345,7 +348,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Email"
               value={formData.architektonickyEmail}
-              onChange={(e) => setFormData(prev => ({...prev, architektonickyEmail: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, architektonickyEmail: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -356,7 +359,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Ulica"
               value={formData.architektonickyUlica}
-              onChange={(e) => setFormData(prev => ({...prev, architektonickyUlica: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, architektonickyUlica: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -364,7 +367,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           <div>
             <RpoAutocomplete
               value={formData.architektonickyIco}
-              onChange={(val) => setFormData(prev => ({...prev, architektonickyIco: val.replace(/[^0-9]/g, '')}))}
+              onChange={(val) => setFormData(prev => ({ ...prev, architektonickyIco: val.replace(/[^0-9]/g, '') }))}
               onSelect={(entity) => handleRpoSelect(entity, 'architekt')}
               getItemValue={(entity) => entity.ico || ''}
               placeholder="IČO"
@@ -379,7 +382,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="Mesto"
                 value={formData.architektonickyMesto}
-                onChange={(e) => setFormData(prev => ({...prev, architektonickyMesto: e.target.value}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, architektonickyMesto: e.target.value }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -387,7 +390,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="PSČ"
                 value={formData.architektonickyPsc}
-                onChange={(e) => setFormData(prev => ({...prev, architektonickyPsc: e.target.value.replace(/[^0-9\s]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, architektonickyPsc: e.target.value.replace(/[^0-9\s]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -399,7 +402,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="IČ DPH"
                 value={formData.architektonickyIcDph}
-                onChange={(e) => setFormData(prev => ({...prev, architektonickyIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, architektonickyIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -407,7 +410,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="DIČ"
                 value={formData.architektonickyDic}
-                onChange={(e) => setFormData(prev => ({...prev, architektonickyDic: e.target.value.replace(/[^0-9]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, architektonickyDic: e.target.value.replace(/[^0-9]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -429,7 +432,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Telefón"
               value={formData.realizatorTelefon}
-              onChange={(e) => setFormData(prev => ({...prev, realizatorTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, realizatorTelefon: e.target.value.replace(/[^0-9+\s-]/g, '') }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -439,7 +442,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Email"
               value={formData.realizatorEmail}
-              onChange={(e) => setFormData(prev => ({...prev, realizatorEmail: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, realizatorEmail: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -450,7 +453,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Ulica"
               value={formData.realizatorUlica}
-              onChange={(e) => setFormData(prev => ({...prev, realizatorUlica: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, realizatorUlica: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -458,7 +461,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
           <div>
             <RpoAutocomplete
               value={formData.realizatorIco}
-              onChange={(val) => setFormData(prev => ({...prev, realizatorIco: val.replace(/[^0-9]/g, '')}))}
+              onChange={(val) => setFormData(prev => ({ ...prev, realizatorIco: val.replace(/[^0-9]/g, '') }))}
               onSelect={(entity) => handleRpoSelect(entity, 'realizator')}
               getItemValue={(entity) => entity.ico || ''}
               placeholder="IČO"
@@ -473,7 +476,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="Mesto"
                 value={formData.realizatorMesto}
-                onChange={(e) => setFormData(prev => ({...prev, realizatorMesto: e.target.value}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, realizatorMesto: e.target.value }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -481,7 +484,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="PSČ"
                 value={formData.realizatorPsc}
-                onChange={(e) => setFormData(prev => ({...prev, realizatorPsc: e.target.value.replace(/[^0-9\s]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, realizatorPsc: e.target.value.replace(/[^0-9\s]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -493,7 +496,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="IČ DPH"
                 value={formData.realizatorIcDph}
-                onChange={(e) => setFormData(prev => ({...prev, realizatorIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, realizatorIcDph: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() }))}
                 disabled={isLocked}
                 className={getInputClass('flex-1')}
               />
@@ -501,7 +504,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                 type="text"
                 placeholder="DIČ"
                 value={formData.realizatorDic}
-                onChange={(e) => setFormData(prev => ({...prev, realizatorDic: e.target.value.replace(/[^0-9]/g, '')}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, realizatorDic: e.target.value.replace(/[^0-9]/g, '') }))}
                 disabled={isLocked}
                 className={getInputClass('w-16')}
               />
@@ -519,7 +522,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Priezvisko"
               value={formData.kontaktnaPriezvisko}
-              onChange={(e) => setFormData(prev => ({...prev, kontaktnaPriezvisko: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, kontaktnaPriezvisko: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -529,7 +532,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Meno"
               value={formData.kontaktnaMeno}
-              onChange={(e) => setFormData(prev => ({...prev, kontaktnaMeno: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, kontaktnaMeno: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -539,7 +542,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Telefón"
               value={formData.kontaktnaTelefon}
-              onChange={(e) => setFormData(prev => ({...prev, kontaktnaTelefon: e.target.value.replace(/[^0-9+\s-]/g, '')}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, kontaktnaTelefon: e.target.value.replace(/[^0-9+\s-]/g, '') }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -549,7 +552,7 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
               type="text"
               placeholder="Email"
               value={formData.kontaktnaEmail}
-              onChange={(e) => setFormData(prev => ({...prev, kontaktnaEmail: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, kontaktnaEmail: e.target.value }))}
               disabled={isLocked}
               className={getInputClass()}
             />
@@ -564,103 +567,126 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
         {/* Toggle Switch */}
         <div
           className={`relative w-10 h-5 rounded-full transition-colors duration-200 ease-in-out ${isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${formData.fakturaciaTyp === 'pouzit' ? 'bg-blue-500' : 'bg-gray-300'}`}
-          onClick={() => !isLocked && setFormData(prev => ({...prev, fakturaciaTyp: prev.fakturaciaTyp === 'pouzit' ? 'nepouzit' : 'pouzit'}))}
+          onClick={() => !isLocked && setFormData(prev => ({ ...prev, fakturaciaTyp: prev.fakturaciaTyp === 'pouzit' ? 'nepouzit' : 'pouzit' }))}
         >
           <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${formData.fakturaciaTyp === 'pouzit' ? 'translate-x-5' : 'translate-x-0'}`} />
         </div>
 
         {formData.fakturaciaTyp === 'pouzit' && ( // Conditional wrapper for all content below the toggle
-            <>
-                <div className="flex flex-col gap-2 mb-2">
-                    {/* Controls Row: K10 and Buttons */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <label className={`flex items-center select-none ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                            <input
-                            type="checkbox"
-                            checked={formData.fakturaciaK10}
-                            onChange={(e) => setFormData(prev => ({...prev, fakturaciaK10: e.target.checked}))}
-                            disabled={isLocked}
-                            className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
-                            />
-                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>K10</span>
-                        </label>
+          <>
+            <div className="flex flex-col gap-2 mb-2">
+              {/* Controls Row: K10 and Buttons */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <label className={`flex items-center select-none ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.fakturaciaK10}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaK10: e.target.checked }))}
+                    disabled={isLocked}
+                    className={`mr-1 ${isLocked ? 'cursor-not-allowed' : ''}`}
+                  />
+                  <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>K10</span>
+                </label>
 
-                        <button
-                            onClick={() => fillFrom('zakaznik')}
-                            disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
-                                formData.fakturaciaSource === 'zakaznik' 
-                                    ? 'bg-red-500 text-white border-red-600' 
-                                    : isDark 
-                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600' 
-                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                            }`}
-                        >
-                            Konečný zákazník
-                        </button>
-                        <button
-                            onClick={() => fillFrom('architekt')}
-                            disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
-                                formData.fakturaciaSource === 'architekt' 
-                                    ? 'bg-red-500 text-white border-red-600' 
-                                    : isDark
-                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600' 
-                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                            }`}
-                        >
-                            Sprostredkovateľ
-                        </button>
-                        <button
-                            onClick={() => fillFrom('realizator')}
-                            disabled={isLocked}
-                            className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${
-                                formData.fakturaciaSource === 'realizator' 
-                                    ? 'bg-red-500 text-white border-red-600' 
-                                    : isDark
-                                        ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600'
-                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                            }`}
-                        >
-                            Fakturačná firma
-                        </button>
-                    </div>
+                <button
+                  onClick={() => fillFrom('zakaznik')}
+                  disabled={isLocked}
+                  className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'zakaznik'
+                    ? 'bg-red-500 text-white border-red-600'
+                    : isDark
+                      ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600'
+                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  Konečný zákazník
+                </button>
+                <button
+                  onClick={() => fillFrom('architekt')}
+                  disabled={isLocked}
+                  className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'architekt'
+                    ? 'bg-red-500 text-white border-red-600'
+                    : isDark
+                      ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600'
+                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  Sprostredkovateľ
+                </button>
+                <button
+                  onClick={() => fillFrom('realizator')}
+                  disabled={isLocked}
+                  className={`px-2 py-1 text-xs border rounded transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''} ${formData.fakturaciaSource === 'realizator'
+                    ? 'bg-red-500 text-white border-red-600'
+                    : isDark
+                      ? 'bg-dark-700 text-gray-200 border-dark-500 hover:bg-dark-600'
+                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  Fakturačná firma
+                </button>
+              </div>
 
-                    {/* Input fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <div>
-                            <input
-                            type="text"
-                            placeholder="Priezvisko"
-                            value={formData.fakturaciaPriezvisko}
-                            onChange={(e) => setFormData(prev => ({...prev, fakturaciaPriezvisko: e.target.value}))}
-                            disabled={isLocked}
-                            className={getInputClass()}
-                            />
-                        </div>
-                        <div>
-                            <input
-                            type="text"
-                            placeholder="Meno"
-                            value={formData.fakturaciaMeno}
-                            onChange={(e) => setFormData(prev => ({...prev, fakturaciaMeno: e.target.value}))}
-                            disabled={isLocked}
-                            className={getInputClass()}
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <textarea
-                            placeholder="Adresa"
-                            value={formData.fakturaciaAdresa}
-                            onChange={(e) => setFormData(prev => ({...prev, fakturaciaAdresa: e.target.value}))}
-                            disabled={isLocked}
-                            className={getInputClass()}
-                            rows={2}
-                        ></textarea>
-                    </div>
+              {/* Input fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Priezvisko"
+                    value={formData.fakturaciaPriezvisko}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaPriezvisko: e.target.value }))}
+                    disabled={isLocked}
+                    className={getInputClass()}
+                  />
                 </div>
-            </>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Meno"
+                    value={formData.fakturaciaMeno}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaMeno: e.target.value }))}
+                    disabled={isLocked}
+                    className={getInputClass()}
+                  />
+                </div>
+              </div>
+              <div>
+                <textarea
+                  placeholder="Adresa"
+                  value={formData.fakturaciaAdresa}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaAdresa: e.target.value }))}
+                  disabled={isLocked}
+                  className={getInputClass()}
+                  rows={2}
+                ></textarea>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="IČO"
+                  value={formData.fakturaciaIco || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaIco: e.target.value }))}
+                  disabled={isLocked}
+                  className={getInputClass()}
+                />
+                <input
+                  type="text"
+                  placeholder="DIČ"
+                  value={formData.fakturaciaDic || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaDic: e.target.value }))}
+                  disabled={isLocked}
+                  className={getInputClass()}
+                />
+                <input
+                  type="text"
+                  placeholder="IČ DPH"
+                  value={formData.fakturaciaIcDph || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaIcDph: e.target.value }))}
+                  disabled={isLocked}
+                  className={getInputClass()}
+                />
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

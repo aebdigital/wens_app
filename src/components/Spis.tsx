@@ -158,7 +158,7 @@ const Spis = () => {
     },
     { key: 'cisloZakazky', label: 'Číslo zákazky' },
     { key: 'datum', label: 'Dátum', isDate: true },
-    { key: 'kontaktnaOsoba', label: 'Konečný zákazník' },
+    { key: 'konecnyZakaznik', label: 'Konečný zákazník' },
     { key: 'architekt', label: 'Architekt' },
     { key: 'realizator', label: 'Realizátor' },
     {

@@ -269,17 +269,6 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
 
     // Helper function to get the correct invoicing name
     const getInvoicingName = (entry: SpisEntry): string => {
-        const formData = entry.fullFormData;
-        if (!formData) return entry.konecnyZakaznik || entry.kontaktnaOsoba || '';
-
-        // If invoicing is enabled and has data, use it
-        if (formData.fakturaciaTyp === 'pouzit' && formData.fakturaciaPriezvisko) {
-            return [formData.fakturaciaPriezvisko, formData.fakturaciaMeno]
-                .filter(Boolean)
-                .join(' ');
-        }
-
-        // Fallback to end customer
         return entry.konecnyZakaznik || entry.kontaktnaOsoba || '';
     };
 
@@ -345,7 +334,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         }
 
         // Dátum 3 - usually completion date or doplatok date
-        deposit3Date = formData.doplatokDatum || formData.terminDokoncenia || '';
+        deposit3Date = formData.doplatokDatum || '';
 
         return {
             price,
@@ -533,7 +522,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                             </div>
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-auto bg-gray-50 dark:bg-dark-900 border-t border-gray-200 dark:border-dark-600">
+                        <div className="flex-1 overflow-auto bg-white border-t border-gray-200 dark:border-dark-600">
                             {/* Cashflow Table */}
                             <table className="w-full text-sm text-left border-collapse">
                                 <thead className={`sticky top-0 z-10 shadow-sm ${isDark ? 'bg-dark-700 text-gray-200' : 'bg-white text-gray-700'} font-semibold border-b ${isDark ? 'border-dark-600' : 'border-gray-200'}`}>

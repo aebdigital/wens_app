@@ -115,6 +115,9 @@ export interface SpisFormData {
   fakturaciaPriezvisko: string;
   fakturaciaMeno: string;
   fakturaciaAdresa: string;
+  fakturaciaIco: string;
+  fakturaciaDic: string;
+  fakturaciaIcDph: string;
 
   // Items
   popisItems: { datum: string, popis: string, pridal: string }[];
