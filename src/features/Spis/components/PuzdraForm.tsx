@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PuzdraData } from '../types';
 import { Product } from '../../../contexts/ProductsContext';
+import { CustomDatePicker } from '../../../components/common/CustomDatePicker';
 
 interface PuzdraFormProps {
   data: PuzdraData;
@@ -308,12 +309,13 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
         <div className="space-y-2 text-xs">
           <div className="flex gap-2 items-center">
             <span className={`w-24 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Dátum:</span>
-            <input
-              type="text"
-              value={data.datum || new Date().toLocaleDateString('sk-SK')}
-              onChange={(e) => onChange({ ...data, datum: e.target.value })}
-              className={`flex-1 px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
-            />
+            <div className="flex-1">
+              <CustomDatePicker
+                value={data.datum || ''}
+                onChange={(val) => onChange({ ...data, datum: val })}
+                className={`w-full px-2 py-1 rounded ${isDark ? 'bg-dark-600 text-white border-gray-500' : 'bg-gray-50 text-gray-800 border-gray-200'} border`}
+              />
+            </div>
           </div>
           <div className="flex gap-2 items-center">
             <span className={`w-24 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Spracoval:</span>

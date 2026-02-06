@@ -34,6 +34,8 @@ export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
         onToggleCustomerInfo={() => onChange({ ...data, showCustomerInfo: !data.showCustomerInfo })}
         showArchitectInfo={data.showArchitectInfo}
         onToggleArchitectInfo={() => onChange({ ...data, showArchitectInfo: !data.showArchitectInfo })}
+        showBillingInfo={data.showBillingInfo}
+        onToggleBillingInfo={() => onChange({ ...data, showBillingInfo: !data.showBillingInfo })}
       />
       {children}
       <QuoteFooter isDark={isDark} data={data} onChange={onChange} headerInfo={headerInfo} totals={totals} defaultLegalText={defaultLegalText} />

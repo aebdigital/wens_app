@@ -33,6 +33,14 @@ interface NabytokFormProps {
       telefon: string;
       email: string;
     };
+    billing?: {
+      priezvisko: string;
+      meno: string;
+      adresa: string;
+      ico: string;
+      dic: string;
+      icDph: string;
+    };
     vypracoval?: string;
     // Legacy / Flat support
     firma?: string;

@@ -757,7 +757,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             email: user?.email || ''
                           }}
                           cisloZakazky={formData.cisloZakazky}
-                          customerName={`${formData.meno} ${formData.priezvisko}`.trim() || formData.firma}
+                          customerName={`${formData.meno} ${formData.priezvisko}`.trim()}
                         />
                       </Suspense>
                     </TabErrorBoundary>
@@ -1022,12 +1022,20 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             architectInfo={{
               priezvisko: formData.architektonickyPriezvisko,
               meno: formData.architektonickeMeno,
-              firma: "", // Assuming no specific company field for architect in the form data provided
+              firma: '', // No separate firma field for architect in formData currently
               ulica: formData.architektonickyUlica,
               mesto: formData.architektonickyMesto,
               psc: formData.architektonickyPsc,
               telefon: formData.architektonickyTelefon,
               email: formData.architektonickyEmail
+            }}
+            billingInfo={{
+              priezvisko: formData.fakturaciaPriezvisko,
+              meno: formData.fakturaciaMeno,
+              adresa: formData.fakturaciaAdresa,
+              ico: formData.fakturaciaIco,
+              dic: formData.fakturaciaDic,
+              icDph: formData.fakturaciaIcDph
             }}
             editingData={editingOfferData}
             visibleTabs={vzorModalTabs}

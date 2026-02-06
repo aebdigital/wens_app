@@ -41,6 +41,14 @@ interface AddTemplateModalProps {
     telefon: string;
     email: string;
   };
+  billingInfo?: {
+    priezvisko: string;
+    meno: string;
+    adresa: string;
+    ico: string;
+    dic: string;
+    icDph: string;
+  };
   // Initial data for editing
   editingData?: {
     type: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
@@ -74,6 +82,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   creatorPhone,
   creatorEmail,
   architectInfo,
+  billingInfo,
   editingData,
   visibleTabs = ['dvere', 'nabytok', 'schody', 'puzdra'],
   isLocked = false,
@@ -422,7 +431,14 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         architektonickyMesto: architectInfo?.mesto || '',
         architektonickyPsc: architectInfo?.psc || '',
         architektonickyTelefon: architectInfo?.telefon || '',
-        architektonickyEmail: architectInfo?.email || ''
+        architektonickyEmail: architectInfo?.email || '',
+        // Billing info for PDF generation
+        fakturaciaPriezvisko: billingInfo?.priezvisko || '',
+        fakturaciaMeno: billingInfo?.meno || '',
+        fakturaciaAdresa: billingInfo?.adresa || '',
+        fakturaciaIco: billingInfo?.ico || '',
+        fakturaciaDic: billingInfo?.dic || '',
+        fakturaciaIcDph: billingInfo?.icDph || ''
       };
 
       const blobUrl = await generatePDF(tempItem, formData as any, headerInfo);
@@ -547,6 +563,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                   email,
                 },
                 architect: architectInfo,
+                billing: billingInfo,
                 vypracoval,
                 telefon: creatorPhone || '',
                 email: creatorEmail || ''
@@ -570,6 +587,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                   email,
                 },
                 architect: architectInfo,
+                billing: billingInfo,
                 vypracoval,
                 telefon: creatorPhone || '',
                 email: creatorEmail || ''
@@ -593,6 +611,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                   email,
                 },
                 architect: architectInfo,
+                billing: billingInfo,
                 vypracoval,
                 telefon: creatorPhone || '',
                 email: creatorEmail || ''

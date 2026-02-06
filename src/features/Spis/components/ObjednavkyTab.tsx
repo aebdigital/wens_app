@@ -98,8 +98,8 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
           </thead>
           <tbody>
             {[...items].sort((a, b) => b.cisloObjednavky.localeCompare(a.cisloObjednavky)).map((item, sortedIndex) => {
-              // Find original index for onUpdate
-              const index = items.findIndex(i => i.cisloObjednavky === item.cisloObjednavky);
+              // Find original index for onUpdate using id if available, otherwise fallback to cisloObjednavky
+              const index = items.findIndex(i => (item.id && i.id === item.id) || i.cisloObjednavky === item.cisloObjednavky);
               const isHighlighted = selectedOrderIndex === index;
               const itemId = item.id || item.cisloObjednavky || `objednavka-${index}`;
 

@@ -23,6 +23,14 @@ interface QuoteHeaderProps {
       telefon: string;
       email: string;
     };
+    billing?: {
+      priezvisko: string;
+      meno: string;
+      adresa: string;
+      ico: string;
+      dic: string;
+      icDph: string;
+    };
     vypracoval?: string;
     // Legacy support (optional)
     firma?: string;
@@ -36,6 +44,8 @@ interface QuoteHeaderProps {
   onToggleCustomerInfo?: () => void;
   showArchitectInfo?: boolean;
   onToggleArchitectInfo?: () => void;
+  showBillingInfo?: boolean;
+  onToggleBillingInfo?: () => void;
 }
 
 export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
@@ -44,7 +54,9 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   showCustomerInfo,
   onToggleCustomerInfo,
   showArchitectInfo,
-  onToggleArchitectInfo
+  onToggleArchitectInfo,
+  showBillingInfo,
+  onToggleBillingInfo
 }) => {
   const customerName = headerInfo.customer
     ? (`${headerInfo.customer.priezvisko || ''} ${headerInfo.customer.meno || ''}`.trim() || headerInfo.customer.firma)
@@ -106,6 +118,30 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
               <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{headerInfo.architect.mesto} {headerInfo.architect.psc}</p>
               <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{headerInfo.architect.telefon}</p>
               <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{headerInfo.architect.email}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Billing Column */}
+        {headerInfo.billing && (
+          <div className="flex-1 space-y-2 border-l pl-4 border-gray-200 dark:border-dark-500">
+            <div className="flex items-center gap-2 mb-1">
+              <input
+                type="checkbox"
+                checked={showBillingInfo}
+                onChange={onToggleBillingInfo}
+                className="rounded text-[#e11b28] focus:ring-[#e11b28]"
+              />
+              <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Fakturačná firma</span>
+            </div>
+            <div className={`text-xs space-y-0.5 ${!showBillingInfo ? 'opacity-50' : ''}`}>
+              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {`${headerInfo.billing.priezvisko || ''} ${headerInfo.billing.meno || ''}`.trim()}
+              </p>
+              <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{headerInfo.billing.adresa}</p>
+              <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>IČO: {headerInfo.billing.ico}</p>
+              <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>DIČ: {headerInfo.billing.dic}</p>
+              {headerInfo.billing.icDph && <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>IČ DPH: {headerInfo.billing.icDph}</p>}
             </div>
           </div>
         )}

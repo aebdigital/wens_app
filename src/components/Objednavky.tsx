@@ -77,7 +77,7 @@ const Objednavky = () => {
         parentSpisId: entry.cisloCP,
         isStandalone: false,
         cisloZakazkyDisplay: entry.cisloZakazky,
-        menoZakaznikaDisplay: entry.kontaktnaOsoba,
+        menoZakaznikaDisplay: entry.konecnyZakaznik,
         // Show dodavatel from order, not firma from entry
         firmaDisplay: order.puzdraData?.dodavatel?.nazov || '',
         // Map order specific fields
@@ -121,8 +121,13 @@ const Objednavky = () => {
   }, [entries, standaloneOrders]);
 
   const handleOrderClick = (order: any) => {
+    // Sync top-level datum to nested data for consistent modal display
+    const pData = order.puzdraData;
+    if (pData && order.datum) {
+      pData.datum = order.datum;
+    }
     // Always open the order for editing directly, regardless of parent spis
-    setEditingOrder({ order, parentSpisId: order.parentSpisId, isStandalone: order.isStandalone });
+    setEditingOrder({ order: { ...order, puzdraData: pData }, parentSpisId: order.parentSpisId, isStandalone: order.isStandalone });
     setIsAddOrderModalOpen(true);
   };
 
@@ -376,7 +381,7 @@ const Objednavky = () => {
         id: editingOrder.order.id,
         nazov: puzdraData.zakazka || editingOrder.order.nazov,
         vypracoval: editingOrder.order.vypracoval || userName,
-        datum: editingOrder.order.datum,
+        datum: puzdraData.datum || editingOrder.order.datum,
         popis: puzdraData.zakazka || '',
         cisloObjednavky: orderNumber,
         dorucene: editingOrder.order.dorucene || '',

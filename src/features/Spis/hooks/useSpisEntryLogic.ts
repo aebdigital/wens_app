@@ -339,7 +339,7 @@ export const useSpisEntryLogic = (
       id: editingOrderId || Date.now().toString() + Math.random().toString(36).substr(2, 9),
       nazov: data.zakazka || `Objednávka ${orderNumber}`,
       vypracoval: existingItem?.vypracoval || (user ? `${user.firstName} ${user.lastName}` : ''),
-      datum: existingItem?.datum || new Date().toISOString().split('T')[0],
+      datum: data.datum || existingItem?.datum || new Date().toISOString().split('T')[0],
       popis: existingItem?.popis || '',
       cisloObjednavky: orderNumber,
       dorucene: existingItem?.dorucene || '',
@@ -389,7 +389,12 @@ export const useSpisEntryLogic = (
 
   const handleEditOrderAction = (item: any) => {
     setEditingOrderId(item.id);
-    setEditingOrderData(item.data || item.puzdraData);
+    const pData = item.data || item.puzdraData;
+    // Sync top-level datum to nested data for consistent modal display
+    if (pData && item.datum) {
+      pData.datum = item.datum;
+    }
+    setEditingOrderData(pData);
     setEditingOrderNumber(item.cisloObjednavky);
     setShowOrderModal(true);
   };

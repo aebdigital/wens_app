@@ -111,9 +111,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   // Check if architect info exists
   const hasArchitect = formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyIco;
 
-  // Check if we should show customer and/or architect info from item data
+  // Check if we should show customer, architect and/or billing info from item data
   const showCustomerInfo = 'showCustomerInfo' in (item.data || {}) ? (item.data as any).showCustomerInfo !== false : true;
   const showArchitectInfo = 'showArchitectInfo' in (item.data || {}) ? (item.data as any).showArchitectInfo === true : false && hasArchitect;
+  const showBillingInfo = 'showBillingInfo' in (item.data || {}) ? (item.data as any).showBillingInfo === true : false;
 
   // Calculate column positions based on what's shown
   const customerColX = rightColX;
@@ -139,6 +140,40 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     if (formData.email) {
       doc.text(`${formData.email}`, customerColX, customerYPos);
       customerYPos += 4;
+    }
+  }
+
+  if (showBillingInfo) {
+    // Determine position for billing - if both architect and billing are shown, we might need more space
+    // For now, let's put it between customer and architect if architect is shown, 
+    // or at the architect position if it's not.
+    // Actually, client asked for "medzi konečného zákazníka a architekta"
+    const currentBillingX = showArchitectInfo ? (customerColX + architectColX) / 2 : architectColX;
+
+    let billingYPos = yPos;
+    const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
+    doc.setFontSize(8);
+    doc.setFont(fontName, 'bold');
+    if (billingName) {
+      doc.text(billingName, currentBillingX, billingYPos);
+      billingYPos += 4;
+    }
+    doc.setFont(fontName, 'normal');
+    if (formData.fakturaciaAdresa) {
+      doc.text(formData.fakturaciaAdresa, currentBillingX, billingYPos);
+      billingYPos += 4;
+    }
+    if (formData.fakturaciaIco) {
+      doc.text(`IČO: ${formData.fakturaciaIco}`, currentBillingX, billingYPos);
+      billingYPos += 4;
+    }
+    if (formData.fakturaciaDic) {
+      doc.text(`DIČ: ${formData.fakturaciaDic}`, currentBillingX, billingYPos);
+      billingYPos += 4;
+    }
+    if (formData.fakturaciaIcDph) {
+      doc.text(`IČ DPH: ${formData.fakturaciaIcDph}`, currentBillingX, billingYPos);
+      billingYPos += 4;
     }
   }
 

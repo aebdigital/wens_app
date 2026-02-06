@@ -214,6 +214,7 @@ export interface DvereData {
   productPhotos?: ProductPhoto[]; // Photos for the Výrobky section
   showCustomerInfo: boolean;
   showArchitectInfo: boolean;
+  showBillingInfo?: boolean;
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
@@ -258,6 +259,7 @@ export interface NabytokData {
   vyrobkyPopis: string;
   showCustomerInfo: boolean;
   showArchitectInfo: boolean;
+  showBillingInfo?: boolean;
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
@@ -298,6 +300,7 @@ export interface SchodyData {
   vyrobkyPopis: string;
   showCustomerInfo: boolean;
   showArchitectInfo: boolean;
+  showBillingInfo?: boolean;
   vyrobky: any[];
   priplatky: any[];
   zlavaPercent: number;
