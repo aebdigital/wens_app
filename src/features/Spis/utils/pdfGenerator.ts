@@ -106,7 +106,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
   // Client Info (Right) - no "Odberateľ:" label
   yPos = 27;
-  const rightColX = pageWidth / 2 + 10;
 
   // Check if architect info exists
   const hasArchitect = formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyIco;
@@ -117,8 +116,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   const showBillingInfo = 'showBillingInfo' in (item.data || {}) ? (item.data as any).showBillingInfo === true : false;
 
   // Calculate column positions based on what's shown
-  const customerColX = rightColX;
-  const architectColX = pageWidth - 14 - 35; // 35mm for architect column from right edge (moved right)
+  // We spread them out across the rest of the page (from approx center to pageWidth-14)
+  const customerColX = 95;
+  const architectColX = 165;
+  const billingColX = 130;
 
   if (showCustomerInfo) {
     let customerYPos = yPos;
@@ -126,6 +127,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const clientName = `${formData.priezvisko || ''} ${formData.meno || ''}`.trim() || formData.firma;
     doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
+    doc.text('Konečný zákazník:', customerColX, customerYPos);
+    customerYPos += 4;
     doc.text(clientName, customerColX, customerYPos);
     doc.setFont(fontName, 'normal');
     customerYPos += 4;
@@ -144,16 +147,15 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   }
 
   if (showBillingInfo) {
-    // Determine position for billing - if both architect and billing are shown, we might need more space
-    // For now, let's put it between customer and architect if architect is shown, 
-    // or at the architect position if it's not.
-    // Actually, client asked for "medzi konečného zákazníka a architekta"
-    const currentBillingX = showArchitectInfo ? (customerColX + architectColX) / 2 : architectColX;
+    // If architect layout is simple, use fixed middle position
+    const currentBillingX = billingColX;
 
     let billingYPos = yPos;
     const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
     doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
+    doc.text('Fakturačná firma:', currentBillingX, billingYPos);
+    billingYPos += 4;
     if (billingName) {
       doc.text(billingName, currentBillingX, billingYPos);
       billingYPos += 4;
@@ -182,6 +184,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const archName = `${formData.architektonickyPriezvisko || ''} ${formData.architektonickeMeno || ''}`.trim();
     doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
+    doc.text('Architekt:', architectColX, architectYPos);
+    architectYPos += 4;
     if (archName) {
       doc.text(archName, architectColX, architectYPos);
       architectYPos += 4;
