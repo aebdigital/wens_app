@@ -11,6 +11,7 @@ import { PermissionsProvider } from './contexts/PermissionsContext';
 import { DocumentLockProvider } from './contexts/DocumentLockContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import AuthWrapper from './components/AuthWrapper';
+import ResetPassword from './components/ResetPassword';
 import Spis from './components/Spis';
 import Objednavky from './components/Objednavky';
 import Kontakty from './components/Kontakty';
@@ -71,6 +72,11 @@ const AppContent: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Allow reset-password route without authentication
+  if (location.pathname === '/reset-password') {
+    return <ResetPassword />;
   }
 
   // Show login page if not authenticated

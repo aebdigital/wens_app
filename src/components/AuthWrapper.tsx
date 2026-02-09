@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const AuthWrapper: React.FC = () => {
   const { login } = useAuth();
@@ -10,6 +11,13 @@ const AuthWrapper: React.FC = () => {
   const [loginShowPassword, setLoginShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoginLoading, setIsLoginLoading] = useState(false);
+
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   // Handlers
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -22,6 +30,28 @@ const AuthWrapper: React.FC = () => {
       setLoginError('Nesprávny e-mail alebo heslo');
     }
     setIsLoginLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotMessage('');
+    setIsForgotLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setForgotError('Nepodarilo sa odoslať e-mail. Skúste to znova.');
+      } else {
+        setForgotMessage('E-mail na obnovenie hesla bol odoslaný. Skontrolujte svoju schránku.');
+      }
+    } catch {
+      setForgotError('Nastala chyba. Skúste to znova.');
+    }
+    setIsForgotLoading(false);
   };
 
   return (
@@ -39,72 +69,132 @@ const AuthWrapper: React.FC = () => {
           </div>
 
           {/* Heading */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Vitajte späť</h1>
-          <p className="text-gray-500 mb-8">Prihláste sa do svojho účtu</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {showForgotPassword ? 'Obnovenie hesla' : 'Vitajte späť'}
+          </h1>
+          <p className="text-gray-500 mb-8">
+            {showForgotPassword ? 'Zadajte svoj e-mail a pošleme vám odkaz na obnovenie hesla' : 'Prihláste sa do svojho účtu'}
+          </p>
 
-          <form onSubmit={handleLoginSubmit} className="space-y-6">
-            {loginError && (
-              <div className="bg-red-50 border-l-4 border-[#e11b28] p-4">
-                <p className="text-[#e11b28] text-sm">{loginError}</p>
-              </div>
-            )}
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              {forgotError && (
+                <div className="bg-red-50 border-l-4 border-[#e11b28] p-4">
+                  <p className="text-[#e11b28] text-sm">{forgotError}</p>
+                </div>
+              )}
+              {forgotMessage && (
+                <div className="bg-green-50 border-l-4 border-green-500 p-4">
+                  <p className="text-green-700 text-sm">{forgotMessage}</p>
+                </div>
+              )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                E-mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                className="block w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
-                placeholder="vas@email.sk"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Heslo
-              </label>
-              <div className="relative">
+              <div>
+                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  E-mail
+                </label>
                 <input
-                  id="password"
-                  type={loginShowPassword ? "text" : "password"}
+                  id="forgot-email"
+                  type="email"
                   required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="block w-full px-4 py-3 pr-12 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
-                  placeholder="••••••••"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="block w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
+                  placeholder="vas@email.sk"
                 />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isForgotLoading}
+                className="w-full bg-[#e11b28] text-white py-3 px-4 font-semibold hover:bg-[#c71325] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isForgotLoading ? 'Odosielam...' : 'Odoslať odkaz na obnovenie'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(false); setForgotError(''); setForgotMessage(''); }}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Späť na prihlásenie
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
+              {loginError && (
+                <div className="bg-red-50 border-l-4 border-[#e11b28] p-4">
+                  <p className="text-[#e11b28] text-sm">{loginError}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="block w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
+                  placeholder="vas@email.sk"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Heslo
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={loginShowPassword ? "text" : "password"}
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="block w-full px-4 py-3 pr-12 border border-gray-300 focus:outline-none focus:border-[#e11b28] transition-colors bg-white text-gray-900"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLoginShowPassword(!loginShowPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  >
+                    {loginShowPassword ? (
+                      <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setLoginShowPassword(!loginShowPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  onClick={() => { setShowForgotPassword(true); setForgotEmail(loginEmail); }}
+                  className="text-sm text-gray-500 hover:text-[#e11b28] transition-colors"
                 >
-                  {loginShowPassword ? (
-                    <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
+                  Zabudli ste heslo?
                 </button>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoginLoading}
-              className="w-full bg-[#e11b28] text-white py-3 px-4 font-semibold hover:bg-[#c71325] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoginLoading ? 'Prihlasuje sa...' : 'Prihlásiť sa'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isLoginLoading}
+                className="w-full bg-[#e11b28] text-white py-3 px-4 font-semibold hover:bg-[#c71325] focus:outline-none focus:ring-2 focus:ring-[#e11b28] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoginLoading ? 'Prihlasuje sa...' : 'Prihlásiť sa'}
+              </button>
+            </form>
+          )}
 
           <p className="mt-8 text-center text-sm text-gray-400">
             WENS Door CRM System
