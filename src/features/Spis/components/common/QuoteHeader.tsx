@@ -78,29 +78,9 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
       </div>
 
       <div className="flex gap-4">
-        {/* Customer Column */}
-        <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-2 mb-1">
-            <input
-              type="checkbox"
-              checked={showCustomerInfo}
-              onChange={onToggleCustomerInfo}
-              className="rounded text-[#e11b28] focus:ring-[#e11b28]"
-            />
-            <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Konečný zákazník</span>
-          </div>
-          <div className={`text-xs space-y-0.5 ${!showCustomerInfo ? 'opacity-50' : ''}`}>
-            <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{customerName}</p>
-            <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{customerAddress}</p>
-            <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{customerCity}</p>
-            <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{customerPhone}</p>
-            <p className={isDark ? 'text-gray-300' : 'text-gray-800'}>{customerEmail}</p>
-          </div>
-        </div>
-
         {/* Architect Column */}
         {headerInfo.architect && (
-          <div className="flex-1 space-y-2 border-l pl-4 border-gray-200 dark:border-dark-500">
+          <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2 mb-1">
               <input
                 type="checkbox"

@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { SpisEntry, CenovaPonukaItem, SpisFormData } from '../types';
-import { useSpis } from '../../../contexts/SpisContext';
+import { useSpis, dbToSpisEntry } from '../../../contexts/SpisContext';
+import { supabase } from '../../../lib/supabase';
 
 interface SpisStatsModalProps {
     isOpen: boolean;
@@ -79,6 +80,40 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
     const { isDark } = useTheme();
     const { updateEntry } = useSpis();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [allEntries, setAllEntries] = useState<SpisEntry[]>([]);
+    const [isLoadingAll, setIsLoadingAll] = useState(false);
+
+    // Fetch ALL entries from Supabase when modal opens (paginated entries prop is incomplete)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const fetchAllEntries = async () => {
+            setIsLoadingAll(true);
+            try {
+                const { data, error } = await supabase
+                    .from('spis_entries')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (error) {
+                    console.error('Error loading all entries for stats:', error);
+                    setAllEntries(entries); // fallback to paginated entries
+                } else {
+                    setAllEntries((data || []).map(dbToSpisEntry));
+                }
+            } catch (err) {
+                console.error('Failed to load all entries for stats:', err);
+                setAllEntries(entries);
+            } finally {
+                setIsLoadingAll(false);
+            }
+        };
+
+        fetchAllEntries();
+    }, [isOpen]);
+
+    // Use allEntries for stats calculations, fall back to entries prop while loading
+    const statsEntries = allEntries.length > 0 ? allEntries : entries;
 
     // --- Overview Logic ---
     const [filterType, setFilterType] = useState<FilterType>('last12months');
@@ -121,12 +156,27 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
     }, [filterType, customStartDate, customEndDate]);
 
     const stats = useMemo(() => {
+        const excludedStatuses = ['Storno', 'Zrušené'];
         const completedStatuses = ['Uzavreté', 'Vybavené', 'Ukončené', 'Hotovo', 'Dokončené'];
-        const filteredEntries = entries.filter(entry => {
-            if (!completedStatuses.includes(entry.stav)) return false;
-            const completionDateStr = entry.fullFormData?.terminDokoncenia;
+
+        // Include all entries with order number and financial data (matching cashflow logic)
+        const filteredEntries = statsEntries.filter(entry => {
+            if (excludedStatuses.includes(entry.stav)) return false;
+
+            // Must have assigned order number
+            if (!entry.cisloZakazky || entry.cisloZakazky.trim() === '') return false;
+
+            // Must have financial data: selected price offer or manual price
+            const formData = entry.fullFormData;
+            if (!formData) return false;
+            const hasSelectedOffer = formData.cenovePonukyItems?.some(item => item.selected);
+            const hasManualPrice = parsePrice(formData.cena) > 0;
+            if (!hasSelectedOffer && !hasManualPrice) return false;
+
+            // Date filter: use creation date primarily, completion date as fallback
             const creationDateStr = entry.datum;
-            let date = parseDate(completionDateStr) || parseDate(creationDateStr);
+            const completionDateStr = formData.terminDokoncenia;
+            let date = parseDate(creationDateStr) || parseDate(completionDateStr);
             if (!date) return false;
             return date >= dateRange.start && date <= dateRange.end;
         });
@@ -142,9 +192,9 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
             const formData = entry.fullFormData;
             if (!formData) return;
 
-            const completionDateStr = formData.terminDokoncenia;
             const creationDateStr = entry.datum;
-            const date = parseDate(completionDateStr) || parseDate(creationDateStr);
+            const completionDateStr = formData.terminDokoncenia;
+            const date = parseDate(creationDateStr) || parseDate(completionDateStr);
             const monthKey = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : 'unknown';
 
             if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, deposits: 0, items: 0 };
@@ -153,7 +203,16 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
 
             if (selectedOffers.length > 0) {
                 selectedOffers.forEach(offer => {
-                    const offerPrice = parsePrice(offer.cenaSDPH);
+                    // Use same price priority as cashflow: cenaDohodou > prenesenieDP (cenaBezDPH) > cenaSDPH
+                    const offerData = offer.data as any;
+                    let offerPrice: number;
+                    if (offerData?.cenaDohodou && offerData?.cenaDohodouValue) {
+                        offerPrice = parsePrice(offerData.cenaDohodouValue);
+                    } else if (offerData?.prenesenieDP) {
+                        offerPrice = parsePrice(offer.cenaBezDPH);
+                    } else {
+                        offerPrice = parsePrice(offer.cenaSDPH);
+                    }
                     totalPrice += offerPrice;
                     monthlyData[monthKey].revenue += offerPrice;
                     const itemCount = countItemsInOffer(offer);
@@ -215,6 +274,8 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         const sortedMonths = Object.keys(monthlyData).sort();
         const chartData = sortedMonths.map(key => ({ month: key, ...monthlyData[key] }));
 
+        const completedCount = filteredEntries.filter(e => completedStatuses.includes(e.stav)).length;
+
         return {
             totalPrice,
             totalDeposits,
@@ -222,10 +283,11 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
             totalItems,
             totalOrders,
             filteredCount: filteredEntries.length,
+            completedCount,
             chartData,
             maxRevenue: Math.max(...chartData.map(d => d.revenue), 1)
         };
-    }, [entries, dateRange]);
+    }, [statsEntries, dateRange]);
 
     const formatMonthLabel = (monthKey: string): string => {
         const [year, month] = monthKey.split('-');
@@ -237,10 +299,10 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
     const cashflowData = useMemo(() => {
         // Filter for "Active" projects (not closed) that have relevant financial data
         // "Data to these columns will be poured after entering the date of the first deposit"
-        return entries
+        return statsEntries
             .filter(entry => {
-                // Exclude closed/cancelled
-                const closedStatuses = ['Uzavreté', 'Storno', 'Zrušené'];
+                // Exclude cancelled only (keep closed/completed)
+                const closedStatuses = ['Storno', 'Zrušené'];
                 if (closedStatuses.includes(entry.stav)) return false;
 
                 // Only show entries with assigned order number
@@ -262,10 +324,21 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                 return false;
             })
             .sort((a, b) => {
-                // Sort by date (oldest first?) or creation? Let's sort by creation date desc for now
-                return (new Date(b.datum || 0).getTime()) - (new Date(a.datum || 0).getTime());
+                // Sort by číslo zákazky: e.g. "001/26", "112/26", "001/27"
+                // First by year (suffix after /), then by number (prefix before /)
+                const parseZakazka = (z: string) => {
+                    const parts = z.split('/');
+                    if (parts.length === 2) {
+                        return { num: parseInt(parts[0], 10) || 0, year: parseInt(parts[1], 10) || 0 };
+                    }
+                    return { num: 0, year: 0 };
+                };
+                const za = parseZakazka(a.cisloZakazky);
+                const zb = parseZakazka(b.cisloZakazky);
+                if (za.year !== zb.year) return za.year - zb.year;
+                return za.num - zb.num;
             });
-    }, [entries]);
+    }, [statsEntries]);
 
     // Helper function to get the correct invoicing name
     const getInvoicingName = (entry: SpisEntry): string => {
@@ -388,7 +461,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
     }, [cashflowData]);
 
     const handleNoteChange = async (entryId: string, newNote: string) => {
-        const entry = entries.find(e => e.id === entryId);
+        const entry = statsEntries.find(e => e.id === entryId);
         if (entry && entry.fullFormData) {
             const updatedEntry = {
                 ...entry,
@@ -443,6 +516,11 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
 
                 {/* Content */}
                 <div className="flex-1 overflow-hidden flex flex-col">
+                    {isLoadingAll && (
+                        <div className={`px-6 py-2 text-xs text-center ${isDark ? 'text-gray-400 bg-dark-700' : 'text-gray-500 bg-gray-50'}`}>
+                            Načítavam všetky záznamy...
+                        </div>
+                    )}
                     {activeTab === 'overview' ? (
                         <div className="flex-1 overflow-y-auto p-6">
                             {/* Time Period Filter */}
@@ -482,12 +560,12 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                                <StatsCard title="Celkové tržby" value={stats.totalPrice} subtitle="Súčet všetkých objednávok" icon="money" color="emerald" isDark={isDark} />
-                                <StatsCard title="Zálohy" value={stats.totalDeposits} subtitle="Prijaté zálohy od zákazníkov" icon="cash" color="blue" isDark={isDark} />
-                                <StatsCard title="Doplatky" value={stats.totalRemainingBalance} subtitle="Zostatok po zálohách" icon="scale" color="orange" isDark={isDark} />
-                                <StatsCard title="Počet položiek" value={stats.totalItems} subtitle="Dvere, nábytok, schody, atď." icon="list" color="purple" isDark={isDark} isCurrency={false} />
-                                <StatsCard title="Počet objednávok" value={stats.totalOrders} subtitle="Uzavretých zákaziek" icon="cart" color="cyan" isDark={isDark} isCurrency={false} />
-                                <StatsCard title="Uzavretých projektov" value={stats.filteredCount} subtitle="V zvolenom období" icon="check" color="pink" isDark={isDark} isCurrency={false} />
+                                <StatsCard title="Celkové tržby" value={stats.totalPrice} icon="money" color="emerald" isDark={isDark} />
+                                <StatsCard title="Zálohy" value={stats.totalDeposits} icon="cash" color="blue" isDark={isDark} />
+                                <StatsCard title="Doplatky" value={stats.totalRemainingBalance} icon="scale" color="orange" isDark={isDark} />
+                                <StatsCard title="Počet položiek" value={stats.totalItems} icon="list" color="purple" isDark={isDark} isCurrency={false} />
+                                <StatsCard title="Počet zakázok" value={stats.totalOrders} icon="cart" color="cyan" isDark={isDark} isCurrency={false} />
+                                <StatsCard title="Uzavretých projektov" value={stats.completedCount} icon="check" color="pink" isDark={isDark} isCurrency={false} />
                             </div>
 
                             {/* Chart */}

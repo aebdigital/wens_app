@@ -104,55 +104,39 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   yPos += 4;
   doc.text('email: info@wens.sk, tel: 046 / 542 2057', 14, yPos);
 
-  // Client Info (Right) - no "Odberateľ:" label
+  // Client Info (Right) - Architect and Billing only
   yPos = 27;
 
-  // Check if architect info exists
-  const hasArchitect = formData.architektonickyPriezvisko || formData.architektonickeMeno || formData.architektonickyIco;
-
-  // Check if we should show customer, architect and/or billing info from item data
-  const showCustomerInfo = 'showCustomerInfo' in (item.data || {}) ? (item.data as any).showCustomerInfo !== false : true;
-  const showArchitectInfo = 'showArchitectInfo' in (item.data || {}) ? (item.data as any).showArchitectInfo === true : false && hasArchitect;
+  // Check if we should show architect and/or billing info from item data
+  const showArchitectInfo = 'showArchitectInfo' in (item.data || {}) ? (item.data as any).showArchitectInfo === true : false;
   const showBillingInfo = 'showBillingInfo' in (item.data || {}) ? (item.data as any).showBillingInfo === true : false;
 
-  // Calculate column positions based on what's shown
-  // We spread them out across the rest of the page (from approx center to pageWidth-14)
-  const customerColX = 95;
-  const architectColX = 165;
-  const billingColX = 130;
-
-  if (showCustomerInfo) {
-    let customerYPos = yPos;
-    // Prioritize person name (priezvisko + meno) over firma, matching the modal display
-    const clientName = `${formData.priezvisko || ''} ${formData.meno || ''}`.trim() || formData.firma;
-    doc.setFontSize(8);
-    doc.setFont(fontName, 'bold');
-    doc.text('Konečný zákazník:', customerColX, customerYPos);
-    customerYPos += 4;
-    doc.text(clientName, customerColX, customerYPos);
-    doc.setFont(fontName, 'normal');
-    customerYPos += 4;
-    doc.text(`${formData.ulica}`, customerColX, customerYPos);
-    customerYPos += 4;
-    doc.text(`${formData.mesto} ${formData.psc}`, customerColX, customerYPos);
-    customerYPos += 4;
-    if (formData.telefon) {
-      doc.text(`${formData.telefon}`, customerColX, customerYPos);
-      customerYPos += 4;
-    }
-    if (formData.email) {
-      doc.text(`${formData.email}`, customerColX, customerYPos);
-      customerYPos += 4;
-    }
-  }
+  // Calculate column positions
+  const architectColX = 130;
+  const rightMarginX = pageWidth - 14; // 196mm on A4
 
   if (showBillingInfo) {
-    // If architect layout is simple, use fixed middle position
-    const currentBillingX = billingColX;
+    // Calculate the widest billing text line to position column as far right as possible
+    doc.setFontSize(8);
+    const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
+    const billingTexts: string[] = ['Fakturačná firma:'];
+    if (billingName) billingTexts.push(billingName);
+    if (formData.fakturaciaAdresa) billingTexts.push(formData.fakturaciaAdresa);
+    if (formData.fakturaciaIco) billingTexts.push(`IČO: ${formData.fakturaciaIco}`);
+    if (formData.fakturaciaDic) billingTexts.push(`DIČ: ${formData.fakturaciaDic}`);
+    if (formData.fakturaciaIcDph) billingTexts.push(`IČ DPH: ${formData.fakturaciaIcDph}`);
+
+    doc.setFont(fontName, 'bold');
+    let maxWidth = doc.getTextWidth(billingTexts[0]);
+    doc.setFont(fontName, 'normal');
+    for (let i = 1; i < billingTexts.length; i++) {
+      const w = doc.getTextWidth(billingTexts[i]);
+      if (w > maxWidth) maxWidth = w;
+    }
+
+    const currentBillingX = rightMarginX - maxWidth;
 
     let billingYPos = yPos;
-    const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
-    doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
     doc.text('Fakturačná firma:', currentBillingX, billingYPos);
     billingYPos += 4;

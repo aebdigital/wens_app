@@ -27,7 +27,7 @@ interface SpisContextType {
 const SpisContext = createContext<SpisContextType | undefined>(undefined);
 
 // Helper to convert DB format to app format
-const dbToSpisEntry = (db: DbSpisEntry): SpisEntry => {
+export const dbToSpisEntry = (db: DbSpisEntry): SpisEntry => {
   const fullFormData = db.full_form_data || {};
   const konecnyZakaznik = `${fullFormData.meno || ''} ${fullFormData.priezvisko || ''}`.trim();
 
@@ -76,7 +76,7 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user } = useAuth();
   const [entries, setEntries] = useState<SpisEntry[]>([]);
   const [standaloneOrders, setStandaloneOrders] = useState<any[]>([]);
-  const [firmaOptions, setFirmaOptions] = useState<string[]>(['R1 Bratislava', 'WENS DOOR Prievidza']);
+  const [firmaOptions, setFirmaOptions] = useState<string[]>(['R1 Bratislava', 'WENS DOOR Prievidza', 'WEB']);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);

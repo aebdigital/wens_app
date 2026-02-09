@@ -625,66 +625,6 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
                   Fakturačná firma
                 </button>
               </div>
-
-              {/* Input fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Priezvisko"
-                    value={formData.fakturaciaPriezvisko}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaPriezvisko: e.target.value }))}
-                    disabled={isLocked}
-                    className={getInputClass()}
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Meno"
-                    value={formData.fakturaciaMeno}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaMeno: e.target.value }))}
-                    disabled={isLocked}
-                    className={getInputClass()}
-                  />
-                </div>
-              </div>
-              <div>
-                <textarea
-                  placeholder="Adresa"
-                  value={formData.fakturaciaAdresa}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaAdresa: e.target.value }))}
-                  disabled={isLocked}
-                  className={getInputClass()}
-                  rows={2}
-                ></textarea>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="IČO"
-                  value={formData.fakturaciaIco || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaIco: e.target.value }))}
-                  disabled={isLocked}
-                  className={getInputClass()}
-                />
-                <input
-                  type="text"
-                  placeholder="DIČ"
-                  value={formData.fakturaciaDic || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaDic: e.target.value }))}
-                  disabled={isLocked}
-                  className={getInputClass()}
-                />
-                <input
-                  type="text"
-                  placeholder="IČ DPH"
-                  value={formData.fakturaciaIcDph || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fakturaciaIcDph: e.target.value }))}
-                  disabled={isLocked}
-                  className={getInputClass()}
-                />
-              </div>
             </div>
           </>
         )}
