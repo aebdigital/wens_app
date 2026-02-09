@@ -119,15 +119,18 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     // Calculate the widest billing text line to position column as far right as possible
     doc.setFontSize(8);
     const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
-    const billingTexts: string[] = ['Fakturačná firma:'];
+    const billingTexts: string[] = [];
     if (billingName) billingTexts.push(billingName);
     if (formData.fakturaciaAdresa) billingTexts.push(formData.fakturaciaAdresa);
     if (formData.fakturaciaIco) billingTexts.push(`IČO: ${formData.fakturaciaIco}`);
     if (formData.fakturaciaDic) billingTexts.push(`DIČ: ${formData.fakturaciaDic}`);
     if (formData.fakturaciaIcDph) billingTexts.push(`IČ DPH: ${formData.fakturaciaIcDph}`);
 
+    let maxWidth = 0;
     doc.setFont(fontName, 'bold');
-    let maxWidth = doc.getTextWidth(billingTexts[0]);
+    if (billingTexts.length > 0) {
+      maxWidth = doc.getTextWidth(billingTexts[0]);
+    }
     doc.setFont(fontName, 'normal');
     for (let i = 1; i < billingTexts.length; i++) {
       const w = doc.getTextWidth(billingTexts[i]);
@@ -138,8 +141,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     let billingYPos = yPos;
     doc.setFont(fontName, 'bold');
-    doc.text('Fakturačná firma:', currentBillingX, billingYPos);
-    billingYPos += 4;
     if (billingName) {
       doc.text(billingName, currentBillingX, billingYPos);
       billingYPos += 4;
@@ -168,8 +169,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const archName = `${formData.architektonickyPriezvisko || ''} ${formData.architektonickeMeno || ''}`.trim();
     doc.setFontSize(8);
     doc.setFont(fontName, 'bold');
-    doc.text('Architekt:', architectColX, architectYPos);
-    architectYPos += 4;
     if (archName) {
       doc.text(archName, architectColX, architectYPos);
       architectYPos += 4;

@@ -562,8 +562,8 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                             {/* Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                                 <StatsCard title="Celkové tržby" value={stats.totalPrice} icon="money" color="emerald" isDark={isDark} />
-                                <StatsCard title="Zálohy" value={stats.totalDeposits} icon="cash" color="blue" isDark={isDark} />
-                                <StatsCard title="Doplatky" value={stats.totalRemainingBalance} icon="scale" color="orange" isDark={isDark} />
+                                <StatsCard title="Zálohy" value={cashflowStats.paid.deposit1 + cashflowStats.paid.deposit2 + cashflowStats.paid.remaining} icon="cash" color="blue" isDark={isDark} />
+                                <StatsCard title="Doplatky" value={cashflowStats.pending.deposit1 + cashflowStats.pending.deposit2 + cashflowStats.pending.remaining} icon="scale" color="orange" isDark={isDark} />
                                 <StatsCard title="Počet položiek" value={stats.totalItems} icon="list" color="purple" isDark={isDark} isCurrency={false} />
                                 <StatsCard title="Počet zakázok" value={stats.totalOrders} icon="cart" color="cyan" isDark={isDark} isCurrency={false} />
                                 <StatsCard title="Uzavretých projektov" value={stats.completedCount} icon="check" color="pink" isDark={isDark} isCurrency={false} />
@@ -609,7 +609,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                                         <th className="px-4 py-3 whitespace-nowrap">číslo CP</th>
                                         <th className="px-4 py-3 whitespace-nowrap">číslo zákazky</th>
                                         <th className="px-4 py-3">Meno</th>
-                                        <th className="px-4 py-3 whitespace-nowrap text-center">s DPH / DP / dohoda</th>
+                                        <th className="px-2 py-3 whitespace-nowrap text-center text-xs">s DPH / DP / dohoda</th>
                                         <th className="px-4 py-3 text-right">CENA</th>
                                         <th className="px-4 py-3 whitespace-nowrap">dátum 1</th>
                                         <th className="px-4 py-3 text-right">záloha 1</th>
@@ -617,7 +617,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                                         <th className="px-4 py-3 text-right">záloha 2</th>
                                         <th className="px-4 py-3 whitespace-nowrap">dátum 3</th>
                                         <th className="px-4 py-3 text-right font-medium text-blue-600 dark:text-blue-400">doplatok</th>
-                                        <th className="px-4 py-3 w-64">poznámky</th>
+                                        <th className="px-4 py-3 min-w-[300px]">poznámky</th>
                                     </tr>
                                 </thead>
                                 <tbody className={`divide-y ${isDark ? 'divide-dark-600' : 'divide-gray-200'} ${isDark ? 'bg-dark-800' : 'bg-white'}`}>
@@ -630,7 +630,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                                                 <td className="px-4 py-3 truncate max-w-[200px]" title={getInvoicingName(entry)}>
                                                     {getInvoicingName(entry)}
                                                 </td>
-                                                <td className="px-4 py-3 text-center">
+                                                <td className="px-2 py-3 text-center">
                                                     <div className="flex justify-center gap-1">
                                                         {rowData.hasPrenos && <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700 font-bold" title="Prenos daňovej povinnosti">DP</span>}
                                                         {rowData.hasDohoda && <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 font-bold" title="Cena dohodou">DOH</span>}
