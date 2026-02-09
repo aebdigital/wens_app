@@ -58,14 +58,6 @@ export const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   showBillingInfo,
   onToggleBillingInfo
 }) => {
-  const customerName = headerInfo.customer
-    ? (`${headerInfo.customer.priezvisko || ''} ${headerInfo.customer.meno || ''}`.trim() || headerInfo.customer.firma)
-    : headerInfo.firma;
-  const customerAddress = headerInfo.customer ? headerInfo.customer.ulica : headerInfo.ulica;
-  const customerCity = headerInfo.customer ? `${headerInfo.customer.mesto} ${headerInfo.customer.psc}` : `${headerInfo.mesto} ${headerInfo.psc}`;
-  const customerPhone = headerInfo.customer ? headerInfo.customer.telefon : headerInfo.telefon;
-  const customerEmail = headerInfo.customer ? headerInfo.customer.email : headerInfo.email;
-
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
       <div className="text-xs space-y-1">

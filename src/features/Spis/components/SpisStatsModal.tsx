@@ -110,6 +110,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         };
 
         fetchAllEntries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     // Use allEntries for stats calculations, fall back to entries prop while loading
