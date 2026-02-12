@@ -123,7 +123,7 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                       const newItems = [...items];
                       newItems[index] = {
                         ...newItems[index],
-                        cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '')
+                        cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9/]/g, '')
                       };
                       onUpdate(newItems);
                     }}

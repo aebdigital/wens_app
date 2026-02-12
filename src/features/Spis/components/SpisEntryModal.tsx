@@ -201,6 +201,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     handleEditOffer,
     handleEditOrderAction,
     handleAddNewOrderAction,
+    handleDeleteOrder,
     handleSaveAsNew,
     internalId,
     lastSavedJson,
@@ -1014,6 +1015,9 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             email={formData.email}
             vypracoval={formData.vypracoval}
             predmet={formData.predmet}
+            ico={formData.ico || ''}
+            dic={formData.dic || ''}
+            icDph={formData.icDph || ''}
             fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
             cisloZakazky={formData.cisloZakazky}
             onCisloZakazkyChange={(value) => setFormData(prev => ({ ...prev, cisloZakazky: value }))}
@@ -1027,7 +1031,10 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
               mesto: formData.architektonickyMesto,
               psc: formData.architektonickyPsc,
               telefon: formData.architektonickyTelefon,
-              email: formData.architektonickyEmail
+              email: formData.architektonickyEmail,
+              ico: formData.architektonickyIco,
+              dic: formData.architektonickyDic,
+              icDph: formData.architektonickyIcDph
             }}
             billingInfo={{
               priezvisko: formData.fakturaciaPriezvisko,
@@ -1035,11 +1042,14 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
               adresa: formData.fakturaciaAdresa,
               ico: formData.fakturaciaIco,
               dic: formData.fakturaciaDic,
-              icDph: formData.fakturaciaIcDph
+              icDph: formData.fakturaciaIcDph,
+              telefon: formData.fakturaciaTelefon,
+              email: formData.fakturaciaEmail
             }}
             editingData={editingOfferData}
             visibleTabs={vzorModalTabs}
             isLocked={isEffectivelyLocked}
+            activeSource={formData.fakturaciaSource}
           />
         </Suspense>
       )}
@@ -1050,6 +1060,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             isOpen={showOrderModal}
             onClose={() => setShowOrderModal(false)}
             onSave={handleAddOrderSave}
+            onDelete={handleDeleteOrder}
             vypracoval={formData.vypracoval}
             telefon={userPhone} // Use user settings phone
             email={user?.email || ''} // Use user email

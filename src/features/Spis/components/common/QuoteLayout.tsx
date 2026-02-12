@@ -14,6 +14,8 @@ interface QuoteLayoutProps {
     cenaSDPH: number;
   };
   defaultLegalText?: string;
+  onRefreshBilling?: () => void;
+  usingSnapshot?: boolean;
 }
 
 export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
@@ -23,7 +25,9 @@ export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
   data,
   onChange,
   totals,
-  defaultLegalText
+  defaultLegalText,
+  onRefreshBilling,
+  usingSnapshot
 }) => {
   return (
     <div className="space-y-4">
@@ -36,6 +40,8 @@ export const QuoteLayout: React.FC<QuoteLayoutProps> = ({
         onToggleArchitectInfo={() => onChange({ ...data, showArchitectInfo: !data.showArchitectInfo })}
         showBillingInfo={data.showBillingInfo}
         onToggleBillingInfo={() => onChange({ ...data, showBillingInfo: !data.showBillingInfo })}
+        onRefreshBilling={onRefreshBilling}
+        usingSnapshot={usingSnapshot}
       />
       {children}
       <QuoteFooter isDark={isDark} data={data} onChange={onChange} headerInfo={headerInfo} totals={totals} defaultLegalText={defaultLegalText} />

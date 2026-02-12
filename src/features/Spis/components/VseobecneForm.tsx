@@ -31,19 +31,27 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
     let priezvisko = '';
     let meno = '';
     let adresa = '';
+    let telefon = '';
+    let email = '';
 
     if (type === 'zakaznik') {
       priezvisko = formData.priezvisko;
       meno = formData.meno;
       adresa = [formData.ulica, formData.mesto, formData.psc].filter(Boolean).join(', ');
+      telefon = formData.telefon;
+      email = formData.email;
     } else if (type === 'architekt') {
       priezvisko = formData.architektonickyPriezvisko;
       meno = formData.architektonickeMeno;
       adresa = [formData.architektonickyUlica, formData.architektonickyMesto, formData.architektonickyPsc].filter(Boolean).join(', ');
+      telefon = formData.architektonickyTelefon;
+      email = formData.architektonickyEmail;
     } else if (type === 'realizator') {
       priezvisko = formData.realizatorPriezvisko;
       meno = formData.realizatorMeno;
       adresa = [formData.realizatorUlica, formData.realizatorMesto, formData.realizatorPsc].filter(Boolean).join(', ');
+      telefon = formData.realizatorTelefon;
+      email = formData.realizatorEmail;
     }
 
     setFormData(prev => ({
@@ -54,7 +62,9 @@ export const VseobecneForm: React.FC<VseobecneFormProps> = ({ formData, setFormD
       fakturaciaAdresa: adresa,
       fakturaciaIco: type === 'zakaznik' ? formData.ico : (type === 'architekt' ? formData.architektonickyIco : formData.realizatorIco),
       fakturaciaDic: type === 'zakaznik' ? formData.dic : (type === 'architekt' ? formData.architektonickyDic : formData.realizatorDic),
-      fakturaciaIcDph: type === 'zakaznik' ? formData.icDph : (type === 'architekt' ? formData.architektonickyIcDph : formData.realizatorIcDph)
+      fakturaciaIcDph: type === 'zakaznik' ? formData.icDph : (type === 'architekt' ? formData.architektonickyIcDph : formData.realizatorIcDph),
+      fakturaciaTelefon: telefon,
+      fakturaciaEmail: email
     }));
   };
 

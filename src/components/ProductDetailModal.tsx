@@ -265,7 +265,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Footer */}
                 <div className={`px-6 py-4 border-t flex justify-between ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                    {isEditing && !isCreating ? (
+                    {!isCreating ? (
                         <button
                             onClick={handleDelete}
                             disabled={isSaving}

@@ -122,6 +122,8 @@ export const useSpisFormState = (initialEntry: SpisEntry | null, isOpen: boolean
         fakturaciaIco: '',
         fakturaciaDic: '',
         fakturaciaIcDph: '',
+        fakturaciaTelefon: '',
+        fakturaciaEmail: '',
 
         // Items
         popisItems: [],

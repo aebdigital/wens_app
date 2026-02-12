@@ -78,13 +78,12 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
         {/* Left - Odberateľ (WENS) */}
         <div className="text-xs space-y-1">
           <p className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Odberateľ:</p>
-          <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>WENS DOOR s.r.o., Vápenická 12, Prievidza 971 01</p>
-          <p className={`notranslate ${isDark ? 'text-gray-300' : 'text-gray-600'}`} translate="no">zap. v OR OS Trenčín od.Sro, Vl.č. 17931 / R</p>
+          <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>WENS DOOR s.r.o., Vápenická 12, 971 01 Prievidza</p>
+          <p className={`notranslate ${isDark ? 'text-gray-300' : 'text-gray-600'}`} translate="no">zap. v OR OS Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428</p>
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>IČO: 36792942, IČ DPH: SK2022396904</p>
-          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>banka:PRIMABANKA Slovensko a.s.o :4520 001 507/3100</p>
-          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>IBAN: SK4431000000004520001507</p>
-          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>BIC (SWIFT): LUBASKBX</p>
-          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>tel: 046/542 2057 e-mail: info@wens.sk</p>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100</p>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>IBAN: SK4431000000004520001507, BIC (SWIFT): LUBASKBX</p>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>tel.: 046 / 542 2057, e-mail: info@wens.sk</p>
         </div>
 
         {/* Right - Dodávateľ */}

@@ -93,102 +93,141 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   doc.setFontSize(8);
   doc.setTextColor(0);
   doc.setFont(fontName, 'bold');
-  doc.text('WENS DOOR s.r.o., Vápenická 12, Prievidza 971 01', 14, yPos);
+  doc.text('WENS DOOR s.r.o., Vápenická 12, 971 01 Prievidza', 14, yPos);
   doc.setFont(fontName, 'normal');
   yPos += 4;
-  doc.text('zap. v OR OS Trenčín od.Sro, Vl.č. 17931 / R', 14, yPos);
+  doc.text('zap. v OR OS Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428', 14, yPos);
   yPos += 4;
   doc.text('IČO: 36792942, IČ DPH: SK2022396904', 14, yPos);
   yPos += 4;
-  doc.text('banka: PRIMABANKA Slovensko a.s. č.ú.: 4520 001 507/3100', 14, yPos);
+  doc.text('PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100', 14, yPos);
   yPos += 4;
-  doc.text('email: info@wens.sk, tel: 046 / 542 2057', 14, yPos);
+  doc.text('IBAN: SK4431000000004520001507, BIC (SWIFT): LUBASKBX', 14, yPos);
+  yPos += 4;
+  doc.text('tel.: 046 / 542 2057, e-mail: info@wens.sk', 14, yPos);
 
   // Client Info (Right) - Architect and Billing only
   yPos = 27;
 
-  // Check if we should show architect and/or billing info from item data
-  const showArchitectInfo = 'showArchitectInfo' in (item.data || {}) ? (item.data as any).showArchitectInfo === true : false;
-  const showBillingInfo = 'showBillingInfo' in (item.data || {}) ? (item.data as any).showBillingInfo === true : false;
+  // Determine active source and data
+  const activeSource = formData.fakturaciaSource || 'zakaznik';
+  let clientData: any = {
+    firma: formData.firma,
+    meno: formData.meno,
+    priezvisko: formData.priezvisko,
+    ulica: formData.ulica,
+    mesto: formData.mesto,
+    psc: formData.psc,
+    telefon: formData.telefon,
+    email: formData.email,
+    ico: formData.ico,
+    dic: formData.dic,
+    icDph: formData.icDph
+  };
 
-  // Calculate column positions
-  const architectColX = 130;
-  const rightMarginX = pageWidth - 14; // 196mm on A4
+  if (activeSource === 'architekt') {
+    clientData = {
+      firma: '', // Architect often doesn't have firma field in formData flat structure? Or use generic?
+      // Actually formData has specific architect fields
+      meno: formData.architektonickeMeno,
+      priezvisko: formData.architektonickyPriezvisko,
+      ulica: formData.architektonickyUlica,
+      mesto: formData.architektonickyMesto,
+      psc: formData.architektonickyPsc,
+      telefon: formData.architektonickyTelefon,
+      email: formData.architektonickyEmail,
+      ico: formData.architektonickyIco,
+      dic: formData.architektonickyDic,
+      icDph: formData.architektonickyIcDph
+    };
+  } else if (activeSource === 'realizator') {
+    clientData = {
+      firma: '',
+      meno: formData.fakturaciaMeno,
+      priezvisko: formData.fakturaciaPriezvisko,
+      ulica: formData.fakturaciaAdresa,
+      // Fakturacia adresa is one string, often contains street city psc?
+      // We will blindly print it.
+      // Other fields
+      ico: formData.fakturaciaIco,
+      dic: formData.fakturaciaDic,
+      icDph: formData.fakturaciaIcDph,
+      telefon: formData.fakturaciaTelefon,
+      email: formData.fakturaciaEmail
+    };
+  }
 
-  if (showBillingInfo) {
-    // Calculate the widest billing text line to position column as far right as possible
-    doc.setFontSize(8);
-    const billingName = `${formData.fakturaciaPriezvisko || ''} ${formData.fakturaciaMeno || ''}`.trim();
-    const billingTexts: string[] = [];
-    if (billingName) billingTexts.push(billingName);
-    if (formData.fakturaciaAdresa) billingTexts.push(formData.fakturaciaAdresa);
-    if (formData.fakturaciaIco) billingTexts.push(`IČO: ${formData.fakturaciaIco}`);
-    if (formData.fakturaciaDic) billingTexts.push(`DIČ: ${formData.fakturaciaDic}`);
-    if (formData.fakturaciaIcDph) billingTexts.push(`IČ DPH: ${formData.fakturaciaIcDph}`);
+  // Render Client Info (Right Side)
+  const rightMarginX = pageWidth - 14;
 
-    let maxWidth = 0;
+  let currentY = 27;
+  doc.setFontSize(8);
+
+  // Name / Company
+  // Name / Company
+  const name = `${clientData.priezvisko || ''} ${clientData.meno || ''}`.trim();
+  const company = clientData.firma;
+
+  // Show name first, then company (if present and not active source 'zakaznik' implies we might want to hide it if user requested, but safe to show both if available, but user said 'only company name seen', so definitely show name).
+  // Actually, for 'zakaznik', we removed company from QuoteHeader. Let's prioritize Name.
+
+  if (name) {
     doc.setFont(fontName, 'bold');
-    if (billingTexts.length > 0) {
-      maxWidth = doc.getTextWidth(billingTexts[0]);
-    }
-    doc.setFont(fontName, 'normal');
-    for (let i = 1; i < billingTexts.length; i++) {
-      const w = doc.getTextWidth(billingTexts[i]);
-      if (w > maxWidth) maxWidth = w;
-    }
+    doc.text(name, rightMarginX, currentY, { align: 'right' });
+    currentY += 4;
+  }
 
-    const currentBillingX = rightMarginX - maxWidth;
-
-    let billingYPos = yPos;
+  if (company && activeSource !== 'zakaznik') {
+    // Only show company if NOT zakaznik (e.g. architect/billing), OR if name is empty. 
+    // User wanted company removed from header for zakaznik.
+    doc.setFont(fontName, activeSource === 'zakaznik' ? 'normal' : 'bold');
+    doc.text(company, rightMarginX, currentY, { align: 'right' });
+    currentY += 4;
+  } else if (company && !name) {
+    // Fallback if no name
     doc.setFont(fontName, 'bold');
-    if (billingName) {
-      doc.text(billingName, currentBillingX, billingYPos);
-      billingYPos += 4;
-    }
-    doc.setFont(fontName, 'normal');
-    if (formData.fakturaciaAdresa) {
-      doc.text(formData.fakturaciaAdresa, currentBillingX, billingYPos);
-      billingYPos += 4;
-    }
-    if (formData.fakturaciaIco) {
-      doc.text(`IČO: ${formData.fakturaciaIco}`, currentBillingX, billingYPos);
-      billingYPos += 4;
-    }
-    if (formData.fakturaciaDic) {
-      doc.text(`DIČ: ${formData.fakturaciaDic}`, currentBillingX, billingYPos);
-      billingYPos += 4;
-    }
-    if (formData.fakturaciaIcDph) {
-      doc.text(`IČ DPH: ${formData.fakturaciaIcDph}`, currentBillingX, billingYPos);
-      billingYPos += 4;
+    doc.text(company, rightMarginX, currentY, { align: 'right' });
+    currentY += 4;
+  }
+
+  doc.setFont(fontName, 'normal');
+
+  // Address
+  if (clientData.ulica) {
+    doc.text(clientData.ulica, rightMarginX, currentY, { align: 'right' });
+    currentY += 4;
+  }
+  if (clientData.mesto || clientData.psc) {
+    const cityStr = `${clientData.mesto || ''} ${clientData.psc || ''}`.trim();
+    if (cityStr) {
+      doc.text(cityStr, rightMarginX, currentY, { align: 'right' });
+      currentY += 4;
     }
   }
 
-  if (showArchitectInfo) {
-    let architectYPos = yPos;
-    const archName = `${formData.architektonickyPriezvisko || ''} ${formData.architektonickeMeno || ''}`.trim();
-    doc.setFontSize(8);
-    doc.setFont(fontName, 'bold');
-    if (archName) {
-      doc.text(archName, architectColX, architectYPos);
-      architectYPos += 4;
+  // ICO/DIC/ICDPH
+  const businessIds = [
+    clientData.ico ? `IČO: ${clientData.ico}` : '',
+    clientData.dic ? `DIČ: ${clientData.dic}` : '',
+    clientData.icDph ? `IČ DPH: ${clientData.icDph}` : ''
+  ].filter(Boolean).join(', ');
+
+  if (businessIds) {
+    currentY += 1; // Small gap
+    doc.text(businessIds, rightMarginX, currentY, { align: 'right' });
+    currentY += 4;
+  }
+
+  // Contact
+  if (clientData.telefon || clientData.email) {
+    currentY += 1;
+    if (clientData.telefon) {
+      doc.text(clientData.telefon, rightMarginX, currentY, { align: 'right' });
+      currentY += 4;
     }
-    doc.setFont(fontName, 'normal');
-    if (formData.architektonickyUlica) {
-      doc.text(formData.architektonickyUlica, architectColX, architectYPos);
-      architectYPos += 4;
-    }
-    if (formData.architektonickyMesto || formData.architektonickyPsc) {
-      doc.text(`${formData.architektonickyMesto || ''} ${formData.architektonickyPsc || ''}`.trim(), architectColX, architectYPos);
-      architectYPos += 4;
-    }
-    if (formData.architektonickyTelefon) {
-      doc.text(`${formData.architektonickyTelefon}`, architectColX, architectYPos);
-      architectYPos += 4;
-    }
-    if (formData.architektonickyEmail) {
-      doc.text(`${formData.architektonickyEmail}`, architectColX, architectYPos);
-      architectYPos += 4;
+    if (clientData.email) {
+      doc.text(clientData.email, rightMarginX, currentY, { align: 'right' });
+      currentY += 4;
     }
   }
 
@@ -1819,17 +1858,17 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
   doc.text('Odberateľ:', 14, yPosLeft);
   doc.setFont(fontName, 'normal');
   yPosLeft += 4;
-  doc.text('WENS DOOR s.r.o., Vápenická 12, Prievidza 971 01', 14, yPosLeft);
+  doc.text('WENS DOOR s.r.o., Vápenická 12, 971 01 Prievidza', 14, yPosLeft);
   yPosLeft += 4;
-  doc.text('zap.v OR SR Trenčín od.Sro, Vl.č. 17931 / R', 14, yPosLeft);
+  doc.text('zap. v OR OS Trenčín od.Sro,Vl.č. 17931 / R, č. ŽR 340-24428', 14, yPosLeft);
   yPosLeft += 4;
   doc.text('IČO: 36792942, IČ DPH: SK2022396904', 14, yPosLeft);
   yPosLeft += 4;
-  doc.text('banka: PRIMABANKA Slovensko a.s. č.ú.: 4520 001 507/3100', 14, yPosLeft);
+  doc.text('PRIMABANKA Slovensko a.s. č.ú.: 4520001507/3100', 14, yPosLeft);
   yPosLeft += 4;
-  doc.text('IBAN: SK4431000000004520001507, BIC: LUBASKBX', 14, yPosLeft);
+  doc.text('IBAN: SK4431000000004520001507, BIC (SWIFT): LUBASKBX', 14, yPosLeft);
   yPosLeft += 4;
-  doc.text('tel/fax: 046/542 2057, e-mail: info@wens.sk', 14, yPosLeft);
+  doc.text('tel.: 046 / 542 2057, e-mail: info@wens.sk', 14, yPosLeft);
   yPosLeft += 4; // After the last line on left side.
 
   // Supplier Info (Right)
@@ -1884,11 +1923,6 @@ export const generateOrderPDF = async (orderData: OrderPDFData) => {
     });
     yPos = (doc as any).lastAutoTable.finalY + 5;
   }
-
-  doc.setFont(fontName, 'bold');
-  doc.setFontSize(10);
-  doc.text('Objednávame u Vás:', 14, yPos);
-  yPos += 5;
 
   const polozkyRows = data.polozky
     .filter((p: any) => p.nazov || p.mnozstvo > 0)

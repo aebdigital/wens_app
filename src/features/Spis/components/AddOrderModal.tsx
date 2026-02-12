@@ -10,6 +10,7 @@ interface AddOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: PuzdraData) => void;
+  onDelete?: () => void;
   // Props for header info
   vypracoval: string;
   telefon: string;
@@ -24,6 +25,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   vypracoval,
   telefon,
   email,
@@ -203,7 +205,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
 
         {/* Footer buttons */}
         <div className={`flex justify-between px-6 py-4 border-t ${isDark ? 'border-dark-500' : 'border-gray-300'}`}>
-          <div>
+          <div className="flex items-center gap-3">
             <button
               onClick={handlePreviewPDF}
               disabled={isGeneratingPDF}
@@ -222,6 +224,19 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
               )}
               Náhľad
             </button>
+            {editingData && onDelete && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Naozaj chcete vymazať túto objednávku?')) {
+                    onDelete();
+                  }
+                }}
+                disabled={isLocked}
+                className={`text-red-600 hover:text-red-700 font-semibold text-sm ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Zmazať objednávku
+              </button>
+            )}
           </div>
           <div className="flex gap-3">
             <button

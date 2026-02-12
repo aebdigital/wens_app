@@ -23,6 +23,9 @@ interface DvereFormProps {
       email: string;
       meno: string;
       priezvisko: string;
+      ico?: string;
+      dic?: string;
+      icDph?: string;
     };
     architect?: {
       priezvisko: string;
@@ -33,6 +36,9 @@ interface DvereFormProps {
       psc: string;
       telefon: string;
       email: string;
+      ico?: string;
+      dic?: string;
+      icDph?: string;
     };
     billing?: {
       priezvisko: string;
@@ -41,6 +47,8 @@ interface DvereFormProps {
       ico: string;
       dic: string;
       icDph: string;
+      telefon: string;
+      email: string;
     };
     vypracoval?: string;
     // Legacy / Flat support
@@ -50,7 +58,10 @@ interface DvereFormProps {
     psc?: string;
     telefon?: string;
     email?: string;
+    activeSource?: string;
   };
+  onRefreshBilling?: () => void;
+  usingSnapshot?: boolean;
 }
 
 // Default payment percentages
@@ -72,7 +83,7 @@ const DEFAULT_WIDTHS = {
   cenaCelkom: 10
 };
 
-export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo }) => {
+export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, headerInfo, onRefreshBilling, usingSnapshot }) => {
   const totals = calculateDvereTotals(data);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -112,7 +123,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     return itemIds.reduce((sum, itemId) => {
       const [roomIndexStr, type] = itemId.split('-');
       const roomIndex = parseInt(roomIndexStr, 10);
-      const vyrobok = data.vyrobky[roomIndex];
+      const vyrobok = (data.vyrobky || [])[roomIndex];
       if (!vyrobok) return sum;
 
       let price = 0;
@@ -134,7 +145,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
     const hasPercentPriplatky = data.priplatky?.some((p: any) => p.percentFromVyrobky && p.selectedVyrobkyIds);
     if (!hasPercentPriplatky) return;
 
-    const updatedPriplatky = data.priplatky.map((priplatok: any) => {
+    const updatedPriplatky = (data.priplatky || []).map((priplatok: any) => {
       if (priplatok.percentFromVyrobky && priplatok.selectedVyrobkyIds) {
         const selectedTotal = calculatePriceForItemIds(priplatok.selectedVyrobkyIds);
         const newValue = selectedTotal * (priplatok.percentFromVyrobky / 100);
@@ -205,7 +216,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   // Generate list of all individual items from výrobky
   const getAllItems = () => {
     const items: { id: string; label: string; price: number; roomIndex: number; type: string }[] = [];
-    data.vyrobky.forEach((vyrobok, roomIndex) => {
+    (data.vyrobky || []).forEach((vyrobok, roomIndex) => {
       const roomName = vyrobok.miestnost || `Miestnosť ${roomIndex + 1}`;
       if (vyrobok.hasDvere && vyrobok.cenaDvere > 0) {
         items.push({
@@ -276,9 +287,9 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
   // Helper to create columns with auto-calc logic
   const createColumns = () => [
-    { key: 'nazov' as keyof typeof data.priplatky[0], label: 'názov', width: 'min-w-[280px]' },
+    { key: 'nazov', label: 'názov', width: 'min-w-[280px]' },
     {
-      key: 'ks' as keyof typeof data.priplatky[0],
+      key: 'ks',
       label: 'ks',
       width: 'w-10',
       align: 'right' as const,
@@ -295,7 +306,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       )
     },
     {
-      key: 'cenaKs' as keyof typeof data.priplatky[0],
+      key: 'cenaKs',
       label: 'cena / ks',
       width: 'w-14',
       align: 'right' as const,
@@ -315,7 +326,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       )
     },
     {
-      key: 'cenaCelkom' as keyof typeof data.priplatky[0],
+      key: 'cenaCelkom',
       label: 'cena celkom',
       width: 'w-24 min-w-[100px]',
       align: 'right' as const,
@@ -391,7 +402,29 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
   // Toggle parts of an existing item
   const toggleItemPart = (index: number, part: 'hasDvere' | 'hasZarubna' | 'hasObklad' | 'hasPrazdne') => {
     const newVyrobky = [...data.vyrobky];
-    newVyrobky[index][part] = !newVyrobky[index][part];
+    const item = { ...newVyrobky[index] }; // Deep copy the item to avoid mutation
+    const isRemoving = item[part]; // Currently true → toggling to false = removing
+
+    item[part] = !item[part];
+
+    // Zero out ks/cena when removing a part so totals and PDF update correctly
+    if (isRemoving) {
+      if (part === 'hasDvere') {
+        item.ks = 0;
+        item.cenaDvere = 0;
+      } else if (part === 'hasZarubna') {
+        item.ksZarubna = 0;
+        item.cenaZarubna = 0;
+      } else if (part === 'hasObklad') {
+        item.ksObklad = 0;
+        item.cenaObklad = 0;
+      } else if (part === 'hasPrazdne') {
+        item.ksPrazdne = 0;
+        item.cenaPrazdne = 0;
+      }
+    }
+
+    newVyrobky[index] = item;
     onChangeWithPaymentReset({ ...data, vyrobky: newVyrobky });
   };
 
@@ -521,7 +554,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
     onChangeWithPaymentReset({
       ...data,
-      priplatky: [...data.priplatky, newPriplatok]
+      priplatky: [...(data.priplatky || []), newPriplatok]
     });
 
     setShowPriplatokModal(false);
@@ -554,6 +587,8 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       onChange={onChange}
       totals={totals}
       defaultLegalText={NOTES_DVERE}
+      onRefreshBilling={onRefreshBilling}
+      usingSnapshot={usingSnapshot}
     >
       {/* Product description */}
       <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
@@ -904,7 +939,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               </tr>
             </thead>
             <tbody>
-              {data.vyrobky.map((item, index) => {
+              {(data.vyrobky || []).map((item, index) => {
                 const rows = [];
                 // Determine row span based on visible parts
                 let rowSpan = 0;
@@ -1522,13 +1557,13 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
       <GenericItemsTable
         title="Príplatky:"
-        items={data.priplatky}
+        items={data.priplatky || []}
         columns={commonColumns}
         isDark={isDark}
         onChange={(items) => onChangeWithPaymentReset({ ...data, priplatky: items })}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          onChangeWithPaymentReset({ ...data, priplatky: [...data.priplatky, newItem] });
+          onChangeWithPaymentReset({ ...data, priplatky: [...(data.priplatky || []), newItem] });
         }}
         mergeFirstTwoHeaders={true}
         footerContent={
@@ -1542,7 +1577,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </tr>
         }
         extraButtons={
-          data.vyrobky.length > 0 && (
+          (data.vyrobky || []).length > 0 && (
             <button
               onClick={handleOpenPriplatokModal}
               className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'} transition-colors shadow-sm`}
@@ -1569,7 +1604,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
 
       <GenericItemsTable
         title="Kovanie:"
-        items={data.kovanie}
+        items={data.kovanie || []}
         columns={commonColumns}
         isDark={isDark}
         onChange={(items) => {
@@ -1578,7 +1613,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          const newKovanie = sortPinnedItems([...data.kovanie, newItem], ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
+          const newKovanie = sortPinnedItems([...(data.kovanie || []), newItem], ['kľučky - doplniť', 'kľučka - doplniť', 'kovanie - doplniť', 'klucky - doplnit', 'klucka - doplnit', 'kovanie - doplnit']);
           onChangeWithPaymentReset({ ...data, kovanie: newKovanie });
         }}
         mergeFirstTwoHeaders={true}
@@ -1597,7 +1632,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       <GenericItemsTable
         title={data.montazLabel || "Montáž - Neumožnená kompletná montáž z dôvodu nepripravenosti stavby bude spoplatnená dopravou."}
         onTitleChange={(newTitle) => onChange({ ...data, montazLabel: newTitle })}
-        items={data.montaz}
+        items={data.montaz || []}
         columns={commonColumns}
         isDark={isDark}
         onChange={(items) => {
@@ -1606,7 +1641,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
         }}
         onAddItem={() => {
           const newItem = { id: Date.now(), nazov: '', ks: 0, cenaKs: 0, cenaCelkom: 0 };
-          const newMontaz = [...data.montaz];
+          const newMontaz = [...(data.montaz || [])];
 
           // Ensure predefined item exists
           const predefinedText = "vynášanie – doceniť po obhliadke";

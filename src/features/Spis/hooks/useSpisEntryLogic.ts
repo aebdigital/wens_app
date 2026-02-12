@@ -206,8 +206,67 @@ export const useSpisEntryLogic = (
     const itemCisloZakazky = dataToSave.itemCisloZakazky;
     const { itemCisloZakazky: _, ...cleanDataToSave } = dataToSave;
 
-    // Sync Case Number to main entry if it's currently empty
-    if (itemCisloZakazky && !formData.cisloZakazky) {
+    // Billing Snapshot Logic
+    // If it's a NEW entry, we create the snapshot from current formData.
+    // If it's an EXISTING entry, we generally KEEP the existing snapshot (unless manually refreshed via refreshing logic which calls this same save function with updated snapshot).
+    // The component calling this (AddTemplateModal) will handle the "Refresh" logic by passing the updated snapshot in `data`.
+    // So here we just need to ensure that if `cleanDataToSave` DOESN'T have a snapshot, we create one (migration/fallback for new items).
+
+    if (!cleanDataToSave.billingSnapshot) {
+      const newSnapshot: import('../types').BillingSnapshot = {
+        customer: {
+          firma: formData.firma,
+          ulica: formData.ulica,
+          mesto: formData.mesto,
+          psc: formData.psc,
+          telefon: formData.telefon,
+          email: formData.email,
+          meno: formData.meno,
+          priezvisko: formData.priezvisko,
+          ico: formData.ico,
+          dic: formData.dic,
+          icDph: formData.icDph
+        },
+        architect: {
+          priezvisko: formData.architektonickyPriezvisko,
+          meno: formData.architektonickeMeno,
+          firma: '', // formData doesn't have architect company name explicitly? 
+          // Wait, SpisFormData has architektonicky* fields but maybe not 'firma'. 
+          // Checking types... SpisFormData has: firma (main), but architect section: architektonickyPriezvisko... 
+          // QuoteHeader uses: headerInfo.architect.firma. 
+          // Let's check SpisFormData in types again. 
+          // existing `types/index.ts`: architektonickyPriezvisko, ...NO firma in architect section.
+          // However, `QuoteHeader` expects it. 
+          // `AddTemplateModal` constructs `architectInfo` prop. 
+          // Let's use what we have. If `firma` is missing in SpisFormData for architect, we use empty string.
+          // Actually, let's check `VseobecneForm`. It might be `firma` field is reused or just missing.
+          // For now, mapping what we have in SpisFormData.
+          ulica: formData.architektonickyUlica,
+          mesto: formData.architektonickyMesto,
+          psc: formData.architektonickyPsc,
+          telefon: formData.architektonickyTelefon,
+          email: formData.architektonickyEmail,
+          ico: formData.architektonickyIco,
+          dic: formData.architektonickyDic,
+          icDph: formData.architektonickyIcDph
+        },
+        billing: {
+          priezvisko: formData.fakturaciaPriezvisko,
+          meno: formData.fakturaciaMeno,
+          adresa: formData.fakturaciaAdresa,
+          ico: formData.fakturaciaIco,
+          dic: formData.fakturaciaDic,
+          icDph: formData.fakturaciaIcDph,
+          telefon: formData.fakturaciaTelefon || '',
+          email: formData.fakturaciaEmail || ''
+        },
+        activeSource: formData.fakturaciaSource || 'zakaznik'
+      };
+      cleanDataToSave.billingSnapshot = newSnapshot;
+    }
+
+    // Sync Case Number to main entry whenever it's changed in the price offer
+    if (itemCisloZakazky) {
       setFormData(prev => ({ ...prev, cisloZakazky: itemCisloZakazky }));
     }
 
@@ -406,6 +465,18 @@ export const useSpisEntryLogic = (
     setShowOrderModal(true);
   };
 
+  const handleDeleteOrder = () => {
+    if (!editingOrderId) return;
+    const newItems = formData.objednavkyItems.filter(item => item.id !== editingOrderId);
+    const newFormData = { ...formData, objednavkyItems: newItems };
+    setFormData(newFormData);
+    setShowOrderModal(false);
+    setEditingOrderId(null);
+    setEditingOrderData(undefined);
+    setEditingOrderNumber(null);
+    performSave(newFormData);
+  };
+
   const handleReset = () => {
     if (window.confirm('Naozaj chcete obnoviť formulár do počiatočného stavu? Všetky vyplnené údaje a súbory budú vymazané.')) {
       const defaults = createDefaultFormData();
@@ -452,6 +523,7 @@ export const useSpisEntryLogic = (
     handleEditOffer,
     handleEditOrderAction,
     handleAddNewOrderAction,
+    handleDeleteOrder,
     handleSaveAsNew,
     handleReset,
     internalId,

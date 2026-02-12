@@ -118,6 +118,8 @@ export interface SpisFormData {
   fakturaciaIco: string;
   fakturaciaDic: string;
   fakturaciaIcDph: string;
+  fakturaciaTelefon: string;
+  fakturaciaEmail: string;
 
   // Items
   popisItems: { datum: string, popis: string, pridal: string }[];
@@ -206,7 +208,48 @@ export interface FinancieDeposit {
   datum: string;
 }
 
+export interface BillingSnapshot {
+  customer?: {
+    firma: string;
+    ulica: string;
+    mesto: string;
+    psc: string;
+    telefon: string;
+    email: string;
+    meno: string;
+    priezvisko: string;
+    ico?: string;
+    dic?: string;
+    icDph?: string;
+  };
+  architect?: {
+    priezvisko: string;
+    meno: string;
+    firma: string;
+    ulica: string;
+    mesto: string;
+    psc: string;
+    telefon: string;
+    email: string;
+    ico?: string;
+    dic?: string;
+    icDph?: string;
+  };
+  billing?: {
+    priezvisko: string;
+    meno: string;
+    adresa: string;
+    ico: string;
+    dic: string;
+    icDph: string;
+    telefon: string;
+    email: string;
+  };
+  activeSource: string; // 'zakaznik' | 'architekt' | 'realizator'
+}
+
 export interface DvereData {
+  billingSnapshot?: BillingSnapshot;
   popisVyrobkov: string;
   dvereTyp: string; // Deprecated or kept for compatibility
   zarubnaTyp: string; // Deprecated or kept for compatibility
@@ -254,6 +297,7 @@ export interface DvereData {
 }
 
 export interface NabytokData {
+  billingSnapshot?: BillingSnapshot;
   popisVyrobkov: string;
   vyrobkyTyp: string;
   vyrobkyPopis: string;
@@ -295,6 +339,7 @@ export interface NabytokData {
 }
 
 export interface SchodyData {
+  billingSnapshot?: BillingSnapshot;
   popisVyrobkov: string;
   vyrobkyTyp: string;
   vyrobkyPopis: string;

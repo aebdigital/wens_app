@@ -199,17 +199,13 @@ export const CompanyDetailModal: React.FC<CompanyDetailModalProps> = ({
 
                 {/* Footer */}
                 <div className={`px-6 py-4 border-t flex justify-between ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
-                    {isEditing ? (
-                        <button
-                            onClick={handleDelete}
-                            disabled={isSaving}
-                            className="text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50"
-                        >
-                            Zmazať firmu a produkty
-                        </button>
-                    ) : (
-                        <div></div>
-                    )}
+                    <button
+                        onClick={handleDelete}
+                        disabled={isSaving}
+                        className="text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50"
+                    >
+                        Zmazať firmu a produkty
+                    </button>
 
                     <div className="flex gap-3">
                         {isEditing ? (

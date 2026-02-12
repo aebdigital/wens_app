@@ -26,6 +26,9 @@ interface AddTemplateModalProps {
   email: string;
   vypracoval: string;
   predmet: string;
+  ico: string;
+  dic: string;
+  icDph: string;
   fullCisloCP?: string;
   cisloZakazky?: string;
   onCisloZakazkyChange?: (value: string) => void;
@@ -40,6 +43,9 @@ interface AddTemplateModalProps {
     psc: string;
     telefon: string;
     email: string;
+    ico?: string;
+    dic?: string;
+    icDph?: string;
   };
   billingInfo?: {
     priezvisko: string;
@@ -48,6 +54,8 @@ interface AddTemplateModalProps {
     ico: string;
     dic: string;
     icDph: string;
+    telefon: string;
+    email: string;
   };
   // Initial data for editing
   editingData?: {
@@ -58,6 +66,8 @@ interface AddTemplateModalProps {
   visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'puzdra')[];
   isLocked?: boolean;
   isEditing?: boolean;
+  activeSource?: string;
+  onRefreshBilling?: () => void;
 }
 
 export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
@@ -76,6 +86,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   email,
   vypracoval,
   predmet,
+  ico,
+  dic,
+  icDph,
   fullCisloCP,
   cisloZakazky = '',
   onCisloZakazkyChange,
@@ -86,7 +99,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   editingData,
   visibleTabs = ['dvere', 'nabytok', 'schody', 'puzdra'],
   isLocked = false,
-  isEditing = false
+  isEditing = false,
+  activeSource
 }) => {
   const { isDark } = useTheme();
   const [pdfPreview, setPdfPreview] = useState<{ url: string; filename: string; tempItem: CenovaPonukaItem; formData: any; headerInfo: any } | null>(null);
@@ -107,6 +121,154 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     return fullCisloCP || predmet;
   };
 
+  // Helper to migrate legacy data structures to new format
+  const migrateDvereData = (data: any): DvereData => {
+    // defaults from initial state
+    const defaults = {
+      popisVyrobkov: '',
+      dvereTyp: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne',
+      zarubnaTyp: 'obložková, spoj „T", dyha dub bielený',
+      specifications: [
+        { id: 1, type: 'dvere', value: 'bezfalcové, séria C1-plné, dyha dub bielený, kresba dyhy vertikálne' },
+        { id: 2, type: 'zarubna', value: 'obložková, spoj „T", dyha dub bielený' }
+      ],
+      productPhotos: [],
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      showFooter: true,
+      montaznePrace: false,
+      zameraniePoplatok: false,
+      dopravaPoplatok: false,
+      vynesenieTovaru: false,
+      likvidaciaOdpadu: false,
+      terminDodania: '6-8 týždňov',
+      splatnost: '14 dní',
+      zaruka: '24 mesiacov',
+      platnostPonuky: '30 dní',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+      mena: 'EUR',
+      zlava: 0,
+      tovarDorucitNaAdresu: {
+        firma: 'WENS door, s.r.o.',
+        ulica: 'Vápenická 12',
+        mesto: 'Prievidza 971 01',
+      },
+      vyrobky: [],
+      priplatky: [],
+      kovanie: [],
+      montaz: [],
+    };
+
+    // Merge saved data with defaults
+    // saved data takes precedence, but if a field is missing in saved, we use default
+    const baseData = {
+      ...defaults, // Apply all defaults first
+      ...data,    // Then apply saved data
+
+      // Ensure specific nested objects/arrays are safe even if data has them as undefined/null
+      specifications: data.specifications || defaults.specifications,
+      productPhotos: data.productPhotos || defaults.productPhotos,
+      vyrobky: data.vyrobky || defaults.vyrobky,
+      priplatky: data.priplatky || defaults.priplatky,
+      kovanie: data.kovanie || defaults.kovanie,
+      montaz: data.montaz || defaults.montaz,
+      // Only set deposits if source data actually has them - otherwise leave undefined
+      // so QuoteFooter falls back to legacy platba1/2/3Percent (60/30/10)
+      ...(data.deposits !== undefined ? { deposits: data.deposits } : {}),
+      tovarDorucitNaAdresu: {
+        ...defaults.tovarDorucitNaAdresu,
+        ...(data.tovarDorucitNaAdresu || {})
+      }
+    };
+
+    // Migrate legacy dvereTyp/zarubnaTyp to specifications if specifications are empty AND we used the default empty array (or original was empty)
+    // Actually, if we used defaults.specifications above, it already has the 2 default items.
+    // However, if the SAVED data had dvereTyp but NO specifications, we want to capture that specific dvereTyp from saved data,
+    // not the default 'dub bielený'.
+
+    // Check if we should override the default specifications with legacy types from data
+    const hasLegacyTypes = data.dvereTyp || data.zarubnaTyp;
+    const hasNoSavedSpecs = !data.specifications || data.specifications.length === 0;
+
+    if (hasLegacyTypes && hasNoSavedSpecs) {
+      baseData.specifications = []; // Clear defaults to start fresh from legacy
+      if (data.dvereTyp) {
+        baseData.specifications.push({ id: 1, type: 'dvere', value: data.dvereTyp });
+      }
+      if (data.zarubnaTyp) {
+        baseData.specifications.push({ id: 2, type: 'zarubna', value: data.zarubnaTyp });
+      }
+    }
+
+    return baseData;
+  };
+
+  const migrateNabytokData = (data: any): NabytokData => {
+    const defaults = {
+      popisVyrobkov: '',
+      vyrobkyTyp: 'Skrinka',
+      vyrobkyPopis: 'DTD laminát biela, ABS hrana 2mm',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      vyrobky: [],
+      priplatky: [],
+      zlavaPercent: 5,
+      kovanie: [],
+      montaz: [],
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+
+    return {
+      ...defaults,
+      ...data,
+      vyrobky: data.vyrobky || defaults.vyrobky,
+      priplatky: data.priplatky || defaults.priplatky,
+      kovanie: data.kovanie || defaults.kovanie,
+      montaz: data.montaz || defaults.montaz,
+      ...(data.deposits !== undefined ? { deposits: data.deposits } : {}),
+    };
+  };
+
+  const migrateSchodyData = (data: any): SchodyData => {
+    const defaults = {
+      popisVyrobkov: '',
+      vyrobkyTyp: 'Stupeň',
+      vyrobkyPopis: 'neviditeľný spoj, DTD + dyhy dub prírodný',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      vyrobky: [],
+      priplatky: [],
+      zlavaPercent: 5,
+      kovanie: [],
+      montaz: [],
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+
+    return {
+      ...defaults,
+      ...data,
+      vyrobky: data.vyrobky || defaults.vyrobky,
+      priplatky: data.priplatky || defaults.priplatky,
+      kovanie: data.kovanie || defaults.kovanie,
+      montaz: data.montaz || defaults.montaz,
+      ...(data.deposits !== undefined ? { deposits: data.deposits } : {}),
+    };
+  };
+
   // Ensure initialTab is valid within visibleTabs
   const validInitialTab = visibleTabs.includes(initialTab) ? initialTab : visibleTabs[0];
   const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'schody' | 'puzdra'>(validInitialTab);
@@ -114,7 +276,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   // Initialize state with default values or editing data
   const [dvereData, setDvereData] = useState<DvereData>(() => {
     if (editingData?.type === 'dvere' && editingData.data) {
-      return editingData.data;
+      return migrateDvereData(editingData.data);
     }
     return {
       popisVyrobkov: '',
@@ -177,7 +339,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
 
   const [nabytokData, setNabytokData] = useState<NabytokData>(() => {
     if (editingData?.type === 'nabytok' && editingData.data) {
-      return editingData.data;
+      return migrateNabytokData(editingData.data);
     }
     return {
       popisVyrobkov: '',
@@ -217,7 +379,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
 
   const [schodyData, setSchodyData] = useState<SchodyData>(() => {
     if (editingData?.type === 'schody' && editingData.data) {
-      return editingData.data;
+      return migrateSchodyData(editingData.data);
     }
     return {
       popisVyrobkov: '',
@@ -286,11 +448,11 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       setActiveTab(editingData.type);
       // Update the corresponding form data when editing
       if (editingData.type === 'dvere' && editingData.data) {
-        setDvereData(editingData.data);
+        setDvereData(migrateDvereData(editingData.data));
       } else if (editingData.type === 'nabytok' && editingData.data) {
-        setNabytokData(editingData.data);
+        setNabytokData(migrateNabytokData(editingData.data));
       } else if (editingData.type === 'schody' && editingData.data) {
-        setSchodyData(editingData.data);
+        setSchodyData(migrateSchodyData(editingData.data));
       } else if (editingData.type === 'puzdra' && editingData.data) {
         setPuzdraData(editingData.data);
       }
@@ -374,7 +536,18 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         data: dataToPreview
       } as CenovaPonukaItem;
 
-      const headerInfo = {
+      // Prepare header info - prefer snapshot if available
+      const snapshot = dataToPreview.billingSnapshot;
+
+      const headerInfo = snapshot ? {
+        customer: snapshot.customer,
+        architect: snapshot.architect,
+        billing: snapshot.billing,
+        vypracoval,
+        telefon: creatorPhone || '',
+        email: creatorEmail || '',
+        activeSource: snapshot.activeSource
+      } : {
         customer: {
           firma: firma,
           meno: meno,
@@ -384,6 +557,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
           psc,
           telefon,
           email,
+          ico: ico,
+          dic: dic,
+          icDph: icDph,
         },
         architect: architectInfo,
         vypracoval,
@@ -392,6 +568,12 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       };
 
       // Create minimal formData for PDF generation
+      // We need to map snapshot data back to flat formData structure for the PDF generator
+      const source = snapshot ? snapshot.activeSource : (activeSource || 'zakaznik');
+      const cust = snapshot ? snapshot.customer : { firma, meno, priezvisko, ulica, mesto, psc, telefon, email, ico, dic, icDph };
+      const arch = snapshot ? snapshot.architect : architectInfo;
+      const bill = snapshot ? snapshot.billing : billingInfo;
+
       const formData = {
         predmet: predmet || '',
         cisloZakazky: '',
@@ -399,16 +581,19 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         odsuhlesenaKS2: '',
         ochranaDatum: '',
         ochranaText: '',
-        firma: firma,
-        ico: '',
-        dic: '',
-        ulica: ulica,
-        mesto: mesto,
-        psc: psc,
-        telefon: telefon,
-        email: email,
-        priezvisko: priezvisko,
-        meno: meno,
+        // Customer fields
+        firma: cust?.firma || '',
+        ico: cust?.ico || '',
+        dic: cust?.dic || '',
+        icDph: cust?.icDph || '',
+        ulica: cust?.ulica || '',
+        mesto: cust?.mesto || '',
+        psc: cust?.psc || '',
+        telefon: cust?.telefon || '',
+        email: cust?.email || '',
+        priezvisko: cust?.priezvisko || '',
+        meno: cust?.meno || '',
+
         architekt: '',
         stavba: '',
         stav: '',
@@ -424,21 +609,27 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         technickeVykresy: [],
         fullFormData: {},
         // Architect info for PDF generation
-        architektonickyPriezvisko: architectInfo?.priezvisko || '',
-        architektonickeMeno: architectInfo?.meno || '',
-        architektonickyIco: '',
-        architektonickyUlica: architectInfo?.ulica || '',
-        architektonickyMesto: architectInfo?.mesto || '',
-        architektonickyPsc: architectInfo?.psc || '',
-        architektonickyTelefon: architectInfo?.telefon || '',
-        architektonickyEmail: architectInfo?.email || '',
+        architektonickyPriezvisko: arch?.priezvisko || '',
+        architektonickeMeno: arch?.meno || '',
+        architektonickyIco: arch?.ico || '',
+        architektonickyDic: arch?.dic || '',
+        architektonickyIcDph: arch?.icDph || '',
+        architektonickyUlica: arch?.ulica || '',
+        architektonickyMesto: arch?.mesto || '',
+        architektonickyPsc: arch?.psc || '',
+        architektonickyTelefon: arch?.telefon || '',
+        architektonickyEmail: arch?.email || '',
         // Billing info for PDF generation
-        fakturaciaPriezvisko: billingInfo?.priezvisko || '',
-        fakturaciaMeno: billingInfo?.meno || '',
-        fakturaciaAdresa: billingInfo?.adresa || '',
-        fakturaciaIco: billingInfo?.ico || '',
-        fakturaciaDic: billingInfo?.dic || '',
-        fakturaciaIcDph: billingInfo?.icDph || ''
+        fakturaciaPriezvisko: bill?.priezvisko || '',
+        fakturaciaMeno: bill?.meno || '',
+        fakturaciaAdresa: bill?.adresa || '',
+        fakturaciaIco: bill?.ico || '',
+        fakturaciaDic: bill?.dic || '',
+        fakturaciaIcDph: bill?.icDph || '',
+        fakturaciaTelefon: bill?.telefon || '',
+        fakturaciaEmail: bill?.email || '',
+        // Source toggle for PDF generation
+        fakturaciaSource: source
       };
 
       const blobUrl = await generatePDF(tempItem, formData as any, headerInfo);
@@ -551,23 +742,62 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               data={dvereData}
               onChange={setDvereData}
               isDark={isDark}
-              headerInfo={{
-                customer: {
-                  firma: firma,
-                  meno: meno,
-                  priezvisko: priezvisko,
-                  ulica,
-                  mesto,
-                  psc,
-                  telefon,
-                  email,
-                },
-                architect: architectInfo,
-                billing: billingInfo,
-                vypracoval,
-                telefon: creatorPhone || '',
-                email: creatorEmail || ''
+              headerInfo={(() => {
+                // Determine effective header info: prefer snapshot if available, else props
+                const snapshot = dvereData.billingSnapshot;
+                if (snapshot) {
+                  return {
+                    customer: snapshot.customer,
+                    architect: snapshot.architect,
+                    billing: snapshot.billing,
+                    vypracoval,
+                    telefon: creatorPhone || '',
+                    email: creatorEmail || '',
+                    activeSource: snapshot.activeSource
+                  };
+                }
+                // Fallback to current global state (legacy behavior or new item before save)
+                return {
+                  customer: {
+                    firma: firma,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ulica,
+                    mesto,
+                    psc,
+                    telefon,
+                    email,
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  vypracoval,
+                  telefon: creatorPhone || '',
+                  email: creatorEmail || '',
+                  activeSource
+                };
+              })()}
+              onRefreshBilling={() => {
+                const newSnapshot: import('../types').BillingSnapshot = {
+                  customer: {
+                    firma: firma,
+                    ulica: ulica,
+                    mesto: mesto,
+                    psc: psc,
+                    telefon: telefon,
+                    email: email,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ico: ico,
+                    dic: dic,
+                    icDph: icDph
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  activeSource: activeSource || 'zakaznik'
+                };
+                setDvereData(prev => ({ ...prev, billingSnapshot: newSnapshot }));
               }}
+              usingSnapshot={!!dvereData.billingSnapshot}
             />
           )}
           {activeTab === 'nabytok' && (
@@ -575,23 +805,60 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               data={nabytokData}
               onChange={setNabytokData}
               isDark={isDark}
-              headerInfo={{
-                customer: {
-                  firma: firma,
-                  meno: meno,
-                  priezvisko: priezvisko,
-                  ulica,
-                  mesto,
-                  psc,
-                  telefon,
-                  email,
-                },
-                architect: architectInfo,
-                billing: billingInfo,
-                vypracoval,
-                telefon: creatorPhone || '',
-                email: creatorEmail || ''
+              headerInfo={(() => {
+                const snapshot = nabytokData.billingSnapshot;
+                if (snapshot) {
+                  return {
+                    customer: snapshot.customer,
+                    architect: snapshot.architect,
+                    billing: snapshot.billing,
+                    vypracoval,
+                    telefon: creatorPhone || '',
+                    email: creatorEmail || '',
+                    activeSource: snapshot.activeSource
+                  };
+                }
+                return {
+                  customer: {
+                    firma: firma,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ulica,
+                    mesto,
+                    psc,
+                    telefon,
+                    email,
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  vypracoval,
+                  telefon: creatorPhone || '',
+                  email: creatorEmail || '',
+                  activeSource
+                };
+              })()}
+              onRefreshBilling={() => {
+                const newSnapshot: import('../types').BillingSnapshot = {
+                  customer: {
+                    firma: firma,
+                    ulica: ulica,
+                    mesto: mesto,
+                    psc: psc,
+                    telefon: telefon,
+                    email: email,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ico: ico,
+                    dic: dic,
+                    icDph: icDph
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  activeSource: activeSource || 'zakaznik'
+                };
+                setNabytokData(prev => ({ ...prev, billingSnapshot: newSnapshot }));
               }}
+              usingSnapshot={!!nabytokData.billingSnapshot}
             />
           )}
           {activeTab === 'schody' && (
@@ -599,23 +866,60 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
               data={schodyData}
               onChange={setSchodyData}
               isDark={isDark}
-              headerInfo={{
-                customer: {
-                  firma: firma,
-                  meno: meno,
-                  priezvisko: priezvisko,
-                  ulica,
-                  mesto,
-                  psc,
-                  telefon,
-                  email,
-                },
-                architect: architectInfo,
-                billing: billingInfo,
-                vypracoval,
-                telefon: creatorPhone || '',
-                email: creatorEmail || ''
+              headerInfo={(() => {
+                const snapshot = schodyData.billingSnapshot;
+                if (snapshot) {
+                  return {
+                    customer: snapshot.customer,
+                    architect: snapshot.architect,
+                    billing: snapshot.billing,
+                    vypracoval,
+                    telefon: creatorPhone || '',
+                    email: creatorEmail || '',
+                    activeSource: snapshot.activeSource
+                  };
+                }
+                return {
+                  customer: {
+                    firma: firma,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ulica,
+                    mesto,
+                    psc,
+                    telefon,
+                    email,
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  vypracoval,
+                  telefon: creatorPhone || '',
+                  email: creatorEmail || '',
+                  activeSource
+                };
+              })()}
+              onRefreshBilling={() => {
+                const newSnapshot: import('../types').BillingSnapshot = {
+                  customer: {
+                    firma: firma,
+                    ulica: ulica,
+                    mesto: mesto,
+                    psc: psc,
+                    telefon: telefon,
+                    email: email,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ico: ico,
+                    dic: dic,
+                    icDph: icDph
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  activeSource: activeSource || 'zakaznik'
+                };
+                setSchodyData(prev => ({ ...prev, billingSnapshot: newSnapshot }));
               }}
+              usingSnapshot={!!schodyData.billingSnapshot}
             />
           )}
           {activeTab === 'puzdra' && (

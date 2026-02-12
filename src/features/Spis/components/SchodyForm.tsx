@@ -22,6 +22,9 @@ interface SchodyFormProps {
       email: string;
       meno: string;
       priezvisko: string;
+      ico?: string;
+      dic?: string;
+      icDph?: string;
     };
     architect?: {
       priezvisko: string;
@@ -32,6 +35,9 @@ interface SchodyFormProps {
       psc: string;
       telefon: string;
       email: string;
+      ico?: string;
+      dic?: string;
+      icDph?: string;
     };
     billing?: {
       priezvisko: string;
@@ -40,6 +46,8 @@ interface SchodyFormProps {
       ico: string;
       dic: string;
       icDph: string;
+      telefon: string;
+      email: string;
     };
     vypracoval?: string;
     // Legacy / Flat support
@@ -49,7 +57,10 @@ interface SchodyFormProps {
     psc?: string;
     telefon?: string;
     email?: string;
+    activeSource?: string;
   };
+  onRefreshBilling?: () => void;
+  usingSnapshot?: boolean;
 }
 
 // Default payment percentages
@@ -67,7 +78,7 @@ const DEFAULT_WIDTHS = {
   cenaCelkom: 10
 };
 
-export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, headerInfo }) => {
+export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, headerInfo, onRefreshBilling, usingSnapshot }) => {
   const totals = calculateSchodyTotals(data);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -220,6 +231,8 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
       onChange={onChange}
       totals={totals}
       defaultLegalText={NOTES_SCHODY}
+      onRefreshBilling={onRefreshBilling}
+      usingSnapshot={usingSnapshot}
     >
       {/* Product description */}
       <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} `}>

@@ -427,6 +427,46 @@ const Objednavky = () => {
     }
   };
 
+  const handleDeleteOrder = async () => {
+    if (!editingOrder) return;
+
+    try {
+      if (editingOrder.isStandalone) {
+        // Delete from standalone_orders table
+        const { error } = await supabase
+          .from('standalone_orders')
+          .delete()
+          .eq('id', editingOrder.order.id);
+        if (error) throw error;
+        await loadStandaloneOrders();
+        await refreshStandaloneOrders();
+      } else {
+        // Delete from spis entry
+        const entry = entries.find(e => e.cisloCP === editingOrder.parentSpisId);
+        if (entry && entry.fullFormData) {
+          const updatedItems = entry.fullFormData.objednavkyItems.filter(
+            (item: ObjednavkaItem) => item.cisloObjednavky !== editingOrder.order.cisloObjednavky
+          );
+          const updatedEntry: SpisEntry = {
+            ...entry,
+            fullFormData: {
+              ...entry.fullFormData,
+              objednavkyItems: updatedItems
+            }
+          };
+          await updateEntry(updatedEntry);
+        }
+      }
+
+      setIsAddOrderModalOpen(false);
+      setEditingOrder(null);
+      toast.success('Objednávka vymazaná');
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error('Chyba pri mazaní objednávky');
+    }
+  };
+
   const tableData = useMemo(() => {
     return [...objednavkyData].sort((a, b) => b.cisloObjednavky.localeCompare(a.cisloObjednavky));
   }, [objednavkyData]);
@@ -811,6 +851,7 @@ const Objednavky = () => {
             setEditingOrder(null);
           }}
           onSave={handleSaveStandaloneOrder}
+          onDelete={handleDeleteOrder}
           vypracoval={userName}
           telefon=""
           email={userEmail}
