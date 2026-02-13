@@ -724,47 +724,51 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     });
     yPos = (doc as any).lastAutoTable.finalY;
 
-    // Summary table row 2 - Zľava - larger (fontSize 11)
-    // Build the discount display string based on which discounts are active
-    let zlavaDisplayStr = '';
-    if (useZlavaPercent && zlavaPercent > 0) {
-      zlavaDisplayStr = `${zlavaPercent.toFixed(0)} %`;
-    }
-    if (useZlavaEur && zlavaEur > 0) {
-      if (zlavaDisplayStr) {
-        zlavaDisplayStr += ` + ${zlavaEur.toFixed(2)} €`;
-      } else {
-        zlavaDisplayStr = `${zlavaEur.toFixed(2)} €`;
+    if (zlavaAmount > 0) {
+      // Summary table row 2 - Zľava - larger (fontSize 11)
+      // Build the discount display string based on which discounts are active
+      let zlavaDisplayStr = '';
+      if (useZlavaPercent && zlavaPercent > 0) {
+        zlavaDisplayStr = `${zlavaPercent.toFixed(0)} %`;
       }
-    }
-    if (!zlavaDisplayStr) {
-      zlavaDisplayStr = '0 %';
+      if (useZlavaEur && zlavaEur > 0) {
+        if (zlavaDisplayStr) {
+          zlavaDisplayStr += ` + ${zlavaEur.toFixed(2)} €`;
+        } else {
+          zlavaDisplayStr = `${zlavaEur.toFixed(2)} €`;
+        }
+      }
+      if (!zlavaDisplayStr) {
+        zlavaDisplayStr = '0 %';
+      }
+
+      autoTable(doc, {
+        startY: yPos,
+        body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStr, `${zlavaAmount.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
+        columnStyles: {
+          0: { halign: 'right' },
+          1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
+          2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
+
+      // Summary table row 3 - after discount
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Cena výrobkov a príplatkov po odpočítaní zľavy spolu:', 'spolu bez DPH', `${afterZlava.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { halign: 'right' },
+          1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
+          2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
     }
 
-    autoTable(doc, {
-      startY: yPos,
-      body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStr, `${zlavaAmount.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
-      columnStyles: {
-        0: { halign: 'right' },
-        1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
-        2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
-      }
-    });
-    yPos = (doc as any).lastAutoTable.finalY;
-
-    // Summary table row 3 - after discount
-    autoTable(doc, {
-      startY: yPos,
-      body: [['Cena výrobkov a príplatkov po odpočítaní zľavy spolu:', 'spolu bez DPH', `${afterZlava.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-      columnStyles: {
-        0: { halign: 'right' },
-        1: { cellWidth: 10 + 18, halign: 'right' }, // Aligned with Ks + Cena/ks columns
-        2: { cellWidth: 28, halign: 'right' }       // Aligned with Cena celkom column
-      }
-    });
-    yPos = (doc as any).lastAutoTable.finalY + 5;
+    yPos += 5;
 
     // 3. Kovanie
     if (data.kovanie.some((k: any) => k.ks > 0)) {
