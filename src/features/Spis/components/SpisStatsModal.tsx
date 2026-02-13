@@ -110,7 +110,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         };
 
         fetchAllEntries();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     // Use allEntries for stats calculations, fall back to entries prop while loading
@@ -358,56 +358,63 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         let deposit3Date = '';
         let remaining = 0;
 
-        let hasDph = false; // Need to check where this flag comes from. Using generic logic.
+        let hasDph = false;
         let hasPrenos = false;
         let hasDohoda = false;
 
+        // Price Calculation
         if (selectedOffer) {
-            // Flags from offer data
             const offerData = selectedOffer.data as any;
             if (offerData) {
                 if (offerData.prenesenieDP) hasPrenos = true;
                 if (offerData.cenaDohodou) hasDohoda = true;
             }
 
-            // Calculate price based on priority: 1. cenaDohodou, 2. prenesenieDP, 3. cenaSDPH
             if (hasDohoda && offerData?.cenaDohodouValue) {
-                // Price by agreement
                 price = parsePrice(offerData.cenaDohodouValue);
             } else if (hasPrenos) {
-                // VAT transfer - use price without VAT
                 price = parsePrice(selectedOffer.cenaBezDPH);
             } else {
-                // Standard price with VAT
                 price = parsePrice(selectedOffer.cenaSDPH);
             }
-
-            // Logic for deposits from offer
-            // Usually mapped to zaloha1, zaloha2 in form data if synchronized, 
-            // but we might need to extract from offer structure if form data is empty
-
-            // Prioritize FormData values as they are the "master" for finances usually
-            deposit1 = parsePrice(formData.zaloha1);
-            deposit1Date = formData.zaloha1Datum;
-            deposit2 = parsePrice(formData.zaloha2);
-            deposit2Date = formData.zaloha2Datum;
-            remaining = parsePrice(formData.doplatok);
         } else {
-            // Manual entry
             price = parsePrice(formData.cena);
+        }
+
+        // Deposits Logic: Prioritize dynamic financieDeposits if available
+        const dynDeposits = formData.financieDeposits;
+        if (dynDeposits && Array.isArray(dynDeposits) && dynDeposits.length > 0) {
+            if (dynDeposits.length >= 1) {
+                deposit1 = parsePrice(dynDeposits[0].amount);
+                deposit1Date = dynDeposits[0].datum;
+            }
+            if (dynDeposits.length >= 2) {
+                deposit2 = parsePrice(dynDeposits[1].amount);
+                deposit2Date = dynDeposits[1].datum;
+            }
+            // Note: If there are more than 2 deposits, they won't seamlessly fit into the 2-column layout yet.
+            // The remaining amount (doplatok) handles the balance.
+        } else {
+            // Fallback to legacy fields
             deposit1 = parsePrice(formData.zaloha1);
             deposit1Date = formData.zaloha1Datum;
             deposit2 = parsePrice(formData.zaloha2);
             deposit2Date = formData.zaloha2Datum;
-            remaining = parsePrice(formData.doplatok);
         }
+
+        remaining = parsePrice(formData.doplatok);
 
         // If remaining is 0 but price > deposits, calculate it
-        if (remaining === 0 && price > (deposit1 + deposit2)) {
-            remaining = price - (deposit1 + deposit2);
+        // Note: For dynamic deposits with >2 items, this simple check might be inaccurate if we only sum d1+d2
+        // But usually doplatok is explicit in formData
+        if (remaining === 0 && price > 0) {
+            const depositsSum = deposit1 + deposit2;
+            // Only auto-calc remaining if it seems completely unset and we have a price
+            if (depositsSum < price) {
+                remaining = price - depositsSum;
+            }
         }
 
-        // Dátum 3 - usually completion date or doplatok date
         deposit3Date = formData.doplatokDatum || '';
 
         return {
@@ -418,7 +425,7 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
             deposit2Date,
             deposit3Date,
             remaining,
-            hasDph, // Placeholder logic
+            hasDph,
             hasPrenos,
             hasDohoda
         };
