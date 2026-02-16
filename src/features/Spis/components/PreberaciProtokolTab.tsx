@@ -129,7 +129,8 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
         mobil: effectiveMobil,
         predmetDiela: data.predmetDiela || (selectedOffer.typ === 'dvere' ? 'Dodávka a montáž interiérových dverí a zárubní' :
           selectedOffer.typ === 'nabytok' ? 'Dodávka a montáž nábytku' :
-            selectedOffer.typ === 'schody' ? 'Dodávka a montáž schodov' : 'Dodávka tovaru'),
+            selectedOffer.typ === 'schody' ? 'Dodávka a montáž schodov' :
+              selectedOffer.typ === 'kovanie' ? 'Dodávka kovania' : 'Dodávka tovaru'),
         zhotovitelInfo: data.zhotovitelInfo !== undefined ? data.zhotovitelInfo : DEFAULT_ZHOTOVITEL,
         objednavatelInfo: data.objednavatelInfo !== undefined ? data.objednavatelInfo : effectiveObjednavatelInfo,
         bankInfo: data.bankInfo !== undefined ? data.bankInfo : DEFAULT_BANK,
@@ -170,7 +171,7 @@ export const PreberaciProtokolTab: React.FC<PreberaciProtokolTabProps> = ({
           <div className="space-y-6">
             <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} border-b pb-4 ${isDark ? 'border-dark-500' : 'border-gray-200'}`}>
               <p><strong>Schválená cenová ponuka:</strong> {selectedOffer.cisloCP}</p>
-              <p><strong>Typ:</strong> {selectedOffer.typ === 'dvere' ? 'Dvere' : selectedOffer.typ === 'nabytok' ? 'Nábytok' : selectedOffer.typ === 'schody' ? 'Schody' : 'Púzdra'}</p>
+              <p><strong>Typ:</strong> {selectedOffer.typ === 'dvere' ? 'Dvere' : selectedOffer.typ === 'nabytok' ? 'Nábytok' : selectedOffer.typ === 'schody' ? 'Schody' : selectedOffer.typ === 'kovanie' ? 'Kovanie' : 'Púzdra'}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -184,7 +184,45 @@ export type CenovaPonukaItem =
   | (CenovaPonukaItemBase & { typ: 'dvere'; data: DvereData })
   | (CenovaPonukaItemBase & { typ: 'nabytok'; data: NabytokData })
   | (CenovaPonukaItemBase & { typ: 'schody'; data: SchodyData })
+  | (CenovaPonukaItemBase & { typ: 'kovanie'; data: KovanieData })
   | (CenovaPonukaItemBase & { typ: 'puzdra'; data: PuzdraData });
+
+export interface KovanieData {
+  billingSnapshot?: BillingSnapshot;
+  popisVyrobkov: string;
+  vyrobky: any[];
+  priplatky: any[];
+  kovanie: any[];
+  zlavaPercent: number;
+  zlavaEur?: number;
+  useZlavaPercent?: boolean;
+  useZlavaEur?: boolean;
+  montaz: any[];
+  montazLabel?: string;
+  platnostPonuky: string;
+  miestoDodavky: string;
+  poznamkaKAdrese?: string;
+  zameranie: string;
+  terminDodania: string;
+  platba1Percent: number;
+  platba2Percent: number;
+  platba3Percent: number;
+  platba1Amount?: number | null;
+  platba2Amount?: number | null;
+  platba3Amount?: number | null;
+  manualCenaSDPH?: number | null;
+  prenesenieDP?: boolean;
+  cenaDohodou?: boolean;
+  cenaDohodouValue?: number | null;
+  deposits?: Deposit[];
+  vypracoval?: string;
+  kontakt?: string;
+  emailVypracoval?: string;
+  datum?: string;
+  legalText?: string;
+  hiddenColumns?: string[];
+  columnWidths?: { [key: string]: number };
+}
 
 export interface ProductPhoto {
   id: string;

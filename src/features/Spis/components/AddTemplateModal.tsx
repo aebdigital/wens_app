@@ -3,18 +3,19 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { DvereForm } from './DvereForm';
 import { NabytokForm } from './NabytokForm';
 import { SchodyForm } from './SchodyForm';
+import { KovanieForm } from './KovanieForm';
 import { PuzdraForm } from './PuzdraForm';
-import { DvereData, NabytokData, SchodyData, PuzdraData, CenovaPonukaItem } from '../types';
+import { DvereData, NabytokData, SchodyData, KovanieData, PuzdraData, CenovaPonukaItem } from '../types';
 import { generatePDF, generateAndSavePDF } from '../utils/pdfGenerator';
 import { PDFPreviewModal } from '../../../components/common/PDFPreviewModal';
-import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals } from '../utils/priceCalculations';
+import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculateKovanieTotals } from '../utils/priceCalculations';
 
 interface AddTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any) => void;
-  onSaveAsNew?: (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }) => void;
-  initialTab?: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
+  onSave: (type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any) => void;
+  onSaveAsNew?: (type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }) => void;
+  initialTab?: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra';
   // Props for header info
   firma: string;
   priezvisko: string;
@@ -59,11 +60,11 @@ interface AddTemplateModalProps {
   };
   // Initial data for editing
   editingData?: {
-    type: 'dvere' | 'nabytok' | 'schody' | 'puzdra';
+    type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra';
     data: any;
     cisloZakazky?: string;
   };
-  visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'puzdra')[];
+  visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra')[];
   isLocked?: boolean;
   isEditing?: boolean;
   activeSource?: string;
@@ -97,7 +98,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   architectInfo,
   billingInfo,
   editingData,
-  visibleTabs = ['dvere', 'nabytok', 'schody', 'puzdra'],
+  visibleTabs = ['dvere', 'nabytok', 'schody', 'kovanie', 'puzdra'],
   isLocked = false,
   isEditing = false,
   activeSource
@@ -269,9 +270,40 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     };
   };
 
+  const migrateKovanieData = (data: any): KovanieData => {
+    const defaults = {
+      popisVyrobkov: '',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      vyrobky: [],
+      priplatky: [],
+      kovanie: [],
+      zlavaPercent: 0,
+      montaz: [],
+      montazLabel: '',
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+
+    return {
+      ...defaults,
+      ...data,
+      vyrobky: data.vyrobky || defaults.vyrobky,
+      priplatky: data.priplatky || defaults.priplatky,
+      kovanie: data.kovanie || defaults.kovanie,
+      montaz: data.montaz || defaults.montaz,
+      ...(data.deposits !== undefined ? { deposits: data.deposits } : {}),
+    };
+  };
+
   // Ensure initialTab is valid within visibleTabs
-  const validInitialTab = visibleTabs.includes(initialTab) ? initialTab : visibleTabs[0];
-  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'schody' | 'puzdra'>(validInitialTab);
+  const validInitialTab = (visibleTabs.includes(initialTab as any) ? initialTab : visibleTabs[0]) as any;
+  const [activeTab, setActiveTab] = useState<'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra'>(validInitialTab);
 
   // Initialize state with default values or editing data
   const [dvereData, setDvereData] = useState<DvereData>(() => {
@@ -417,6 +449,38 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
     };
   });
 
+  const [kovanieData, setKovanieData] = useState<KovanieData>(() => {
+    if (editingData?.type === 'kovanie' && editingData.data) {
+      return migrateKovanieData(editingData.data);
+    }
+    return {
+      popisVyrobkov: '',
+      showCustomerInfo: true,
+      showArchitectInfo: false,
+      vyrobky: Array(1).fill(null).map((_, i) => ({
+        id: i + 1,
+        nazov: '',
+        rozmer: '',
+        material: '',
+        poznamka: '',
+        ks: 0,
+        cenaKs: 0,
+        cenaCelkom: 0,
+      })),
+      priplatky: [],
+      kovanie: [],
+      zlavaPercent: 0,
+      montaz: [],
+      platnostPonuky: '1 mesiac od vypracovania',
+      miestoDodavky: 'Bratislava',
+      zameranie: '',
+      terminDodania: '6-8 týždňov od prijatia zálohy na náš účet a upresnení všetkých detailov a zmien zo strany objednávateľa.',
+      platba1Percent: 60,
+      platba2Percent: 30,
+      platba3Percent: 10,
+    };
+  });
+
   const [puzdraData, setPuzdraData] = useState<PuzdraData>(() => {
     if (editingData?.type === 'puzdra' && editingData.data) {
       return editingData.data;
@@ -453,6 +517,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         setNabytokData(migrateNabytokData(editingData.data));
       } else if (editingData.type === 'schody' && editingData.data) {
         setSchodyData(migrateSchodyData(editingData.data));
+      } else if (editingData.type === 'kovanie' && editingData.data) {
+        setKovanieData(migrateKovanieData(editingData.data));
       } else if (editingData.type === 'puzdra' && editingData.data) {
         setPuzdraData(editingData.data);
       }
@@ -468,6 +534,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       if (activeTab === 'dvere') dataToSave = dvereData;
       else if (activeTab === 'nabytok') dataToSave = nabytokData;
       else if (activeTab === 'schody') dataToSave = schodyData;
+      else if (activeTab === 'kovanie') dataToSave = kovanieData;
       else dataToSave = puzdraData;
 
       // Include the local cisloZakazky in the data
@@ -486,6 +553,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       if (activeTab === 'dvere') dataToSave = dvereData;
       else if (activeTab === 'nabytok') dataToSave = nabytokData;
       else if (activeTab === 'schody') dataToSave = schodyData;
+      else if (activeTab === 'kovanie') dataToSave = kovanieData;
       else dataToSave = puzdraData;
 
       // Include the local cisloZakazky in the data
@@ -511,6 +579,9 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       } else if (activeTab === 'schody') {
         dataToPreview = schodyData;
         totals = calculateSchodyTotals(schodyData);
+      } else if (activeTab === 'kovanie') {
+        dataToPreview = kovanieData;
+        totals = calculateKovanieTotals(kovanieData);
       } else {
         // Puzdra type doesn't have a standard PDF
         alert('Náhľad PDF nie je dostupný pre typ Púzdra');
@@ -703,7 +774,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                 >
-                  {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : tab === 'schody' ? 'Schody' : 'Púzdra'}
+                  {tab === 'dvere' ? 'Dvere' : tab === 'nabytok' ? 'Nábytok' : tab === 'schody' ? 'Schody' : tab === 'kovanie' ? 'Kovanie' : 'Púzdra'}
                 </button>
               ))}
             </div>
@@ -920,6 +991,67 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                 setSchodyData(prev => ({ ...prev, billingSnapshot: newSnapshot }));
               }}
               usingSnapshot={!!schodyData.billingSnapshot}
+            />
+          )}
+          {activeTab === 'kovanie' && (
+            <KovanieForm
+              data={kovanieData}
+              onChange={setKovanieData}
+              isDark={isDark}
+              headerInfo={(() => {
+                const snapshot = kovanieData.billingSnapshot;
+                if (snapshot) {
+                  return {
+                    customer: snapshot.customer,
+                    architect: snapshot.architect,
+                    billing: snapshot.billing,
+                    vypracoval,
+                    telefon: creatorPhone || '',
+                    email: creatorEmail || '',
+                    activeSource: snapshot.activeSource
+                  };
+                }
+                return {
+                  customer: {
+                    firma: firma,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ulica,
+                    mesto,
+                    psc,
+                    telefon,
+                    email,
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  vypracoval,
+                  telefon: creatorPhone || '',
+                  email: creatorEmail || '',
+                  activeSource
+                };
+              })()}
+              onRefreshBilling={() => {
+                const newSnapshot: import('../types').BillingSnapshot = {
+                  customer: {
+                    firma: firma,
+                    ulica: ulica,
+                    mesto: mesto,
+                    psc: psc,
+                    telefon: telefon,
+                    email: email,
+                    meno: meno,
+                    priezvisko: priezvisko,
+                    ico: ico,
+                    dic: dic,
+                    icDph: icDph
+                  },
+                  architect: architectInfo,
+                  billing: billingInfo,
+                  activeSource: activeSource || 'zakaznik'
+                };
+                setKovanieData(prev => ({ ...prev, billingSnapshot: newSnapshot }));
+              }}
+              usingSnapshot={!!kovanieData.billingSnapshot}
             />
           )}
           {activeTab === 'puzdra' && (

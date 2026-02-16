@@ -163,7 +163,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showDeleteNoteConfirm, setShowDeleteNoteConfirm] = useState(false);
   const [noteToDeleteIndex, setNoteToDeleteIndex] = useState<number | null>(null);
-  const [vzorModalTabs, setVzorModalTabs] = useState<('dvere' | 'nabytok' | 'schody' | 'puzdra')[]>(['dvere', 'nabytok', 'schody', 'puzdra']);
+  const [vzorModalTabs, setVzorModalTabs] = useState<('dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra')[]>(['dvere', 'nabytok', 'schody', 'kovanie', 'puzdra']);
   const [isSaving, setIsSaving] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
 
@@ -380,8 +380,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         totalQuantity = (selectedItem.data.vyrobky as any[]).reduce((sum: number, p: any) => {
           return sum + (Number(p.ks) || 0);
         }, 0);
-      } else if ((selectedItem.typ === 'nabytok' || selectedItem.typ === 'schody') && 'vyrobky' in selectedItem.data) {
-        // For furniture and stairs, quantity logic uses 'ks' field
+      } else if ((selectedItem.typ === 'nabytok' || selectedItem.typ === 'schody' || selectedItem.typ === 'kovanie') && 'vyrobky' in selectedItem.data) {
+        // For furniture, stairs, and kovanie, quantity logic uses 'ks' field
         totalQuantity = (selectedItem.data.vyrobky as any[]).reduce((sum: number, p: any) => sum + (Number(p.ks) || 0), 0);
       }
     }
@@ -390,7 +390,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     let financeUpdates: { cena?: string; zaloha1?: string; zaloha2?: string; doplatok?: string; financieDeposits?: FinancieDeposit[] } = {};
     if (!isCurrentlySelected && selectedItem.data) {
       if (selectedItem.typ !== 'puzdra') {
-        const data = selectedItem.data as import('../types').DvereData | import('../types').NabytokData | import('../types').SchodyData;
+        const data = selectedItem.data as import('../types').DvereData | import('../types').NabytokData | import('../types').SchodyData | import('../types').KovanieData;
         const cenaSDPH = selectedItem.cenaSDPH || 0;
 
         // Helper function to round UP to nearest 10 (matches QuoteFooter display)
@@ -414,11 +414,17 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             const amount = deposit.amount != null
               ? deposit.amount
               : effectivePrice * (deposit.percent / 100);
+
+            // Try to find existing date in current formData to preserve it
+            // Fallback to matching by label if ID match fails (e.g. if deposits were regenerated)
+            const existingDeposit = formData.financieDeposits?.find(d => d.id === deposit.id)
+              || formData.financieDeposits?.find(d => d.label === deposit.label);
+
             return {
               id: deposit.id,
               label: deposit.label,
               amount: amount.toFixed(2),
-              datum: '' // Date will be set by user in Financie section
+              datum: existingDeposit?.datum || ''
             };
           });
 
@@ -725,7 +731,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                           isDark={isDark}
                           isLocked={isEffectivelyLocked}
                           onAddVzor={() => {
-                            setVzorModalTabs(['dvere', 'nabytok', 'schody']);
+                            setVzorModalTabs(['dvere', 'nabytok', 'schody', 'kovanie']);
                             setEditingOfferId(null);
                             // Always start with a fresh form when adding new quote
                             setEditingOfferData(undefined);

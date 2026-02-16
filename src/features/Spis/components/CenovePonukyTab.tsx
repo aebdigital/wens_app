@@ -110,9 +110,11 @@ export const CenovePonukyTab: React.FC<CenovePonukyTabProps> = ({
                       ? 'bg-green-100 text-green-800'
                       : item.typ === 'schody'
                         ? 'bg-purple-100 text-purple-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                        : item.typ === 'kovanie'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                    {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Púzdra'}
+                    {item.typ === 'dvere' ? 'Dvere' : item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : item.typ === 'kovanie' ? 'Kovanie' : 'Púzdra'}
                   </span>
                 </td>
                 <td className={`border px-1 py-1 ${isDark ? 'border-dark-500 text-white' : 'border-gray-300 text-gray-800'}`} onClick={(e) => e.stopPropagation()}>

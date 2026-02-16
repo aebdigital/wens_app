@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import { CenovaPonukaItem, SpisFormData, PuzdraData } from '../types';
-import { NOTES_DVERE, NOTES_NABYTOK, NOTES_SCHODY } from './legalTexts';
+import { NOTES_DVERE, NOTES_NABYTOK, NOTES_SCHODY, NOTES_KOVANIE } from './legalTexts';
 
 interface UserInfo {
   vypracoval: string;
@@ -1207,10 +1207,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       doc.text(legalLines, 14, legalYPos);
     }
 
-  } else if ((item.typ === 'nabytok' || item.typ === 'schody') && item.data) {
-    // Nabytok and Schody have similar structure
+  } else if ((item.typ === 'nabytok' || item.typ === 'schody' || item.typ === 'kovanie') && item.data) {
+    // Nabytok, Schody and Kovanie have similar structure
     const data = item.data;
-    const typLabel = item.typ === 'nabytok' ? 'Nábytok' : 'Schody';
+    const typLabel = item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Kovanie';
 
     // Tables - adjusted for portrait
     const tableStyles = {
@@ -1387,35 +1387,40 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     });
     yPos = (doc as any).lastAutoTable.finalY;
 
-    // Summary table row 2 - Zľava - larger (fontSize 11)
-    autoTable(doc, {
-      startY: yPos,
-      body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStrNS, `${zlavaAmountNS.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
-      columnStyles: {
-        0: { halign: 'right' },
-        1: { cellWidth: 28, halign: 'right' },
-        2: { cellWidth: 28, halign: 'right' }
-      }
-    });
-    yPos = (doc as any).lastAutoTable.finalY;
+    if (zlavaAmountNS > 0) {
+      // Summary table row 2 - Zľava - larger (fontSize 11)
+      autoTable(doc, {
+        startY: yPos,
+        body: [[`Zľava z ceny výrobkov a príplatkov:`, zlavaDisplayStrNS, `${zlavaAmountNS.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
+        columnStyles: {
+          0: { halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' },
+          2: { cellWidth: 28, halign: 'right' }
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY;
 
-    // Summary table row 3 - normal size
-    autoTable(doc, {
-      startY: yPos,
-      body: [['Cena výrobkov a príplatkov po odpočítaní zľavy spolu:', 'spolu bez DPH', `${afterZlava.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
-      columnStyles: {
-        0: { halign: 'right' },
-        1: { cellWidth: 28, halign: 'right' },
-        2: { cellWidth: 28, halign: 'right' }
-      }
-    });
-    yPos = (doc as any).lastAutoTable.finalY + 5;
+      // Summary table row 3 - normal size
+      autoTable(doc, {
+        startY: yPos,
+        body: [['Cena výrobkov a príplatkov po odpočítaní zľavy spolu:', 'spolu bez DPH', `${afterZlava.toFixed(2)} €`]],
+        styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
+        columnStyles: {
+          0: { halign: 'right' },
+          1: { cellWidth: 28, halign: 'right' },
+          2: { cellWidth: 28, halign: 'right' }
+        }
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 5;
+    } else {
+      yPos += 5;
+    }
 
     // 3. Kovanie
-    if (data.kovanie.some((k: any) => k.ks > 0)) {
-      const kovanieRows = data.kovanie
+    const kovanieList = (data as any).kovanie || [];
+    if (kovanieList.some((k: any) => k.ks > 0)) {
+      const kovanieRows = kovanieList
         .filter((k: any) => k.ks > 0)
         .map((k: any, i: number) => [
           i + 1,
@@ -1425,7 +1430,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           `${(k.cenaCelkom || 0).toFixed(2)} €`
         ]);
 
-      const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+      const kovanieTotalCalc = kovanieList.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -1517,7 +1522,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Totals & Payment Plan Tables - adjusted for portrait
-    const kovanieTotal = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+    const kovanieTotal = ((data as any).kovanie || []).reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
     const montazTotal = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
     const cenaBezDPH = afterZlava + kovanieTotal + montazTotal;
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
@@ -1538,32 +1543,56 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const hasNoManualAmounts2 = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
 
     // Use saved amounts if available, otherwise calculate with rounding for default split
-    let platba1Amount: string, platba2Amount: string, platba3Amount: string;
-    if (data.platba1Amount != null) {
-      platba1Amount = data.platba1Amount.toFixed(2);
-    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
-      platba1Amount = roundUpToTen2(paymentBase2 * 0.60).toFixed(2);
-    } else {
-      platba1Amount = (paymentBase2 * (data.platba1Percent || 0) / 100).toFixed(2);
-    }
+    let paymentRows: any[] = [];
 
-    if (data.platba2Amount != null) {
-      platba2Amount = data.platba2Amount.toFixed(2);
-    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
-      platba2Amount = roundUpToTen2(paymentBase2 * 0.30).toFixed(2);
+    if (data.deposits && data.deposits.length > 0) {
+      // Dynamic payments from deposits array
+      paymentRows = data.deposits.map((d: any) => {
+        let amount = d.amount;
+        if (amount == null) {
+          amount = paymentBase2 * (d.percent / 100);
+        }
+        return [
+          { content: d.label, styles: { halign: 'right' as const } },
+          `${(d.percent || 0).toFixed(0)} %`,
+          `${(amount || 0).toFixed(2)} €`
+        ];
+      });
     } else {
-      platba2Amount = (paymentBase2 * (data.platba2Percent || 0) / 100).toFixed(2);
-    }
+      // Legacy fallback
+      let platba1Amount: string, platba2Amount: string, platba3Amount: string;
+      if (data.platba1Amount != null) {
+        platba1Amount = data.platba1Amount.toFixed(2);
+      } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+        platba1Amount = roundUpToTen2(paymentBase2 * 0.60).toFixed(2);
+      } else {
+        platba1Amount = (paymentBase2 * (data.platba1Percent || 0) / 100).toFixed(2);
+      }
 
-    if (data.platba3Amount != null) {
-      platba3Amount = data.platba3Amount.toFixed(2);
-    } else if (isDefaultSplit2 && hasNoManualAmounts2) {
-      // Remainder after rounding
-      const p1 = roundUpToTen2(paymentBase2 * 0.60);
-      const p2 = roundUpToTen2(paymentBase2 * 0.30);
-      platba3Amount = (paymentBase2 - p1 - p2).toFixed(2);
-    } else {
-      platba3Amount = (paymentBase2 * (data.platba3Percent || 0) / 100).toFixed(2);
+      if (data.platba2Amount != null) {
+        platba2Amount = data.platba2Amount.toFixed(2);
+      } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+        platba2Amount = roundUpToTen2(paymentBase2 * 0.30).toFixed(2);
+      } else {
+        platba2Amount = (paymentBase2 * (data.platba2Percent || 0) / 100).toFixed(2);
+      }
+
+      if (data.platba3Amount != null) {
+        platba3Amount = data.platba3Amount.toFixed(2);
+      } else if (isDefaultSplit2 && hasNoManualAmounts2) {
+        // Remainder after rounding
+        const p1 = roundUpToTen2(paymentBase2 * 0.60);
+        const p2 = roundUpToTen2(paymentBase2 * 0.30);
+        platba3Amount = (paymentBase2 - p1 - p2).toFixed(2);
+      } else {
+        platba3Amount = (paymentBase2 * (data.platba3Percent || 0) / 100).toFixed(2);
+      }
+
+      paymentRows = [
+        [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
+        [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
+        [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
+      ];
     }
 
     // Table width: col0 (45) + col1 (28) = 73mm for portrait
@@ -1618,13 +1647,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         1: { cellWidth: 28, halign: 'right' }
       }
     });
-
-    // Payment plan table (with gap)
-    const paymentRows = [
-      [{ content: '1. záloha - pri objednávke', styles: { halign: 'right' as const } }, `${(data.platba1Percent || 0).toFixed(0)} %`, `${platba1Amount} €`],
-      [{ content: '2. platba - pred montážou', styles: { halign: 'right' as const } }, `${(data.platba2Percent || 0).toFixed(0)} %`, `${platba2Amount} €`],
-      [{ content: '3. platba - po montáži', styles: { halign: 'right' as const } }, `${(data.platba3Percent || 0).toFixed(0)} %`, `${platba3Amount} €`]
-    ];
 
     // Payment table width: same as Totals table = 73mm
     const paymentTableWidth = 73;
@@ -1715,8 +1737,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = Math.max((doc as any).lastAutoTable.finalY, leftYPos) + 5;
 
     // Legal Text
-    // Legal Text
-    const defaultLegalText = item.typ === 'schody' ? NOTES_SCHODY : NOTES_NABYTOK;
+    // Legal Text - specific for each type
+    const defaultLegalText = item.typ === 'nabytok' ? NOTES_NABYTOK : item.typ === 'schody' ? NOTES_SCHODY : NOTES_KOVANIE;
     const legalText = (data as any).legalText ?? defaultLegalText;
 
     if (legalText) {

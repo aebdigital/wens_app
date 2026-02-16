@@ -11,7 +11,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SpisEntry, CenovaPonukaItem, FinancieDeposit, Deposit } from '../types';
-import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
+import { calculateDvereTotals, calculateNabytokTotals, calculateSchodyTotals, calculateKovanieTotals, calculatePuzdraTotals } from '../utils/priceCalculations';
 import { calculateNextOrderNumber } from '../utils/orderNumbering';
 import { useSpisFormState } from './useSpisFormState';
 import { useSpisPersistence } from './useSpisPersistence';
@@ -106,7 +106,7 @@ export const useSpisEntryLogic = (
   // 4. Modal States (Templates & Orders)
   const [showVzorModal, setShowVzorModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, cisloCP?: string, cisloZakazky?: string } | undefined>(undefined);
+  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, cisloCP?: string, cisloZakazky?: string } | undefined>(undefined);
 
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingOrderData, setEditingOrderData] = useState<any>(undefined);
@@ -117,7 +117,7 @@ export const useSpisEntryLogic = (
   // Note: These functions update formData locally. The actual saving to DB happens via performSave.
   // Ideally, these could also be extracted into a useSpisBusinessLogic hook.
 
-  const handleAddTemplateSave = async (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }): Promise<void> => {
+  const handleAddTemplateSave = async (type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }): Promise<void> => {
     // If we are in Objednavky tab (which uses 'puzdra' usually), save to objednavkyItems
     if (activeTab === 'objednavky') {
       const nextId = calculateNextOrderNumber(entries, formData.objednavkyItems);
@@ -157,6 +157,10 @@ export const useSpisEntryLogic = (
       const totals = calculateSchodyTotals(data);
       cenaBezDPH = totals.cenaBezDPH;
       cenaSDPH = totals.cenaSDPH;
+    } else if (type === 'kovanie') {
+      const totals = calculateKovanieTotals(data);
+      cenaBezDPH = totals.cenaBezDPH;
+      cenaSDPH = totals.cenaSDPH;
     } else if (type === 'puzdra') {
       const totals = calculatePuzdraTotals(data);
       cenaBezDPH = totals.cenaBezDPH;
@@ -182,7 +186,7 @@ export const useSpisEntryLogic = (
     const hasNoManualAmounts = data.platba1Amount == null && data.platba2Amount == null && data.platba3Amount == null;
 
     let dataToSave = data;
-    if (isDefaultSplit && hasNoManualAmounts && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
+    if (isDefaultSplit && hasNoManualAmounts && (type === 'dvere' || type === 'nabytok' || type === 'schody' || type === 'kovanie')) {
       // Calculate effective price for storage defaults
       let effectivePriceForStorage = cenaSDPH;
       if (data.cenaDohodou && data.cenaDohodouValue) {
@@ -286,7 +290,7 @@ export const useSpisEntryLogic = (
     };
 
     let financeUpdates: Partial<typeof formData> = {};
-    if (isSelected && (type === 'dvere' || type === 'nabytok' || type === 'schody')) {
+    if (isSelected && (type === 'dvere' || type === 'nabytok' || type === 'schody' || type === 'kovanie')) {
       // Check if deposits array exists (including empty array which means user explicitly removed all)
       if (dataToSave.deposits !== undefined) {
         let effectivePrice = cenaSDPH;
@@ -300,11 +304,16 @@ export const useSpisEntryLogic = (
           const amount = deposit.amount != null
             ? deposit.amount
             : effectivePrice * (deposit.percent / 100);
+          // Try to find existing date in current formData to preserve it
+          // Fallback to matching by label if ID match fails (e.g. if deposits were regenerated)
+          const existingDeposit = formData.financieDeposits?.find(d => d.id === deposit.id)
+            || formData.financieDeposits?.find(d => d.label === deposit.label);
+
           return {
             id: deposit.id,
             label: deposit.label,
             amount: amount.toFixed(2),
-            datum: ''
+            datum: existingDeposit?.datum || ''
           };
         });
 
@@ -441,7 +450,7 @@ export const useSpisEntryLogic = (
     setShowVzorModal(true);
   };
 
-  const handleSaveAsNew = async (type: 'dvere' | 'nabytok' | 'schody' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }): Promise<void> => {
+  const handleSaveAsNew = async (type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, options?: { forceNewVersion?: boolean }): Promise<void> => {
     setEditingOfferId(null);
     await handleAddTemplateSave(type, data, options);
   };

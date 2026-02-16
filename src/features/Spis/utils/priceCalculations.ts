@@ -7,7 +7,7 @@
  * @module priceCalculations
  */
 
-import { DvereData, NabytokData, SchodyData, PuzdraData } from '../types';
+import { DvereData, NabytokData, SchodyData, KovanieData, PuzdraData } from '../types';
 
 /** Slovak VAT (DPH) rate - 23% */
 const DPH_RATE = 0.23;
@@ -269,6 +269,33 @@ export const calculateNabytokTotals = (data: NabytokData): QuoteTotals => {
  */
 export const calculateSchodyTotals = (data: SchodyData): QuoteTotals => {
   const cacheKey = createCacheKey('schody:', data);
+  const cached = getCached<QuoteTotals>(cacheKey);
+  if (cached) return cached;
+
+  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+
+  const result = calculateCommonTotals(
+    vyrobkyTotal,
+    priplatkyTotal,
+    data.zlavaPercent || 0,
+    data.zlavaEur || 0,
+    data.useZlavaPercent !== false,
+    data.useZlavaEur || false,
+    data.kovanie || [],
+    data.montaz || [],
+    data.manualCenaSDPH
+  );
+
+  setCache(cacheKey, result);
+  return result;
+};
+
+/**
+ * Calculates price totals for a Kovanie (hardware) quote.
+ */
+export const calculateKovanieTotals = (data: KovanieData): QuoteTotals => {
+  const cacheKey = createCacheKey('kovanie:', data);
   const cached = getCached<QuoteTotals>(cacheKey);
   if (cached) return cached;
 
