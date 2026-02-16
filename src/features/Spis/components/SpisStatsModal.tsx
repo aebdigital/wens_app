@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { SpisEntry, CenovaPonukaItem, SpisFormData } from '../types';
 import { useSpis, dbToSpisEntry } from '../../../contexts/SpisContext';
@@ -78,10 +78,11 @@ const countItemsInOffer = (offer: CenovaPonukaItem): number => {
 
 export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose, entries }) => {
     const { isDark } = useTheme();
-    const { updateEntry } = useSpis();
+    const { updateEntry, entries: contextEntries } = useSpis();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [allEntries, setAllEntries] = useState<SpisEntry[]>([]);
     const [isLoadingAll, setIsLoadingAll] = useState(false);
+    const debounceTimerRef = useRef<any>(null);
 
     // Fetch ALL entries from Supabase when modal opens (paginated entries prop is incomplete)
     useEffect(() => {
@@ -468,18 +469,42 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
         });
     }, [cashflowData]);
 
-    const handleNoteChange = async (entryId: string, newNote: string) => {
+    const handleNoteChange = (entryId: string, newNote: string) => {
+        // 1. Update local state immediately for responsiveness
+        // Use a functional update to ensure we have the latest state
+        setAllEntries(prev => {
+            const baseList = prev.length > 0 ? prev : contextEntries;
+            return baseList.map(e =>
+                e.id === entryId
+                    ? { ...e, fullFormData: { ...(e.fullFormData || {}), stat_note: newNote } as any }
+                    : e
+            );
+        });
+
+        // 2. Find the entry to update for the DB call
         const entry = statsEntries.find(e => e.id === entryId);
-        if (entry && entry.fullFormData) {
-            const updatedEntry = {
-                ...entry,
-                fullFormData: {
-                    ...entry.fullFormData,
-                    stat_note: newNote
-                }
-            };
-            await updateEntry(updatedEntry);
+        if (!entry) return;
+
+        const updatedEntry = {
+            ...entry,
+            fullFormData: {
+                ...(entry.fullFormData || {}),
+                stat_note: newNote
+            }
+        };
+
+        // 3. Debounce database update to avoid frequent API calls
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
         }
+
+        debounceTimerRef.current = setTimeout(async () => {
+            try {
+                await updateEntry(updatedEntry as SpisEntry);
+            } catch (err) {
+                console.error('Failed to update stat note:', err);
+            }
+        }, 500);
     };
 
     if (!isOpen) return null;
@@ -614,17 +639,17 @@ export const SpisStatsModal: React.FC<SpisStatsModalProps> = ({ isOpen, onClose,
                                 <thead className={`sticky top-0 z-10 shadow-sm ${isDark ? 'bg-dark-700 text-gray-200' : 'bg-white text-gray-700'} font-semibold border-b ${isDark ? 'border-dark-600' : 'border-gray-200'}`}>
                                     <tr>
                                         <th className="px-4 py-3 whitespace-nowrap">číslo CP</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">číslo zákazky</th>
+                                        <th className="px-2 py-3 whitespace-nowrap w-24">č. zákazky</th>
                                         <th className="px-4 py-3">Meno</th>
-                                        <th className="px-2 py-3 whitespace-nowrap text-center text-xs">s DPH / DP / dohoda</th>
+                                        <th className="px-1 py-3 whitespace-nowrap text-center text-[10px] w-12">Cena</th>
                                         <th className="px-4 py-3 text-right">CENA</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">dátum 1</th>
+                                        <th className="px-4 py-3 whitespace-nowrap text-center">dátum 1</th>
                                         <th className="px-4 py-3 text-right">záloha 1</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">dátum 2</th>
+                                        <th className="px-4 py-3 whitespace-nowrap text-center">dátum 2</th>
                                         <th className="px-4 py-3 text-right">záloha 2</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">dátum 3</th>
+                                        <th className="px-4 py-3 whitespace-nowrap text-center">dátum 3</th>
                                         <th className="px-4 py-3 text-right font-medium text-blue-600 dark:text-blue-400">doplatok</th>
-                                        <th className="px-4 py-3 min-w-[300px]">poznámky</th>
+                                        <th className="px-4 py-3 min-w-[450px]">poznámky</th>
                                     </tr>
                                 </thead>
                                 <tbody className={`divide-y ${isDark ? 'divide-dark-600' : 'divide-gray-200'} ${isDark ? 'bg-dark-800' : 'bg-white'}`}>

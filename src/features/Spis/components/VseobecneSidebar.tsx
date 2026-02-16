@@ -89,7 +89,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                 <input
                   type="text"
                   value={formData.cisloZakazky}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9]/g, '') }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cisloZakazky: e.target.value.replace(/[^a-zA-Z0-9/]/g, '') }))}
                   disabled={isLocked}
                   className={getInputClass()}
                 />
