@@ -1243,39 +1243,58 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = (doc as any).lastAutoTable.finalY + 5; // Add some gap, matching other tables
 
     // 1. Výrobky table for Nabytok/Schody
-    const vyrobkyRows = data.vyrobky.filter((v: any) => v.ks > 0 || v.nazov).map((v: any, i: number) => [
-      i + 1,
-      v.nazov || '',
-      v.rozmer || '',
-      v.material || '',
-      v.poznamka || '',
-      v.ks,
-      `${(v.cenaKs || 0).toFixed(2)} €`,
-      `${(v.cenaCelkom || 0).toFixed(2)} €`
-    ]);
+    const hiddenCols = data.hiddenColumns || [];
+    const isColVisible = (key: string) => !hiddenCols.includes(key);
+
+    // Define all possible columns
+    const allColumns: Array<{ key: string; label: string; halign: 'left' | 'center' | 'right'; width: number | 'auto'; alwaysVisible?: boolean }> = [
+      { key: '#', label: '#', halign: 'center', width: 6, alwaysVisible: true },
+      { key: 'nazov', label: 'Názov', halign: 'left', width: 'auto', alwaysVisible: true },
+      { key: 'rozmer', label: 'Rozmer', halign: 'left', width: 22 },
+      { key: 'material', label: 'Materiál', halign: 'left', width: 22 },
+      { key: 'poznamka', label: 'Poznámka', halign: 'left', width: 'auto' },
+      { key: 'ks', label: 'Ks', halign: 'center', width: 10, alwaysVisible: true },
+      { key: 'cenaKs', label: 'Cena/ks', halign: 'right', width: 18, alwaysVisible: true },
+      { key: 'cenaCelkom', label: 'Cena celkom', halign: 'right', width: 28, alwaysVisible: true },
+    ];
+    const visibleCols = allColumns.filter(c => c.alwaysVisible || isColVisible(c.key));
+
+    const vyrobkyRows = data.vyrobky.filter((v: any) => v.ks > 0 || v.nazov).map((v: any, i: number) => {
+      const fullRow: Record<string, any> = {
+        '#': i + 1,
+        nazov: v.nazov || '',
+        rozmer: v.rozmer || '',
+        material: v.material || '',
+        poznamka: v.poznamka || '',
+        ks: v.ks,
+        cenaKs: `${(v.cenaKs || 0).toFixed(2)} €`,
+        cenaCelkom: `${(v.cenaCelkom || 0).toFixed(2)} €`,
+      };
+      return visibleCols.map(c => fullRow[c.key]);
+    });
 
     // Calculate vyrobky total
     const vyrobkyTotalCalc = data.vyrobky.reduce((sum: number, v: any) => sum + (v.cenaCelkom || 0), 0);
 
+    const colStyles: any = {};
+    visibleCols.forEach((c, idx) => {
+      if (c.width === 'auto') {
+        colStyles[idx] = { halign: c.halign };
+      } else {
+        colStyles[idx] = { cellWidth: c.width, halign: c.halign };
+      }
+    });
+
     autoTable(doc, {
       startY: yPos,
       head: [
-        [{ content: `Výrobky - ${typLabel}`, colSpan: 8, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
-        ['#', 'Názov', 'Rozmer', 'Materiál', 'Poznámka', 'Ks', 'Cena/ks', 'Cena celkom']
+        [{ content: `Výrobky - ${typLabel}`, colSpan: visibleCols.length, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
+        visibleCols.map(c => c.label)
       ],
       body: vyrobkyRows,
       styles: tableStyles,
       headStyles: headStyles,
-      columnStyles: {
-        0: { cellWidth: 6, halign: 'center' },
-        1: { halign: 'left' },
-        2: { cellWidth: 22, halign: 'left' },
-        3: { cellWidth: 22, halign: 'left' },
-        4: { halign: 'left' },
-        5: { cellWidth: 10, halign: 'center' },
-        6: { cellWidth: 18, halign: 'right' },
-        7: { cellWidth: 28, halign: 'right' }
-      }
+      columnStyles: colStyles
     });
     yPos = (doc as any).lastAutoTable.finalY;
 
