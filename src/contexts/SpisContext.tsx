@@ -4,7 +4,7 @@ import { supabase, DbSpisEntry } from '../lib/supabase';
 import { SpisEntry } from '../features/Spis/types';
 
 // Pagination configuration
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 500;
 
 interface SpisContextType {
   entries: SpisEntry[];
