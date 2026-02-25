@@ -330,7 +330,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       label: 'cena celkom',
       width: 'w-24 min-w-[100px]',
       align: 'right' as const,
-      render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
+      render: (item: any) => <span>{(item.ks * item.cenaKs).toFixed(2)} €</span>
     }
   ];
 

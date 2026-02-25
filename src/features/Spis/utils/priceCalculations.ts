@@ -207,7 +207,7 @@ export const calculateDvereTotals = (data: DvereData): QuoteTotals => {
     return sum + dverePrice + zarubnaPrice + obkladPrice + prazdnePrice;
   }, 0);
 
-  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
 
   const result = calculateCommonTotals(
     vyrobkyTotal,
@@ -239,8 +239,8 @@ export const calculateNabytokTotals = (data: NabytokData): QuoteTotals => {
   const cached = getCached<QuoteTotals>(cacheKey);
   if (cached) return cached;
 
-  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
-  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
+  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
 
   const result = calculateCommonTotals(
     vyrobkyTotal,
@@ -272,8 +272,8 @@ export const calculateSchodyTotals = (data: SchodyData): QuoteTotals => {
   const cached = getCached<QuoteTotals>(cacheKey);
   if (cached) return cached;
 
-  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
-  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
+  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
 
   const result = calculateCommonTotals(
     vyrobkyTotal,
@@ -299,8 +299,8 @@ export const calculateKovanieTotals = (data: KovanieData): QuoteTotals => {
   const cached = getCached<QuoteTotals>(cacheKey);
   if (cached) return cached;
 
-  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
-  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const vyrobkyTotal = (data.vyrobky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
+  const priplatkyTotal = (data.priplatky || []).reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
 
   const result = calculateCommonTotals(
     vyrobkyTotal,

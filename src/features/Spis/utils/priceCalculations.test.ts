@@ -219,12 +219,12 @@ describe('calculateDvereTotals', () => {
   });
 
   describe('priplatky (supplements)', () => {
-    it('should sum priplatky cenaCelkom values', () => {
+    it('should sum priplatky ks * cenaKs values', () => {
       const data = createMinimalDvereData({
         priplatky: [
-          { cenaCelkom: 100 },
-          { cenaCelkom: 200 },
-          { cenaCelkom: 50 }
+          { ks: 1, cenaKs: 100, cenaCelkom: 100 },
+          { ks: 1, cenaKs: 200, cenaCelkom: 200 },
+          { ks: 1, cenaKs: 50, cenaCelkom: 50 }
         ]
       });
       const result = calculateDvereTotals(data);
@@ -249,7 +249,7 @@ describe('calculateDvereTotals', () => {
     it('should apply discount to subtotal (vyrobky + priplatky)', () => {
       const data = createMinimalDvereData({
         vyrobky: [{ ks: 1, cenaDvere: 800, ksZarubna: 0, cenaZarubna: 0, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
-        priplatky: [{ cenaCelkom: 200 }],
+        priplatky: [{ ks: 1, cenaKs: 200, cenaCelkom: 200 }],
         zlavaPercent: 20
       });
       const result = calculateDvereTotals(data);
@@ -348,7 +348,7 @@ describe('calculateDvereTotals', () => {
     it('should maintain VAT relationship: cenaSDPH = cenaBezDPH + dph', () => {
       const data = createMinimalDvereData({
         vyrobky: [{ ks: 3, cenaDvere: 750, ksZarubna: 2, cenaZarubna: 300, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
-        priplatky: [{ cenaCelkom: 150 }],
+        priplatky: [{ ks: 1, cenaKs: 150, cenaCelkom: 150 }],
         zlavaPercent: 5,
         kovanie: [{ cenaCelkom: 80 }],
         montaz: [{ cenaCelkom: 250 }]
@@ -413,8 +413,8 @@ describe('calculateDvereTotals', () => {
           { ks: 1, cenaDvere: 920, ksZarubna: 1, cenaZarubna: 350, ksObklad: 1, cenaObklad: 180, ksPrazdne: 0, cenaPrazdne: 0 }
         ],
         priplatky: [
-          { cenaCelkom: 75 },  // Glass upgrade
-          { cenaCelkom: 45 }   // Special finish
+          { ks: 1, cenaKs: 75, cenaCelkom: 75 },  // Glass upgrade
+          { ks: 1, cenaKs: 45, cenaCelkom: 45 }   // Special finish
         ],
         zlavaPercent: 5,
         kovanie: [
@@ -473,11 +473,11 @@ describe('calculateNabytokTotals', () => {
     expect(result.cenaSDPH).toBe(0);
   });
 
-  it('should sum vyrobky cenaCelkom values', () => {
+  it('should sum vyrobky ks * cenaKs values', () => {
     const data = createMinimalNabytokData({
       vyrobky: [
-        { cenaCelkom: 1500 },
-        { cenaCelkom: 2200 }
+        { ks: 3, cenaKs: 500, cenaCelkom: 1500 },
+        { ks: 2, cenaKs: 1100, cenaCelkom: 2200 }
       ]
     });
     const result = calculateNabytokTotals(data);
@@ -487,8 +487,8 @@ describe('calculateNabytokTotals', () => {
 
   it('should calculate complete totals correctly', () => {
     const data = createMinimalNabytokData({
-      vyrobky: [{ cenaCelkom: 5000 }],
-      priplatky: [{ cenaCelkom: 500 }],
+      vyrobky: [{ ks: 5, cenaKs: 1000, cenaCelkom: 5000 }],
+      priplatky: [{ ks: 1, cenaKs: 500, cenaCelkom: 500 }],
       zlavaPercent: 10,
       kovanie: [{ cenaCelkom: 200 }],
       montaz: [{ cenaCelkom: 800 }]
@@ -510,7 +510,7 @@ describe('calculateNabytokTotals', () => {
 
   it('should handle manual price override', () => {
     const data = createMinimalNabytokData({
-      vyrobky: [{ cenaCelkom: 5000 }],
+      vyrobky: [{ ks: 5, cenaKs: 1000, cenaCelkom: 5000 }],
       manualCenaSDPH: 10000
     });
     const result = calculateNabytokTotals(data);
@@ -536,10 +536,10 @@ describe('calculateSchodyTotals', () => {
   it('should calculate staircase quote correctly', () => {
     const data = createMinimalSchodyData({
       vyrobky: [
-        { cenaCelkom: 8500 }, // Main staircase
-        { cenaCelkom: 1200 }  // Railing
+        { ks: 1, cenaKs: 8500, cenaCelkom: 8500 }, // Main staircase
+        { ks: 1, cenaKs: 1200, cenaCelkom: 1200 }  // Railing
       ],
-      priplatky: [{ cenaCelkom: 350 }], // Special wood treatment
+      priplatky: [{ ks: 1, cenaKs: 350, cenaCelkom: 350 }], // Special wood treatment
       zlavaPercent: 8,
       montaz: [{ cenaCelkom: 1500 }]
     });
@@ -676,7 +676,7 @@ describe('edge cases', () => {
   it('should handle negative prices (credits/refunds)', () => {
     const data = createMinimalDvereData({
       vyrobky: [{ ks: 1, cenaDvere: 1000, ksZarubna: 0, cenaZarubna: 0, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
-      priplatky: [{ cenaCelkom: -200 }] // Credit/refund
+      priplatky: [{ ks: 1, cenaKs: -200, cenaCelkom: -200 }] // Credit/refund
     });
     const result = calculateDvereTotals(data);
 

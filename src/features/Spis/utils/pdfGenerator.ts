@@ -653,11 +653,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           p.nazov,
           p.ks,
           `${p.cenaKs.toFixed(2)} €`,
-          `${p.cenaCelkom.toFixed(2)} €`
+          `${(p.ks * p.cenaKs).toFixed(2)} €`
         ]);
 
       // Calculate príplatky total
-      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + ((p.ks || 0) * (p.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -696,7 +696,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Calculate totals for summary
-    const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+    const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + ((p.ks || 0) * (p.cenaKs || 0)), 0);
     const subtotal = vyrobkyTotalCalc + priplatkyTotal;
 
     // Support both percentage and EUR discounts
@@ -778,11 +778,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           k.nazov,
           k.ks,
           `${k.cenaKs.toFixed(2)} €`,
-          `${k.cenaCelkom.toFixed(2)} €`
+          `${(k.ks * k.cenaKs).toFixed(2)} €`
         ]);
 
       // Calculate kovanie total
-      const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+      const kovanieTotalCalc = data.kovanie.reduce((sum: number, k: any) => sum + ((k.ks || 0) * (k.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -829,11 +829,11 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           m.nazov,
           m.ks,
           `${m.cenaKs.toFixed(2)} €`,
-          `${m.cenaCelkom.toFixed(2)} €`
+          `${(m.ks * m.cenaKs).toFixed(2)} €`
         ]);
 
       // Calculate montáž total
-      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
+      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + ((m.ks || 0) * (m.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -890,9 +890,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     if (data.cenaDohodou && data.cenaDohodouValue) {
       paymentBase = data.cenaDohodouValue;
     } else if (data.prenesenieDP) {
-      const kovanieTotal = data.kovanie?.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0) || 0;
-      const montazTotal = data.montaz?.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0) || 0;
-      const fullNetTotal = (vyrobkyTotalCalc + (data.priplatky?.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0) || 0) + kovanieTotal + montazTotal) - zlavaAmount;
+      const kovanieTotal = data.kovanie?.reduce((sum: number, k: any) => sum + ((k.ks || 0) * (k.cenaKs || 0)), 0) || 0;
+      const montazTotal = data.montaz?.reduce((sum: number, m: any) => sum + ((m.ks || 0) * (m.cenaKs || 0)), 0) || 0;
+      const fullNetTotal = (vyrobkyTotalCalc + (data.priplatky?.reduce((sum: number, p: any) => sum + ((p.ks || 0) * (p.cenaKs || 0)), 0) || 0) + kovanieTotal + montazTotal) - zlavaAmount;
       paymentBase = fullNetTotal;
     }
 
@@ -1268,13 +1268,13 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
         poznamka: v.poznamka || '',
         ks: v.ks,
         cenaKs: `${(v.cenaKs || 0).toFixed(2)} €`,
-        cenaCelkom: `${(v.cenaCelkom || 0).toFixed(2)} €`,
+        cenaCelkom: `${((v.ks || 0) * (v.cenaKs || 0)).toFixed(2)} €`,
       };
       return visibleCols.map(c => fullRow[c.key]);
     });
 
     // Calculate vyrobky total
-    const vyrobkyTotalCalc = data.vyrobky.reduce((sum: number, v: any) => sum + (v.cenaCelkom || 0), 0);
+    const vyrobkyTotalCalc = data.vyrobky.reduce((sum: number, v: any) => sum + ((v.ks || 0) * (v.cenaKs || 0)), 0);
 
     const colStyles: any = {};
     visibleCols.forEach((c, idx) => {
@@ -1321,10 +1321,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           p.nazov,
           p.ks,
           `${(p.cenaKs || 0).toFixed(2)} €`,
-          `${(p.cenaCelkom || 0).toFixed(2)} €`
+          `${((p.ks || 0) * (p.cenaKs || 0)).toFixed(2)} €`
         ]);
 
-      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+      const priplatkyTotalCalc = data.priplatky.reduce((sum: number, p: any) => sum + ((p.ks || 0) * (p.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -1362,8 +1362,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Calculate totals for summary
-    const vyrobkyTotal = data.vyrobky.reduce((sum: number, v: any) => sum + (v.cenaCelkom || 0), 0);
-    const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + (p.cenaCelkom || 0), 0);
+    const vyrobkyTotal = data.vyrobky.reduce((sum: number, v: any) => sum + ((v.ks || 0) * (v.cenaKs || 0)), 0);
+    const priplatkyTotal = data.priplatky.reduce((sum: number, p: any) => sum + ((p.ks || 0) * (p.cenaKs || 0)), 0);
     const subtotal = vyrobkyTotal + priplatkyTotal;
 
     // Support both percentage and EUR discounts
@@ -1446,10 +1446,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           k.nazov,
           k.ks,
           `${(k.cenaKs || 0).toFixed(2)} €`,
-          `${(k.cenaCelkom || 0).toFixed(2)} €`
+          `${((k.ks || 0) * (k.cenaKs || 0)).toFixed(2)} €`
         ]);
 
-      const kovanieTotalCalc = kovanieList.reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
+      const kovanieTotalCalc = kovanieList.reduce((sum: number, k: any) => sum + ((k.ks || 0) * (k.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -1495,10 +1495,10 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
           m.nazov,
           m.ks,
           `${(m.cenaKs || 0).toFixed(2)} €`,
-          `${(m.cenaCelkom || 0).toFixed(2)} €`
+          `${((m.ks || 0) * (m.cenaKs || 0)).toFixed(2)} €`
         ]);
 
-      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
+      const montazTotalCalc = data.montaz.reduce((sum: number, m: any) => sum + ((m.ks || 0) * (m.cenaKs || 0)), 0);
 
       autoTable(doc, {
         startY: yPos,
@@ -1541,8 +1541,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // Totals & Payment Plan Tables - adjusted for portrait
-    const kovanieTotal = ((data as any).kovanie || []).reduce((sum: number, k: any) => sum + (k.cenaCelkom || 0), 0);
-    const montazTotal = data.montaz.reduce((sum: number, m: any) => sum + (m.cenaCelkom || 0), 0);
+    const kovanieTotal = ((data as any).kovanie || []).reduce((sum: number, k: any) => sum + ((k.ks || 0) * (k.cenaKs || 0)), 0);
+    const montazTotal = data.montaz.reduce((sum: number, m: any) => sum + ((m.ks || 0) * (m.cenaKs || 0)), 0);
     const cenaBezDPH = afterZlava + kovanieTotal + montazTotal;
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
       ? data.manualCenaSDPH

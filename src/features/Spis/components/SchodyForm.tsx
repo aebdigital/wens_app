@@ -217,7 +217,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
       label: 'cena celkom',
       width: 'w-24 min-w-[100px]',
       align: 'right' as const,
-      render: (item: any) => <span>{item.cenaCelkom.toFixed(2)} €</span>
+      render: (item: any) => <span>{(item.ks * item.cenaKs).toFixed(2)} €</span>
     }
   ];
 
@@ -431,7 +431,7 @@ export const SchodyForm: React.FC<SchodyFormProps> = ({ data, onChange, isDark, 
                     <span className={isDark ? 'text-gray-400' : 'text-gray-800'}> €</span>
                   </td>
                   <td className={`px-2 py-1 text-right ${isDark ? 'text-white' : 'text-gray-800'} `}>
-                    {item.cenaCelkom.toFixed(2)} €
+                    {(item.ks * item.cenaKs).toFixed(2)} €
                   </td>
                   <td className="px-1 py-1 text-center align-middle">
                     <div className="flex items-center gap-0.5">
