@@ -286,8 +286,8 @@ describe('calculateDvereTotals', () => {
     it('should sum kovanie items', () => {
       const data = createMinimalDvereData({
         kovanie: [
-          { cenaCelkom: 50 },
-          { cenaCelkom: 75 }
+          { ks: 1, cenaKs: 50, cenaCelkom: 50 },
+          { ks: 1, cenaKs: 75, cenaCelkom: 75 }
         ]
       });
       const result = calculateDvereTotals(data);
@@ -299,7 +299,7 @@ describe('calculateDvereTotals', () => {
       const data = createMinimalDvereData({
         vyrobky: [{ ks: 1, cenaDvere: 1000, ksZarubna: 0, cenaZarubna: 0, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
         zlavaPercent: 10,
-        kovanie: [{ cenaCelkom: 100 }]
+        kovanie: [{ ks: 1, cenaKs: 100, cenaCelkom: 100 }]
       });
       const result = calculateDvereTotals(data);
 
@@ -313,8 +313,8 @@ describe('calculateDvereTotals', () => {
     it('should sum montaz items', () => {
       const data = createMinimalDvereData({
         montaz: [
-          { cenaCelkom: 200 },
-          { cenaCelkom: 150 }
+          { ks: 1, cenaKs: 200, cenaCelkom: 200 },
+          { ks: 1, cenaKs: 150, cenaCelkom: 150 }
         ]
       });
       const result = calculateDvereTotals(data);
@@ -325,7 +325,7 @@ describe('calculateDvereTotals', () => {
     it('should add montaz after discount', () => {
       const data = createMinimalDvereData({
         vyrobky: [{ ks: 1, cenaDvere: 1000, ksZarubna: 0, cenaZarubna: 0, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
-        montaz: [{ cenaCelkom: 200 }]
+        montaz: [{ ks: 1, cenaKs: 200, cenaCelkom: 200 }]
       });
       const result = calculateDvereTotals(data);
 
@@ -350,8 +350,8 @@ describe('calculateDvereTotals', () => {
         vyrobky: [{ ks: 3, cenaDvere: 750, ksZarubna: 2, cenaZarubna: 300, ksObklad: 0, cenaObklad: 0, ksPrazdne: 0, cenaPrazdne: 0 }],
         priplatky: [{ ks: 1, cenaKs: 150, cenaCelkom: 150 }],
         zlavaPercent: 5,
-        kovanie: [{ cenaCelkom: 80 }],
-        montaz: [{ cenaCelkom: 250 }]
+        kovanie: [{ ks: 1, cenaKs: 80, cenaCelkom: 80 }],
+        montaz: [{ ks: 1, cenaKs: 250, cenaCelkom: 250 }]
       });
       const result = calculateDvereTotals(data);
 
@@ -418,10 +418,10 @@ describe('calculateDvereTotals', () => {
         ],
         zlavaPercent: 5,
         kovanie: [
-          { cenaCelkom: 120 }  // Handle set
+          { ks: 1, cenaKs: 120, cenaCelkom: 120 }  // Handle set
         ],
         montaz: [
-          { cenaCelkom: 280 }  // Installation
+          { ks: 1, cenaKs: 280, cenaCelkom: 280 }  // Installation
         ]
       });
 
@@ -490,8 +490,8 @@ describe('calculateNabytokTotals', () => {
       vyrobky: [{ ks: 5, cenaKs: 1000, cenaCelkom: 5000 }],
       priplatky: [{ ks: 1, cenaKs: 500, cenaCelkom: 500 }],
       zlavaPercent: 10,
-      kovanie: [{ cenaCelkom: 200 }],
-      montaz: [{ cenaCelkom: 800 }]
+      kovanie: [{ ks: 1, cenaKs: 200, cenaCelkom: 200 }],
+      montaz: [{ ks: 1, cenaKs: 800, cenaCelkom: 800 }]
     });
     const result = calculateNabytokTotals(data);
 
@@ -541,7 +541,7 @@ describe('calculateSchodyTotals', () => {
       ],
       priplatky: [{ ks: 1, cenaKs: 350, cenaCelkom: 350 }], // Special wood treatment
       zlavaPercent: 8,
-      montaz: [{ cenaCelkom: 1500 }]
+      montaz: [{ ks: 1, cenaKs: 1500, cenaCelkom: 1500 }]
     });
     const result = calculateSchodyTotals(data);
 

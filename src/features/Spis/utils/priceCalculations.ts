@@ -138,8 +138,8 @@ const calculateCommonTotals = (
   zlavaEur: number,
   useZlavaPercent: boolean,
   useZlavaEur: boolean,
-  kovanieItems: Array<{ cenaCelkom: number }>,
-  montazItems: Array<{ cenaCelkom: number }>,
+  kovanieItems: Array<{ ks?: number; cenaKs?: number; cenaCelkom?: number }>,
+  montazItems: Array<{ ks?: number; cenaKs?: number; cenaCelkom?: number }>,
   manualCenaSDPH?: number | null
 ): QuoteTotals => {
   const subtotal = vyrobkyTotal + priplatkyTotal;
@@ -149,8 +149,8 @@ const calculateCommonTotals = (
   const zlava = percentDiscount + eurDiscount;
 
   const afterZlava = subtotal - zlava;
-  const kovanieTotal = kovanieItems.reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
-  const montazTotal = montazItems.reduce((sum, item) => sum + (item.cenaCelkom || 0), 0);
+  const kovanieTotal = kovanieItems.reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
+  const montazTotal = montazItems.reduce((sum, item) => sum + ((item.ks || 0) * (item.cenaKs || 0)), 0);
 
   const cenaBezDPH_calculated = afterZlava + kovanieTotal + montazTotal;
   const dph_calculated = cenaBezDPH_calculated * DPH_RATE;
