@@ -359,6 +359,19 @@ export const KovanieForm: React.FC<KovanieFormProps> = ({ data, onChange, isDark
                 footerContent={<tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}><td colSpan={3} className="px-2 py-2 text-right font-semibold">Spolu bez DPH:</td><td className="px-2 py-2 text-right font-bold">{totals.priplatkyTotal.toFixed(2)} €</td></tr>}
             />
 
+            <QuoteSummary
+                isDark={isDark}
+                totals={totals}
+                zlavaPercent={data.zlavaPercent}
+                zlavaEur={data.zlavaEur || 0}
+                useZlavaPercent={data.useZlavaPercent !== false}
+                useZlavaEur={data.useZlavaEur || false}
+                onZlavaChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaPercent: val })}
+                onZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaEur: val })}
+                onUseZlavaPercentChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaPercent: val })}
+                onUseZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaEur: val })}
+            />
+
             <GenericItemsTable
                 title="Kovanie:"
                 items={data.kovanie}
@@ -375,19 +388,6 @@ export const KovanieForm: React.FC<KovanieFormProps> = ({ data, onChange, isDark
                 }}
                 mergeFirstTwoHeaders={true}
                 footerContent={<tr className={isDark ? 'bg-dark-600' : 'bg-gray-100'}><td colSpan={3} className="px-2 py-2 text-right font-semibold">Spolu bez DPH:</td><td className="px-2 py-2 text-right font-bold">{totals.kovanieTotal.toFixed(2)} €</td></tr>}
-            />
-
-            <QuoteSummary
-                isDark={isDark}
-                totals={totals}
-                zlavaPercent={data.zlavaPercent}
-                zlavaEur={data.zlavaEur || 0}
-                useZlavaPercent={data.useZlavaPercent !== false}
-                useZlavaEur={data.useZlavaEur || false}
-                onZlavaChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaPercent: val })}
-                onZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, zlavaEur: val })}
-                onUseZlavaPercentChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaPercent: val })}
-                onUseZlavaEurChange={(val) => onChangeWithPaymentRecalc({ ...data, useZlavaEur: val })}
             />
 
             <GenericItemsTable

@@ -1546,15 +1546,19 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     const cenaBezDPH = afterZlava + kovanieTotal + montazTotal;
     const cenaSDPH = data.manualCenaSDPH !== undefined && data.manualCenaSDPH !== null
       ? data.manualCenaSDPH
-      : cenaBezDPH * 1.23;
+      : data.prenesenieDP
+        ? cenaBezDPH
+        : cenaBezDPH * 1.23;
 
     // Helper to round UP to nearest 10 (matches QuoteFooter display)
     const roundUpToTen2 = (value: number) => Math.ceil(value / 10) * 10;
 
-    // Determine the base calculation amount (cenaDohodou takes priority)
+    // Determine the base calculation amount (cenaDohodou takes priority, then prenesenieDP)
     let paymentBase2 = cenaSDPH;
     if (data.cenaDohodou && data.cenaDohodouValue) {
       paymentBase2 = data.cenaDohodouValue;
+    } else if (data.prenesenieDP) {
+      paymentBase2 = cenaBezDPH;
     }
 
     // Check if using default 60/30/10 split
@@ -1635,7 +1639,9 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       }
     }
 
-    // Price totals table - rows 1 & 2 (normal size, bold)
+    const isPrenesenieDP2 = !!data.prenesenieDP;
+
+    // Price totals table - rows 1 & 2 (normal size, bold; highlighted if prenesenieDP)
     autoTable(doc, {
       startY: yPos,
       margin: { left: tableStartX },
@@ -1645,22 +1651,33 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
       ],
       styles: { ...tableStyles, fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 45, halign: 'right' },
-        1: { cellWidth: 28, halign: 'right' }
+        0: { cellWidth: 45, halign: 'right', fontSize: isPrenesenieDP2 ? 11 : 7 },
+        1: { cellWidth: 28, halign: 'right', fontSize: isPrenesenieDP2 ? 11 : 7 }
       }
     });
 
-    // Price totals table - row 3 (Final price - larger, bold)
+    // Add "Prenesenie daňovej povinnosti" if applicable
+    const lastY2 = (doc as any).lastAutoTable.finalY;
+    if (isPrenesenieDP2) {
+      doc.setFontSize(9);
+      doc.setFont(fontName, 'bold');
+      doc.setTextColor(220, 38, 38);
+      doc.text('PRENESENIE DAŇOVEJ POVINNOSTI', pageWidth - 14, lastY2 + 3, { align: 'right' });
+      doc.setTextColor(0);
+    }
+
+    // Price totals table - row 3 (Final price - larger, bold; smaller if prenesenieDP)
     // Show negotiated price if cenaDohodou is enabled, otherwise show cenaSDPH
     const isCenaDohodou2 = data.cenaDohodou && data.cenaDohodouValue;
     const finalPriceLabel2 = isCenaDohodou2 ? 'Cena dohodou:' : 'Cena s DPH:';
     const finalPriceValue2 = isCenaDohodou2 ? (data.cenaDohodouValue || 0) : cenaSDPH;
+    const finalRowFontSize2 = isPrenesenieDP2 ? 7 : 11;
 
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY,
+      startY: lastY2 + (isPrenesenieDP2 ? 5 : 0),
       margin: { left: tableStartX },
       body: [[finalPriceLabel2, `${finalPriceValue2.toFixed(2)} €`]],
-      styles: { ...tableStyles, fontSize: 11, fontStyle: 'bold' },
+      styles: { ...tableStyles, fontSize: finalRowFontSize2, fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 45, halign: 'right' },
         1: { cellWidth: 28, halign: 'right' }
