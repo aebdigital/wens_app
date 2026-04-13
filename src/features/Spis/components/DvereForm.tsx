@@ -444,23 +444,20 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
 
-        // Create an image to resize while keeping aspect ratio
+        // Create an image to resize and crop to 800×800 square
         const img = new Image();
         img.onload = () => {
-          // Scale so the longest side is 800px, keeping aspect ratio
-          const maxDim = 800;
-          const scale = maxDim / Math.max(img.naturalWidth, img.naturalHeight);
-          const scaledW = Math.round(img.naturalWidth * scale);
-          const scaledH = Math.round(img.naturalHeight * scale);
-
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
 
-          canvas.width = scaledW;
-          canvas.height = scaledH;
+          canvas.width = 800;
+          canvas.height = 800;
 
           if (ctx) {
-            ctx.drawImage(img, 0, 0, scaledW, scaledH);
+            const size = Math.min(img.naturalWidth, img.naturalHeight);
+            const offsetX = (img.naturalWidth - size) / 2;
+            const offsetY = (img.naturalHeight - size) / 2;
+            ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, 800, 800);
 
             const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
