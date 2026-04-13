@@ -208,6 +208,62 @@ export const SpisProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadEntries();
   }, [loadEntries]);
 
+
+  // Realtime subscription — keeps all clients in sync without a full reload
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('spis_entries_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'spis_entries' },
+        (payload) => {
+          // Use notify+re-fetch pattern: payload.new may be empty/truncated for
+          // large rows (full_form_data JSONB can exceed Supabase's 1 MB realtime limit).
+          // We only trust payload for the id, then query the full row ourselves.
+          (async () => {
+            if (payload.eventType === 'INSERT') {
+              const newId = (payload.new as { id: string }).id;
+              if (!newId) return;
+              const { data } = await supabase
+                .from('spis_entries')
+                .select('*')
+                .eq('id', newId)
+                .single();
+              if (!data) return;
+              const newEntry = dbToSpisEntry(data as DbSpisEntry);
+              setEntries(prev => {
+                if (prev.some(e => e.id === newEntry.id)) return prev;
+                return [...prev, newEntry];
+              });
+              setTotalCount(prev => prev + 1);
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedId = (payload.new as { id: string }).id;
+              if (!updatedId) return;
+              const { data } = await supabase
+                .from('spis_entries')
+                .select('*')
+                .eq('id', updatedId)
+                .single();
+              if (!data) return;
+              const updated = dbToSpisEntry(data as DbSpisEntry);
+              setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as { id: string }).id;
+              setEntries(prev => prev.filter(e => e.id !== deletedId));
+              setTotalCount(prev => Math.max(0, prev - 1));
+            }
+          })();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const refreshEntries = useCallback(async () => {
     await loadEntries();
   }, [loadEntries]);

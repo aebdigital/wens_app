@@ -39,7 +39,7 @@ export const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     <div className={`rounded-lg ${isDark ? 'bg-dark-700' : 'bg-white'} border ${isDark ? 'border-dark-500' : 'border-gray-200'} overflow-hidden`}>
       <table className="w-full text-xs">
         <thead>
-          <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+          <tr className="bg-gray-500 text-white">
             <th className="px-4 py-2 text-right font-semibold" colSpan={3}>Cena celkom</th>
           </tr>
         </thead>

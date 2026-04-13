@@ -444,28 +444,24 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
 
-        // Create an image to get dimensions and crop to centered square
+        // Create an image to resize while keeping aspect ratio
         const img = new Image();
         img.onload = () => {
-          // Calculate crop dimensions for centered square
-          const srcSize = Math.min(img.naturalWidth, img.naturalHeight);
-          const srcX = (img.naturalWidth - srcSize) / 2;
-          const srcY = (img.naturalHeight - srcSize) / 2;
+          // Scale so the longest side is 800px, keeping aspect ratio
+          const maxDim = 800;
+          const scale = maxDim / Math.max(img.naturalWidth, img.naturalHeight);
+          const scaledW = Math.round(img.naturalWidth * scale);
+          const scaledH = Math.round(img.naturalHeight * scale);
 
-          // Create canvas to crop the image
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
 
-          // Target size for stored image (good quality but not too large)
-          const targetSize = 800;
-          canvas.width = targetSize;
-          canvas.height = targetSize;
+          canvas.width = scaledW;
+          canvas.height = scaledH;
 
           if (ctx) {
-            // Draw the centered square portion of the image
-            ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, targetSize, targetSize);
+            ctx.drawImage(img, 0, 0, scaledW, scaledH);
 
-            // Get the cropped square image as base64
             const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
             const newPhoto: ProductPhoto = {
@@ -815,7 +811,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
               <col style={{ width: '50px' }} />
             </colgroup>
             <thead>
-              <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+              <tr className="bg-gray-500 text-white">
                 <th className="px-2 py-2 text-center border-r border-white/20 w-8 relative group">
                   {hiddenColumns.length > 0 && (
                     <>
@@ -1577,7 +1573,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
           </tr>
         }
         extraButtons={
-          (data.vyrobky || []).length > 0 && (
+          (data.vyrobky || []).length > 0 ? (
             <button
               onClick={handleOpenPriplatokModal}
               className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'} transition-colors shadow-sm`}
@@ -1585,7 +1581,7 @@ export const DvereForm: React.FC<DvereFormProps> = ({ data, onChange, isDark, he
             >
               % z výrobkov
             </button>
-          )
+          ) : undefined
         }
       />
 

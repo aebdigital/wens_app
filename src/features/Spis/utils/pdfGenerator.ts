@@ -84,11 +84,23 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   const headerText = item.cisloCP.replace(/^CP/, 'Cenová ponuka č. ');
   doc.text(headerText, pageWidth - 14, 18, { align: 'right' });
 
+  let headerExtraY = 0;
+  if (item.printCisloZakazky && item.cisloZakazky) {
+    doc.setFontSize(9);
+    doc.setFont(fontName, 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Číslo zákazky: ${item.cisloZakazky}`, pageWidth - 14, 24, { align: 'right' });
+    doc.setFont(fontName, 'bold');
+    doc.setTextColor(225, 27, 40);
+    doc.setFontSize(14);
+    headerExtraY = 6;
+  }
+
   doc.setDrawColor(200);
-  doc.line(14, 22, pageWidth - 14, 22);
+  doc.line(14, 22 + headerExtraY, pageWidth - 14, 22 + headerExtraY);
 
   // Company Info (Left) - no "Dodávateľ:" label
-  let yPos = 27;
+  let yPos = 27 + headerExtraY;
   doc.setFontSize(8);
   doc.setTextColor(0);
   doc.setFont(fontName, 'bold');
@@ -645,9 +657,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = (doc as any).lastAutoTable.finalY + 5;
 
     // 2. Príplatky
-    if (data.priplatky.some((p: any) => p.ks > 0)) {
+    if (data.priplatky.length > 0) {
       const priplatkyRows = data.priplatky
-        .filter((p: any) => p.ks > 0)
         .map((p: any, i: number) => [
           i + 1,
           p.nazov,
@@ -770,9 +781,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos += 5;
 
     // 3. Kovanie
-    if (data.kovanie.some((k: any) => k.ks > 0)) {
+    if (data.kovanie.length > 0) {
       const kovanieRows = data.kovanie
-        .filter((k: any) => k.ks > 0)
         .map((k: any, i: number) => [
           i + 1,
           k.nazov,
@@ -821,9 +831,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     }
 
     // 4. Montaz
-    if (data.montaz.some((m: any) => m.ks > 0)) {
+    if (data.montaz.length > 0) {
       const montazRows = data.montaz
-        .filter((m: any) => m.ks > 0)
         .map((m: any, i: number) => [
           i + 1,
           m.nazov,
@@ -1210,8 +1219,6 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
   } else if ((item.typ === 'nabytok' || item.typ === 'schody' || item.typ === 'kovanie') && item.data) {
     // Nabytok, Schody and Kovanie have similar structure
     const data = item.data;
-    const typLabel = item.typ === 'nabytok' ? 'Nábytok' : item.typ === 'schody' ? 'Schody' : 'Kovanie';
-
     // Tables - adjusted for portrait
     const tableStyles = {
       fontSize: 7,
@@ -1288,7 +1295,7 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     autoTable(doc, {
       startY: yPos,
       head: [
-        [{ content: `Výrobky - ${typLabel}`, colSpan: visibleCols.length, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
+        [{ content: 'Výrobky', colSpan: visibleCols.length, styles: { fillColor: [225, 27, 40], fontStyle: 'bold', halign: 'left' } }],
         visibleCols.map(c => c.label)
       ],
       body: vyrobkyRows,
@@ -1313,9 +1320,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
     yPos = (doc as any).lastAutoTable.finalY + 5;
 
     // 2. Príplatky
-    if (data.priplatky.some((p: any) => p.ks > 0)) {
+    if (data.priplatky.length > 0) {
       const priplatkyRows = data.priplatky
-        .filter((p: any) => p.ks > 0)
         .map((p: any, i: number) => [
           i + 1,
           p.nazov,
@@ -1438,9 +1444,8 @@ export const generatePDF = async (item: CenovaPonukaItem, formData: SpisFormData
 
     // 3. Kovanie
     const kovanieList = (data as any).kovanie || [];
-    if (kovanieList.some((k: any) => k.ks > 0)) {
+    if (kovanieList.length > 0) {
       const kovanieRows = kovanieList
-        .filter((k: any) => k.ks > 0)
         .map((k: any, i: number) => [
           i + 1,
           k.nazov,

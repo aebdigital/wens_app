@@ -8,6 +8,7 @@ interface VseobecneSidebarProps {
   isDark: boolean;
   firmaOptions: string[];
   isLocked?: boolean;
+  nextCpNumber?: string;
 }
 
 export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
@@ -15,7 +16,8 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
   setFormData,
   isDark,
   firmaOptions,
-  isLocked = false
+  isLocked = false,
+  nextCpNumber
 }) => {
   const [showFirmaDropdown, setShowFirmaDropdown] = useState(false);
   const [filteredFirmaOptions, setFilteredFirmaOptions] = useState<string[]>([]);
@@ -77,7 +79,7 @@ export const VseobecneSidebar: React.FC<VseobecneSidebarProps> = ({
                   type="text"
                   value={formData.predmet}
                   onChange={(e) => setFormData(prev => ({ ...prev, predmet: e.target.value }))}
-                  placeholder={`CP${new Date().getFullYear()}/xxxx`}
+                  placeholder={nextCpNumber || `CP${new Date().getFullYear()}/xxxx`}
                   disabled={isLocked}
                   className={getInputClass()}
                 />

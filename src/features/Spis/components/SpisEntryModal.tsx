@@ -160,6 +160,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
   const { acquireLock, releaseLock, checkLockStatus } = useDocumentLock();
   const [isLocked, setIsLocked] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showDeleteFinalConfirm, setShowDeleteFinalConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showDeleteNoteConfirm, setShowDeleteNoteConfirm] = useState(false);
   const [noteToDeleteIndex, setNoteToDeleteIndex] = useState<number | null>(null);
@@ -208,6 +210,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
     nextVariantCP,
     nextOrderNumber,
     userPhone,
+    getNextCP,
     // Contact changes modal
     showContactChangesModal,
     pendingContactChanges,
@@ -332,11 +335,18 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
 
   // Handle delete with confirmation
   const handleDeleteClick = () => {
+    setDeleteConfirmText('');
     setShowDeleteConfirm(true);
   };
 
   const confirmDelete = () => {
     setShowDeleteConfirm(false);
+    setDeleteConfirmText('');
+    setShowDeleteFinalConfirm(true);
+  };
+
+  const finalConfirmDelete = () => {
+    setShowDeleteFinalConfirm(false);
     onDelete(internalId);
   };
 
@@ -588,6 +598,7 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
                             isDark={isDark}
                             firmaOptions={firmaOptions}
                             isLocked={isEffectivelyLocked}
+                            nextCpNumber={!formData.predmet ? getNextCP() : undefined}
                           />
                         </div>
                         <div className="flex-1">
@@ -1027,8 +1038,8 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
             fullCisloCP={editingOfferData?.cisloCP || nextVariantCP}
             cisloZakazky={formData.cisloZakazky}
             onCisloZakazkyChange={(value) => setFormData(prev => ({ ...prev, cisloZakazky: value }))}
-            creatorPhone={userPhone}
-            creatorEmail={user?.email}
+            creatorPhone={editingOfferData?.creatorPhone ?? userPhone}
+            creatorEmail={editingOfferData?.creatorEmail ?? user?.email}
             architectInfo={{
               priezvisko: formData.architektonickyPriezvisko,
               meno: formData.architektonickeMeno,
@@ -1092,17 +1103,71 @@ export const SpisEntryModal: React.FC<SpisEntryModalProps> = ({
         isDark={isDark}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        title="Vymazať záznam"
-        message="Naozaj chcete vymazať tento záznam? Táto akcia sa nedá vrátiť späť."
-        onConfirm={confirmDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-        confirmText="Vymazať"
-        cancelText="Zrušiť"
-        isDark={isDark}
-      />
+      {/* Delete Confirmation Dialog — requires typing the spis number */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Vymazať záznam</h3>
+            <p className={`mb-4 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              Táto akcia sa nedá vrátiť späť. Pre potvrdenie napíšte číslo spisu:
+            </p>
+            <p className={`mb-3 text-sm font-mono font-semibold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              {formData.predmet || '—'}
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={formData.predmet || 'Číslo spisu'}
+              autoFocus
+              className={`w-full px-3 py-2 text-sm rounded border mb-5 focus:outline-none focus:ring-2 focus:ring-red-500 ${isDark ? 'bg-dark-700 border-dark-500 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400'}`}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
+                className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteConfirmText !== formData.predmet}
+                className={`px-4 py-2 rounded-lg font-medium text-white transition-colors ${deleteConfirmText === formData.predmet ? 'bg-red-600 hover:bg-red-700' : 'bg-red-300 cursor-not-allowed'}`}
+              >
+                Vymazať
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Delete Confirmation Dialog */}
+      {showDeleteFinalConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[101]">
+          <div className={`rounded-lg p-6 max-w-sm w-full mx-4 ${isDark ? 'bg-dark-800' : 'bg-white'}`}
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+            <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Ste si naozaj istý?</h3>
+            <p className={`text-sm mb-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              Záznam <span className="font-mono font-semibold text-red-500">{formData.predmet}</span> bude natrvalo vymazaný.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteFinalConfirm(false)}
+                className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={finalConfirmDelete}
+                className="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Áno, som si istý
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Close Confirmation Dialog */}
       <CloseConfirmDialog

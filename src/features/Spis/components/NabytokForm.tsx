@@ -270,7 +270,7 @@ export const NabytokForm: React.FC<NabytokFormProps> = ({ data, onChange, isDark
               <col style={{ width: '50px' }} />
             </colgroup>
             <thead>
-              <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+              <tr className="bg-gray-500 text-white">
                 <th className="px-2 py-2 text-center border-r border-white/20 w-8 relative group">
                   {hiddenColumns.length > 0 && (
                     <>

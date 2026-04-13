@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { DvereForm } from './DvereForm';
 import { NabytokForm } from './NabytokForm';
@@ -63,6 +63,7 @@ interface AddTemplateModalProps {
     type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra';
     data: any;
     cisloZakazky?: string;
+    printCisloZakazky?: boolean;
   };
   visibleTabs?: ('dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra')[];
   isLocked?: boolean;
@@ -108,10 +109,53 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Floating text preview for all table cell inputs
+  const [cellPreview, setCellPreview] = useState<{ value: string; rect: DOMRect } | null>(null);
+  const cellPreviewBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName !== 'INPUT' || target.type !== 'text') return;
+      if (cellPreviewBlurTimer.current) clearTimeout(cellPreviewBlurTimer.current);
+      const val = target.value;
+      if (val.length > 3) {
+        setCellPreview({ value: val, rect: target.getBoundingClientRect() });
+      }
+    };
+    const handleInputChange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName !== 'INPUT' || target.type !== 'text') return;
+      if (document.activeElement === target) {
+        const val = target.value;
+        if (val.length > 3) {
+          setCellPreview({ value: val, rect: target.getBoundingClientRect() });
+        } else {
+          setCellPreview(null);
+        }
+      }
+    };
+    const handleFocusOut = () => {
+      cellPreviewBlurTimer.current = setTimeout(() => setCellPreview(null), 150);
+    };
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('input', handleInputChange);
+    document.addEventListener('focusout', handleFocusOut);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('input', handleInputChange);
+      document.removeEventListener('focusout', handleFocusOut);
+      if (cellPreviewBlurTimer.current) clearTimeout(cellPreviewBlurTimer.current);
+    };
+  }, []);
+
   // Local cisloZakazky for this specific price offer (not shared globally)
   const [localCisloZakazky, setLocalCisloZakazky] = useState<string>(() => {
     // Initialize from editingData if available (the item's own cisloZakazky)
     return editingData?.cisloZakazky || '';
+  });
+  const [printCisloZakazky, setPrintCisloZakazky] = useState<boolean>(() => {
+    return editingData?.printCisloZakazky || false;
   });
 
   // Helper to get full cisloCP - prepends predmet if fullCisloCP starts with '-'
@@ -538,7 +582,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       else dataToSave = puzdraData;
 
       // Include the local cisloZakazky in the data
-      await onSave(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky });
+      await onSave(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky, itemPrintCisloZakazky: printCisloZakazky });
       // Don't close the modal after saving
     } finally {
       setIsSaving(false);
@@ -557,7 +601,7 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       else dataToSave = puzdraData;
 
       // Include the local cisloZakazky in the data
-      await onSaveAsNew(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky }, { forceNewVersion: true });
+      await onSaveAsNew(activeTab, { ...dataToSave, itemCisloZakazky: localCisloZakazky, itemPrintCisloZakazky: printCisloZakazky }, { forceNewVersion: true });
       onClose(); // Close modal after creating new offer
     } finally {
       setIsSavingAsNew(false);
@@ -597,6 +641,8 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
       const tempItem: CenovaPonukaItem = {
         id: 'preview',
         cisloCP: getDisplayCisloCP() || 'PREVIEW',
+        cisloZakazky: localCisloZakazky,
+        printCisloZakazky,
         typ: activeTab,
         verzia: '1',
         cenaBezDPH: totals.cenaBezDPH,
@@ -734,6 +780,25 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
   if (!isOpen) return null;
 
   return (
+    <>
+    {/* Floating text preview for table cell inputs */}
+    {cellPreview && (
+      <div
+        style={{
+          position: 'fixed',
+          top: cellPreview.rect.top,
+          left: cellPreview.rect.left,
+          transform: 'translateY(calc(-100% - 6px))',
+          width: Math.min(480, window.innerWidth - cellPreview.rect.left - 16),
+          zIndex: 99999,
+          pointerEvents: 'none',
+        }}
+      >
+        <div className={`rounded-lg shadow-xl border text-xs px-3 py-2 leading-relaxed break-words ${isDark ? 'bg-dark-700 border-dark-500 text-white' : 'bg-white border-gray-300 text-gray-800'}`}>
+          {cellPreview.value}
+        </div>
+      </div>
+    )}
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 md:p-4">
       <div
         className={`${isDark ? 'bg-dark-800' : 'bg-gray-100'} rounded-xl shadow-2xl flex flex-col w-full h-full md:w-[95vw] md:h-[90vh] md:max-w-[1400px]`}
@@ -793,6 +858,15 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
                   placeholder="Zadajte..."
                   className={`w-24 px-2 py-0.5 text-base font-semibold rounded border ${isDark ? 'bg-dark-700 text-white border-dark-500' : 'bg-white text-gray-800 border-gray-300'} focus:outline-none focus:ring-1 focus:ring-red-500`}
                 />
+                <label className="flex items-center gap-1 cursor-pointer" title="Tlačiť číslo zákazky v PDF">
+                  <input
+                    type="checkbox"
+                    checked={printCisloZakazky}
+                    onChange={(e) => setPrintCisloZakazky(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-red-600"
+                  />
+                  <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>tlačiť v PDF</span>
+                </label>
               </div>
             </div>
             <button
@@ -1143,5 +1217,6 @@ export const AddTemplateModal: React.FC<AddTemplateModalProps> = ({
         />
       )}
     </div>
+    </>
   );
 };

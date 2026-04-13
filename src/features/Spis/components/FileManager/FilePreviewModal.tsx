@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileItem } from '../../types';
 import { PDFPreviewModal } from '../../../../components/common/PDFPreviewModal';
 import { useTheme } from '../../../../contexts/ThemeContext';
@@ -11,14 +11,23 @@ interface FilePreviewModalProps {
 
 export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose }) => {
     const { isDark } = useTheme();
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const isDragging = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const panStart = useRef({ x: 0, y: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Reset zoom and pan when file changes
+    useEffect(() => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    }, [file]);
 
     if (!isOpen || !file) return null;
 
     const isImage = file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
     const isPdf = file.name.match(/\.pdf$/i);
-
-    // Debug: log full file info
-    console.log('FilePreviewModal - full file object:', JSON.stringify(file, null, 2));
 
     // For PDFs, use the advanced PDFPreviewModal
     if (isPdf && file.url) {
@@ -76,6 +85,35 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen
         }
     };
 
+    const handleWheel = (e: React.WheelEvent) => {
+        if (!isImage) return;
+        e.preventDefault();
+        setZoom(prev => Math.min(5, Math.max(0.5, prev - e.deltaY * 0.001)));
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!isImage || zoom <= 1) return;
+        e.preventDefault();
+        isDragging.current = true;
+        dragStart.current = { x: e.clientX, y: e.clientY };
+        panStart.current = { ...pan };
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging.current) return;
+        const dx = e.clientX - dragStart.current.x;
+        const dy = e.clientY - dragStart.current.y;
+        setPan({ x: panStart.current.x + dx, y: panStart.current.y + dy });
+    };
+
+    const handleMouseUp = () => {
+        isDragging.current = false;
+    };
+
+    const zoomIn = () => setZoom(prev => Math.min(5, Math.round((prev + 0.25) * 100) / 100));
+    const zoomOut = () => setZoom(prev => Math.max(0.5, Math.round((prev - 0.25) * 100) / 100));
+    const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
+
     return (
         <div
             className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -87,7 +125,32 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white truncate pr-4">
                         {file.name}
                     </h3>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        {isImage && (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={zoomOut}
+                                    className="px-2 py-1 text-sm font-bold text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                                    title="Zmenšiť"
+                                >
+                                    −
+                                </button>
+                                <button
+                                    onClick={resetZoom}
+                                    className="px-2 py-1 text-xs text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors min-w-[48px] text-center"
+                                    title="Resetovať zoom"
+                                >
+                                    {Math.round(zoom * 100)}%
+                                </button>
+                                <button
+                                    onClick={zoomIn}
+                                    className="px-2 py-1 text-sm font-bold text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                                    title="Zväčšiť"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        )}
                         {file.url && (
                             <a
                                 href={file.url}
@@ -112,13 +175,31 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden relative">
+                <div
+                    ref={containerRef}
+                    className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden relative"
+                    onWheel={handleWheel}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                >
                     {isImage && file.url ? (
-                        <img
-                            src={file.url}
-                            alt={file.name}
-                            className="max-w-full max-h-full object-contain"
-                        />
+                        <div
+                            style={{
+                                transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                                transition: isDragging.current ? 'none' : 'transform 0.1s ease',
+                                transformOrigin: 'center center',
+                                cursor: zoom > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'default'
+                            }}
+                        >
+                            <img
+                                src={file.url}
+                                alt={file.name}
+                                className="max-w-full max-h-[75vh] object-contain select-none"
+                                draggable={false}
+                            />
+                        </div>
                     ) : (
                         <div className="text-center p-8">
                             <div className="mb-4">

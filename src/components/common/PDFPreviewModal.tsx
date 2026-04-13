@@ -23,7 +23,6 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   // Use smaller scale on mobile for better initial view
   const getInitialScale = () => {
@@ -34,20 +33,19 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   };
   const [scale, setScale] = useState(getInitialScale);
   const [error, setError] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const renderTaskRef = useRef<any>(null);
-  const isRenderingRef = useRef(false);
+  const renderTasksRef = useRef<any[]>([]);
 
   // Reset all state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setPdfDoc(null);
-      setCurrentPage(1);
       setTotalPages(0);
       setScale(getInitialScale());
       setError(null);
       setIsLoading(true);
+      canvasRefs.current = [];
     }
   }, [isOpen]);
 
@@ -59,15 +57,13 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     setPdfDoc(null);
     setIsLoading(true);
     setError(null);
-    setCurrentPage(1);
     setTotalPages(0);
+    canvasRefs.current = [];
 
     const loadPdf = async () => {
       try {
-        console.log('Loading PDF from:', pdfUrl);
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
-        console.log('PDF loaded, pages:', pdf.numPages);
         setPdfDoc(pdf);
         setTotalPages(pdf.numPages);
         setIsLoading(false);
@@ -81,101 +77,62 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     loadPdf();
   }, [isOpen, pdfUrl]);
 
-  // Render current page
+  // Render all pages whenever pdfDoc or scale changes
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
+    if (!pdfDoc || totalPages === 0) return;
 
-    const renderPage = async () => {
-      // Prevent overlapping renders
-      if (isRenderingRef.current) {
-        return;
-      }
+    // Cancel any previous render tasks
+    renderTasksRef.current.forEach(task => {
+      try { task?.cancel(); } catch (e) { /* ignore */ }
+    });
+    renderTasksRef.current = [];
 
-      // Cancel any previous render task
-      if (renderTaskRef.current) {
+    const renderAllPages = async () => {
+      const pixelRatio = window.devicePixelRatio || 1;
+
+      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+        const canvas = canvasRefs.current[pageNum - 1];
+        if (!canvas) continue;
+
         try {
-          renderTaskRef.current.cancel();
-        } catch (e) {
-          // Ignore cancel errors
+          const page = await pdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale: scale * pixelRatio });
+
+          const context = canvas.getContext('2d');
+          if (!context) continue;
+
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          canvas.style.width = `${viewport.width / pixelRatio}px`;
+          canvas.style.height = `${viewport.height / pixelRatio}px`;
+
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          const renderTask = page.render({ canvasContext: context, viewport });
+          renderTasksRef.current[pageNum - 1] = renderTask;
+          await renderTask.promise;
+        } catch (err: any) {
+          if (err?.name !== 'RenderingCancelledException') {
+            console.error(`Error rendering page ${pageNum}:`, err);
+          }
         }
-        renderTaskRef.current = null;
-      }
-
-      isRenderingRef.current = true;
-
-      try {
-        const page = await pdfDoc.getPage(currentPage);
-
-        // Get device pixel ratio for sharp rendering
-        const pixelRatio = window.devicePixelRatio || 1;
-        const viewport = page.getViewport({ scale: scale * pixelRatio });
-
-        const canvas = canvasRef.current;
-        if (!canvas) {
-          isRenderingRef.current = false;
-          return;
-        }
-
-        const context = canvas.getContext('2d');
-        if (!context) {
-          isRenderingRef.current = false;
-          return;
-        }
-
-        // Set canvas dimensions at higher resolution
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        // Scale down the canvas display size
-        canvas.style.width = `${viewport.width / pixelRatio}px`;
-        canvas.style.height = `${viewport.height / pixelRatio}px`;
-
-        // Clear canvas before rendering
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Render PDF page
-        const renderTask = page.render({
-          canvasContext: context,
-          viewport: viewport
-        });
-        renderTaskRef.current = renderTask;
-
-        await renderTask.promise;
-        renderTaskRef.current = null;
-
-        console.log('Page rendered successfully');
-      } catch (err: any) {
-        // Ignore cancellation errors
-        if (err?.name !== 'RenderingCancelledException') {
-          console.error('Error rendering page:', err);
-        }
-      } finally {
-        isRenderingRef.current = false;
       }
     };
 
-    // Small delay to ensure canvas is ready
-    const timeoutId = setTimeout(renderPage, 50);
-
+    const timeoutId = setTimeout(renderAllPages, 50);
     return () => {
       clearTimeout(timeoutId);
-      if (renderTaskRef.current) {
-        try {
-          renderTaskRef.current.cancel();
-        } catch (e) {
-          // Ignore cancel errors
-        }
-      }
+      renderTasksRef.current.forEach(task => {
+        try { task?.cancel(); } catch (e) { /* ignore */ }
+      });
     };
-  }, [pdfDoc, currentPage, scale]);
+  }, [pdfDoc, scale, totalPages]);
 
   const handleDownload = () => {
-    // Use custom download handler if provided (e.g., for generating PDF without QR code)
     if (customDownload) {
       customDownload();
       return;
     }
-    // Default: download the preview PDF as-is
     const link = document.createElement('a');
     link.href = pdfUrl;
     link.download = filename;
@@ -184,25 +141,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     document.body.removeChild(link);
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
 
   if (!isOpen || !pdfUrl) return null;
 
@@ -235,7 +175,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             </button>
             {totalPages > 0 && (
               <span className={`hidden md:inline text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Strana {currentPage} / {totalPages}
+                {totalPages} {totalPages === 1 ? 'strana' : 'strany'}
               </span>
             )}
           </div>
@@ -280,7 +220,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               <span className="hidden sm:inline">Stiahnuť</span>
             </button>
 
-            {/* Close button - desktop only (mobile has it in title row) */}
+            {/* Close button - desktop only */}
             <button
               onClick={onClose}
               className={`hidden md:flex p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}
@@ -293,7 +233,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
           </div>
         </div>
 
-        {/* PDF Content */}
+        {/* PDF Content — scrollable, all pages stacked */}
         <div
           ref={containerRef}
           className={`flex-1 overflow-auto ${isDark ? 'bg-dark-900' : 'bg-gray-100'}`}
@@ -312,56 +252,18 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{error}</p>
             </div>
           )}
-          {!isLoading && !error && (
-            <div className="inline-block p-4 min-w-full">
-              <div className="flex justify-center">
+          {!isLoading && !error && totalPages > 0 && (
+            <div className="flex flex-col items-center gap-4 p-4">
+              {Array.from({ length: totalPages }, (_, i) => (
                 <canvas
-                  ref={canvasRef}
+                  key={i}
+                  ref={el => { canvasRefs.current[i] = el; }}
                   className="shadow-lg bg-white"
                 />
-              </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Footer with page navigation */}
-        {totalPages > 1 && !isLoading && !error && (
-          <div className={`flex items-center justify-center gap-4 px-4 py-3 border-t ${isDark ? 'border-dark-600 bg-dark-700' : 'border-gray-200 bg-gray-50'}`}>
-            <button
-              onClick={handlePrevPage}
-              disabled={currentPage <= 1}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                currentPage <= 1
-                  ? 'opacity-50 cursor-not-allowed'
-                  : isDark ? 'hover:bg-dark-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Predchádzajúca
-            </button>
-
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              {currentPage} / {totalPages}
-            </span>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage >= totalPages}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                currentPage >= totalPages
-                  ? 'opacity-50 cursor-not-allowed'
-                  : isDark ? 'hover:bg-dark-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'
-              }`}
-            >
-              Ďalšia
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

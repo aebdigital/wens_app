@@ -173,11 +173,15 @@ export interface CenovaPonukaItemBase {
   verzia: string;
   odoslane: string;
   vytvoril: string;
+  datumVytvorenia?: string;
+  creatorPhone?: string;
+  creatorEmail?: string;
   popis: string;
   cenaBezDPH: number;
   cenaSDPH: number;
   selected?: boolean;
   isLocked?: boolean;
+  printCisloZakazky?: boolean;
 }
 
 export type CenovaPonukaItem =

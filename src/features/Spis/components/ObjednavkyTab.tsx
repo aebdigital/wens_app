@@ -53,10 +53,10 @@ export const ObjednavkyTab: React.FC<ObjednavkyTabProps> = ({
         orderNumber: item.cisloObjednavky || item.id || 'N/A',
         nazov: item.nazov,
         data: item.puzdraData,
-        headerInfo: headerInfo || {
-          vypracoval: item.vypracoval || user?.name || '',
-          telefon: user?.telefon || '',
-          email: user?.email || ''
+        headerInfo: {
+          vypracoval: item.vypracoval || headerInfo?.vypracoval || user?.name || '',
+          telefon: item.creatorPhone ?? headerInfo?.telefon ?? '',
+          email: item.creatorEmail ?? headerInfo?.email ?? user?.email ?? ''
         }
       };
 

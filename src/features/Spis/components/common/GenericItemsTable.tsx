@@ -44,7 +44,7 @@ export const GenericItemsTable = <T extends { id: string | number }>({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+            <tr className="bg-gray-500 text-white">
               {mergeFirstTwoHeaders ? (
                 <>
                   {/* First column shows table title instead of column label */}

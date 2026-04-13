@@ -194,7 +194,7 @@ export const PuzdraForm: React.FC<PuzdraFormProps> = ({ data, onChange, isDark, 
         <div className="">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gradient-to-br from-[#e11b28] to-[#b8141f] text-white">
+              <tr className="bg-gray-500 text-white">
                 <th className="px-4 py-2 text-left border-r border-white/20 min-w-[200px]">Popis položky</th>
                 <th className="px-2 py-2 text-left border-r border-white/20 min-w-[120px] w-32">Kód</th>
                 <th className="px-2 py-2 text-center border-r border-white/20 min-w-[80px] w-24">Množstvo</th>

@@ -82,6 +82,19 @@ export const useSpisEntryLogic = (
     return `CP${currentYear}/${(max + 1).toString().padStart(4, '0')}`;
   }, [entries]);
 
+  // Auto-fill predmet with next CP number when opening a new (unsaved) entry.
+  // Must be after useSpisFormState and getNextCP so it runs AFTER the form reset effect.
+  useEffect(() => {
+    if (isOpen && !initialEntry) {
+      setFormData(prev => {
+        if (!prev.predmet) {
+          return { ...prev, predmet: getNextCP() };
+        }
+        return prev;
+      });
+    }
+  }, [isOpen, initialEntry, getNextCP]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 3. Persistence Logic (Save & Contact Changes)
   const {
     showContactChangesModal,
@@ -106,7 +119,7 @@ export const useSpisEntryLogic = (
   // 4. Modal States (Templates & Orders)
   const [showVzorModal, setShowVzorModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, cisloCP?: string, cisloZakazky?: string } | undefined>(undefined);
+  const [editingOfferData, setEditingOfferData] = useState<{ type: 'dvere' | 'nabytok' | 'schody' | 'kovanie' | 'puzdra', data: any, cisloCP?: string, cisloZakazky?: string, printCisloZakazky?: boolean, creatorPhone?: string, creatorEmail?: string, vytvoril?: string } | undefined>(undefined);
 
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingOrderData, setEditingOrderData] = useState<any>(undefined);
@@ -127,6 +140,8 @@ export const useSpisEntryLogic = (
         nazov: data.zakazka || `Objednávka ${nextId}`,
         vypracoval: user ? `${user.firstName} ${user.lastName}` : '',
         datum: new Date().toISOString().split('T')[0],
+        creatorPhone: userPhone || '',
+        creatorEmail: user?.email || '',
         popis: type === 'puzdra'
           ? `Púzdra: ${data.polozky ? data.polozky.length : 0} ks`
           : `${type}: ${data.popisVyrobkov ? data.popisVyrobkov.substring(0, 30) : ''}...`,
@@ -208,7 +223,8 @@ export const useSpisEntryLogic = (
 
     // Extract itemCisloZakazky from data if provided, then remove it from dataToSave
     const itemCisloZakazky = dataToSave.itemCisloZakazky;
-    const { itemCisloZakazky: _, ...cleanDataToSave } = dataToSave;
+    const itemPrintCisloZakazky = dataToSave.itemPrintCisloZakazky;
+    const { itemCisloZakazky: _, itemPrintCisloZakazky: __, ...cleanDataToSave } = dataToSave;
 
     // Billing Snapshot Logic
     // If it's a NEW entry, we create the snapshot from current formData.
@@ -278,9 +294,21 @@ export const useSpisEntryLogic = (
       id: newId,
       cisloCP: newCisloCP,
       cisloZakazky: itemCisloZakazky || existingItem?.cisloZakazky || '',
+      printCisloZakazky: itemPrintCisloZakazky !== undefined ? itemPrintCisloZakazky : (existingItem?.printCisloZakazky || false),
       verzia: existingItem?.verzia || '1', // Versioning within the same item ID is different, here we just keep '1' or existing.
       odoslane: existingItem?.odoslane || '',
-      vytvoril: formData.vypracoval || (user ? `${user.firstName} ${user.lastName}` : '') || '',
+      vytvoril: isNewEntry
+        ? (formData.vypracoval || (user ? `${user.firstName} ${user.lastName}` : '') || '')
+        : (existingItem?.vytvoril || formData.vypracoval || (user ? `${user.firstName} ${user.lastName}` : '') || ''),
+      datumVytvorenia: isNewEntry
+        ? new Date().toISOString().split('T')[0]
+        : existingItem?.datumVytvorenia,
+      creatorPhone: isNewEntry
+        ? (userPhone || '')
+        : existingItem?.creatorPhone,
+      creatorEmail: isNewEntry
+        ? (user?.email || '')
+        : existingItem?.creatorEmail,
       popis: existingItem?.popis || '',
       typ: type,
       cenaBezDPH: cenaBezDPH,
@@ -446,7 +474,16 @@ export const useSpisEntryLogic = (
 
   const handleEditOffer = (item: CenovaPonukaItem) => {
     setEditingOfferId(item.id);
-    setEditingOfferData({ type: item.typ, data: item.data, cisloCP: item.cisloCP, cisloZakazky: item.cisloZakazky });
+    setEditingOfferData({
+      type: item.typ,
+      data: item.data,
+      cisloCP: item.cisloCP,
+      cisloZakazky: item.cisloZakazky,
+      printCisloZakazky: item.printCisloZakazky,
+      creatorPhone: item.creatorPhone,
+      creatorEmail: item.creatorEmail,
+      vytvoril: item.vytvoril
+    });
     setShowVzorModal(true);
   };
 
@@ -541,6 +578,7 @@ export const useSpisEntryLogic = (
     lastSavedJson,
     nextVariantCP,
     nextOrderNumber,
+    getNextCP,
     showContactChangesModal,
     pendingContactChanges,
     handleApplyContactChanges,
